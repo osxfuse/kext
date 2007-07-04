@@ -12,9 +12,6 @@
 #define M_MACFUSE_ENABLE_UNSUPPORTED   1
 #define M_MACFUSE_ENABLE_XATTR         1
 
-#define FUSE_MAC_CREATOR               0x46555345 /* FUSE */
-#define FUSE_MAC_TYPE_ROOT             0x524f4f54 /* ROOT */
-
 /*
  * This is the prefix ("fuse" by default) of the name of a FUSE device node
  * in devfs. The suffix is the device number. "/dev/fuse0" is the first FUSE

@@ -20,6 +20,7 @@ int fuse_devices_stop(void);
 int fuse_devices_kill_unit(int unit);
 
 fuse_softc_t      fuse_softc_get(dev_t dev);
+int               fuse_softc_get_usecount(fuse_softc_t fdev);
 struct fuse_data *fuse_softc_get_data(fuse_softc_t fdev);
 void              fuse_softc_set_data(fuse_softc_t fdev,
                                       struct fuse_data *data);

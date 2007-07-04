@@ -172,13 +172,10 @@ fuse_internal_access(vnode_t                   vp,
               vp, vnode_isvroot(vp), vnode_vtype(vp), action);
 
         /*
-         * Finder's /.Trashes/<uid> issue... avoid deadlock
+         * On 10.4, because of the Finder's /.Trashes/<uid> issue, we set
+         * dorevoke to 0 to avoid deadlock.
          */
-        if (FUSE_KL_skiprevoke(vp, action)) {
-            dorevoke = 0;
-            IOLog("MacFUSE: skipping revoke on vnode %p\n", vp);
-        }
-
+         
         fuse_internal_vnode_disappear(vp, context, dorevoke);
     }
 
@@ -1247,6 +1244,56 @@ fuse_internal_thread_call_expiry_handler(void *param0, void *param1)
 
 __private_extern__
 int
+fuse_internal_init_synchronous(struct fuse_ticket *ftick)
+{
+    int err = 0;
+    struct fuse_data *data = ftick->tk_data;
+    struct fuse_init_out *fiio;
+
+    if ((err = ftick->tk_aw_ohead.error)) {
+        goto out;
+    }
+
+    fiio = fticket_resp(ftick)->base;
+
+    /* XXX: Do we want to check anything further besides this? */
+    if (fiio->major < 7) {
+        debug_printf("userpace version too low\n");
+        err = EPROTONOSUPPORT;
+        goto out;
+    }
+
+    data->fuse_libabi_major = fiio->major;
+    data->fuse_libabi_minor = fiio->minor;
+
+    if (fuse_libabi_geq(data, 7, 5)) {
+        if (fticket_resp(ftick)->len == sizeof(struct fuse_init_out)) {
+            data->max_write = fiio->max_write;
+        } else {
+            err = EINVAL;
+        }
+    } else {
+        /* Old fix values */
+        data->max_write = 4096;
+    }
+
+out:
+    fuse_ticket_drop(ftick);
+
+    if (err) {
+        fdata_kick_set(data);
+    }
+
+    fuse_lck_mtx_lock(data->ticket_mtx);
+    data->dataflags |= FSESS_INITED;
+    fuse_wakeup(&data->ticketer);
+    fuse_lck_mtx_unlock(data->ticket_mtx);
+
+    return (0);
+}
+
+__private_extern__
+int
 fuse_internal_init_callback(struct fuse_ticket *ftick, uio_t uio)
 {
     int err = 0;
@@ -1308,7 +1355,7 @@ out:
 }
 
 __private_extern__
-void
+int
 fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 {
     struct fuse_init_in   *fiii;
@@ -1321,6 +1368,10 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
     fiii->minor = FUSE_KERNEL_MINOR_VERSION;
     fiii->max_readahead = data->iosize * 16;
     fiii->flags = 0;
+
+    if (fuse_init_backgrounded) {
+
+        /* non-blocking FUSE_INIT up to user space */
 
 #if M_MACFUSE_ENABLE_INIT_TIMEOUT
     {
@@ -1335,6 +1386,26 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
     }
 #endif
 
-    fuse_insert_callback(fdi.tick, fuse_internal_init_callback);
-    fuse_insert_message(fdi.tick);
+        fuse_insert_callback(fdi.tick, fuse_internal_init_callback);
+        fuse_insert_message(fdi.tick);
+    } else {
+
+        /* blocking FUSE_INIT up to user space */
+
+        int err = 0;
+
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
+            IOLog("MacFUSE: user-space initialization failed (%d)\n", err);
+            return err;
+        }
+
+        err = fuse_internal_init_synchronous(fdi.tick);
+        if (err) {
+            IOLog("MacFUSE: in-kernel initialization failed (%d)\n", err);
+            return err;
+        }
+    }
+
+    return 0;
 }

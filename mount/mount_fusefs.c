@@ -37,26 +37,8 @@
 
 #define PROGNAME "mount_" MACFUSE_FS_TYPE
 
-char *getproctitle(pid_t pid, char **title, int *len);
 void  showhelp(void);
 void  showversion(int doexit);
-
-static int FinderInfoSet(const char *path, uint32_t *type, uint32_t *creator);
-
-static const char dot_data[] = {
-     0x00, 0x05, 0x16, 0x07, 0x00, 0x02, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x02, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00,
-     0x00, 0x32, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00,
-     0x00, 0x02, 0x00, 0x00, 0x00, 0x52, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00                                                        
-};
-#define DOT_DATA_LEN (sizeof(dot_data)/sizeof(char))
 
 struct mntopt mopts[] = {
     MOPT_STDOPTS,
@@ -211,10 +193,8 @@ fuse_to_subtype(void **target, void *value, void *fallback)
     *(uint32_t *)target = FUSE_FSSUBTYPE_UNKNOWN;
 
     {
-        int   len;
-        char *title;
+        char *title = getenv("MOUNT_FUSEFS_DAEMON_PATH");
 
-        title = getproctitle(getppid(), &title, &len);
         if (!title) {
             return 0;
         }
@@ -241,8 +221,6 @@ fuse_to_subtype(void **target, void *value, void *fallback)
         } else if (strcasestr(title, "crypto")) {
             *(uint32_t *)target = FUSE_FSSUBTYPE_CRYPTOFS;
         }
-
-        free(title);
     }
     
     return 0;
@@ -348,144 +326,6 @@ fuse_process_mvals(void)
             exit(ret);
         }
     }
-}
-
-char *
-getproctitle(pid_t pid, char **title, int *len)
-{
-    size_t size;
-    int    mib[3];
-    int    argmax, target_argc;
-    char  *target_argv;
-    char  *cp;
-
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_ARGMAX;
-
-    size = sizeof(argmax);
-    if (sysctl(mib, 2, &argmax, &size, NULL, 0) == -1) {
-        goto failed;
-    }
-
-    target_argv = (char *)malloc(argmax);
-    if (target_argv == NULL) {
-        goto failed;
-    }
-
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_PROCARGS2;
-    mib[2] = pid;
-
-    size = (size_t)argmax;
-    if (sysctl(mib, 3, target_argv, &size, NULL, 0) == -1) {
-        free(target_argv);
-        goto failed;
-    }
-
-    memcpy(&target_argc, target_argv, sizeof(target_argc));
-    cp = target_argv + sizeof(target_argc);
-
-    for (; cp < &target_argv[size]; cp++) {
-        if (*cp == '\0') {
-            break;
-        }
-    }
-
-    if (cp == &target_argv[size]) {
-        free(target_argv);
-        goto failed;
-    }
-
-    for (; cp < &target_argv[size]; cp++) {
-        if (*cp != '\0') {
-            break;
-        }
-    }
-
-    if (cp == &target_argv[size]) {
-        free(target_argv);
-        goto failed;
-    }
-
-    *len = asprintf(title, "%s", basename(cp));
-
-    free(target_argv);
-    goto out;
-
-failed:
-    *title = NULL;
-    *len = 0;
-
-out:
-    return *title;
-}
-
-#include <DiskArbitration/DiskArbitration.h>
-
-extern kern_return_t DiskArbInit(void) __attribute__((weak_import));
-extern kern_return_t DiskArbDiskAppearedWithMountpointPing_auto(
-  char     *disk,
-  unsigned  flags,
-  char     *mountpoint
-) __attribute__((weak_import));
-
-static int
-ping_diskarb(char *mntpath, uint64_t altflags)
-{
-    int ret;
-    int dot_fd;
-    size_t len;
-    char *p1, *p2;
-    char dot_path[MAXPATHLEN + 1] = { 0 };
-    struct statfs sb;
-    enum {
-        kDiskArbDiskAppearedEjectableMask   = 1 << 1,
-        kDiskArbDiskAppearedWholeDiskMask   = 1 << 2,
-        kDiskArbDiskAppearedNetworkDiskMask = 1 << 3
-    };
-
-    ret = statfs(mntpath, &sb);
-    if (ret < 0) {
-        return ret;
-    }
-
-    if (!DiskArbInit || !DiskArbDiskAppearedWithMountpointPing_auto) {
-        return 0;
-    }
-
-    ret = DiskArbInit();
-
-    /* we ignore the return value from DiskArbInit() */
-
-    if (altflags & FUSE_MOPT_VOLICON) {
-        len = strlen(mntpath) + 2;
-        p1 = dirname(mntpath);
-        p2 = basename(mntpath);
-        if (p1 && p2 && (len <= MAXPATHLEN)) {
-            ret = snprintf(dot_path, MAXPATHLEN + 1, "%s/._%s", p1, p2);
-            if (ret == (int)len) {
-                dot_fd = open(dot_path, O_RDWR | O_CREAT | O_EXCL, 0644);
-                if (dot_fd >= 0) {
-                    uint32_t creator = FUSE_MAC_CREATOR;
-                    uint32_t type = FUSE_MAC_TYPE_ROOT;
-                    /* assume no interruption... just best effort */
-                    (void)write(dot_fd, dot_data, DOT_DATA_LEN);
-                    close(dot_fd);
-                    FinderInfoSet(dot_path, &type, &creator);
-                }
-            }
-        }
-    }
-
-    ret = DiskArbDiskAppearedWithMountpointPing_auto(
-              sb.f_mntfromname,
-              (kDiskArbDiskAppearedEjectableMask |
-               kDiskArbDiskAppearedNetworkDiskMask),
-              mntpath);
-
-    /* we ignore the return value from the ping */
-
-    return 0;
 }
 
 static int
@@ -857,80 +697,15 @@ main(int argc, char **argv)
     }
 
     if (mount(MACFUSE_FS_TYPE, mntpath, mntflags, (void *)&args) < 0) {
-        err(EX_OSERR, "%s@%d on %s", MACFUSE_FS_TYPE, dindex, mntpath);
+        err(EX_OSERR, "failed to mount %s@/dev/fuse%d", mntpath, dindex);
     }
 
-    /*
-     * XXX: There's a race condition here with the Finder. The kernel's
-     * vfs_getattr() won't do the real thing until the daemon has responded
-     * to the FUSE_INIT method. If the Finder does a stat on the file system
-     * too soon, it will get "fake" information (leading to things like
-     * "Zero KB on disk"). A decent solution is to do this pinging not here,
-     * but somewhere else asynchronously, after we've made sure that the
-     * kernel-user handshake is complete.
-     */
     {
-        pid_t pid;
-
-        signal(SIGCHLD, SIG_IGN);
-
-        if ((pid = fork()) < 0) {
-            err(EX_OSERR, "%s@%d on %s (fork failed)",
-                MACFUSE_FS_TYPE, dindex, mntpath);
-        }
-
-        setbuf(stderr, NULL);
-
-        if (pid == 0) { /* child */
-
-            int ret = 0, wait_iterations;
-            char *udata_keys[]   = { kFUSEMountPathKey };
-            char *udata_values[] = { mntpath };
+        char *udata_keys[]   = { kFUSEMountPathKey };
+        char *udata_values[] = { mntpath };
            
-            post_notification(FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED,
-                              udata_keys, udata_values, 1);
-
-            wait_iterations = \
-                (init_timeout * 1000000) / FUSE_INIT_WAIT_INTERVAL;
-
-            for (; wait_iterations > 0; wait_iterations--) { 
-                u_int32_t hs_complete = 0;
-
-                ret = ioctl(fd, FUSEDEVIOCISHANDSHAKECOMPLETE, &hs_complete);
-                if (ret) {
-                    break;
-                }
-
-                if (hs_complete) {
-                    if (args.altflags & FUSE_MOPT_PING_DISKARB) {
-                        /* Let Disk Arbitration know. */
-                        if (ping_diskarb(mntpath, altflags)) {
-                            /* Somebody might want to exit here instead. */
-                            fprintf(stderr, "%s@%d on %s (ping DiskArb)",
-                                    MACFUSE_FS_TYPE, dindex, mntpath);
-                        }
-                    }
-
-                    post_notification(FUSE_UNOTIFICATIONS_NOTIFY_INITED,
-                                      udata_keys, udata_values, 1);
-
-                    exit(0);
-                }
-
-                usleep(FUSE_INIT_WAIT_INTERVAL);
-
-            } /* for */
-
-            post_notification(FUSE_UNOTIFICATIONS_NOTIFY_INITTIMEDOUT,
-                              udata_keys, udata_values, 1);
-
-            if (ret == 0) {
-                /* Somebody might want to exit here instead. */
-                fprintf(stderr, "%s@%d on %s (gave up on init handshake)",
-                        MACFUSE_FS_TYPE, dindex, mntpath);
-            }
-
-        } /* parent: just fall through and exit */
+        post_notification(FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED,
+                          udata_keys, udata_values, 1);
     }
 
     exit(0);
@@ -984,46 +759,4 @@ showversion(int doexit)
     if (doexit) {
         exit(EX_USAGE);
     }
-}
-
-typedef struct attrlist attrlist_t;
-
-struct FinderInfoAttrBuf {
-    unsigned long length;
-    fsobj_type_t  objType;
-    char          finderInfo[32];
-};
-typedef struct FinderInfoAttrBuf FinderInfoAttrBuf;
-
-static int
-FinderInfoSet(const char *path, uint32_t *type, uint32_t *creator)
-{
-    int               ret;
-    attrlist_t        attrList;
-    FinderInfoAttrBuf attrBuf;
-
-    attrList.commonattr = ATTR_CMN_FNDRINFO;
-
-    memset(&attrList, 0, sizeof(attrList));
-    attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
-    attrList.commonattr  = ATTR_CMN_OBJTYPE | ATTR_CMN_FNDRINFO;
-    
-    ret = getattrlist(path, &attrList, &attrBuf, sizeof(attrBuf), 0);
-    if (ret != 0) {
-        return errno;
-    }   
-    
-    if ((ret == 0) && (attrBuf.objType != VREG) ) {
-        return EINVAL;
-    } else {
-         uint32_t be_type = htonl(*type);
-         uint32_t be_creator = htonl(*creator);
-         memcpy(&attrBuf.finderInfo[0], &be_type,    sizeof(uint32_t));
-         memcpy(&attrBuf.finderInfo[4], &be_creator, sizeof(uint32_t));
-         attrList.commonattr = ATTR_CMN_FNDRINFO;
-         ret = setattrlist(path, &attrList, attrBuf.finderInfo,
-                           sizeof(attrBuf.finderInfo), 0);
-    }
-
-    return ret;
 }

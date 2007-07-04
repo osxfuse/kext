@@ -400,6 +400,7 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "fusefs" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			productRefGroup = 540966F20C33BEC900F5E227 /* Products */;
@@ -410,6 +411,7 @@
 					ProjectRef = 54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */;
 				},
 			);
+			projectRoot = "";
 			targets = (
 				54C6DD290B5EE606002D9FD9 /* All */,
 				32A4FEB80562C75700D090E7 /* fusefs */,
@@ -657,7 +659,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
 			name = Debug;
 		};
@@ -674,7 +676,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 			};
 			name = Release;
 		};
@@ -702,6 +704,7 @@
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = "$(HOME)/bin";
+				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PREBINDING = NO;
 				PRODUCT_NAME = mount_fusefs;
 				ZERO_LINK = NO;

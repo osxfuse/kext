@@ -70,6 +70,17 @@ fuse_softc_get(dev_t dev)
 }
 
 __inline__
+int
+fuse_softc_get_usecount(fuse_softc_t fdev)
+{
+    if (!fdev) {
+        return -1;
+    }
+
+    return fdev->usecount;
+}
+
+__inline__
 struct fuse_data *
 fuse_softc_get_data(fuse_softc_t fdev)
 {
@@ -374,6 +385,9 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
     case FUSEDEVIOCDAEMONISDYING:
         fdata_kick_set(data);
+        fuse_lck_mtx_lock(data->timeout_mtx);
+        data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
+        fuse_lck_mtx_unlock(data->timeout_mtx);
         ret = 0;
         break;
 

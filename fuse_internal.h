@@ -165,7 +165,11 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
         VATTR_RETURN(out_vap, va_data_size, VTOFUD(vp)->filesize);
         VATTR_RETURN(in_vap,  va_data_size, VTOFUD(vp)->filesize);
     } else {
+#if WORKS_ON_TIGER_BUT_NOT_ON_LEOPARD
         VATTR_RETURN(out_vap, va_data_size, in_vap->va_data_size);
+#endif
+        VATTR_RETURN(out_vap, va_data_size, VTOFUD(vp)->filesize);
+        VATTR_RETURN(in_vap,  va_data_size, VTOFUD(vp)->filesize);
     }
 
     VATTR_RETURN(out_vap, va_access_time, in_vap->va_access_time);
@@ -382,7 +386,8 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int dorevoke);
 /* fuse start/stop */
 
 int fuse_internal_init_callback(struct fuse_ticket *ftick, uio_t uio);
-void fuse_internal_send_init(struct fuse_data *data, vfs_context_t context);
+int fuse_internal_init_synchronous(struct fuse_ticket *ftick);
+int fuse_internal_send_init(struct fuse_data *data, vfs_context_t context);
 void fuse_internal_thread_call_expiry_handler(void *param0, void *param1);
 
 /* miscellaneous */

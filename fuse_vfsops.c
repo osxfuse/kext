@@ -122,7 +122,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = ENOTSUP;
 
-    FUSE_KL_vfs_setlocklocal(mp);
+    vfs_setlocklocal(mp);
 
     /* Option Processing. */
 
@@ -383,7 +383,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     vfs_setfsprivate(mp, data);
 
     /* Handshake with the daemon. */
-    fuse_internal_send_init(data, context);
+    err = fuse_internal_send_init(data, context);
 
 out:
     if (err) {
@@ -546,6 +546,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_CASE_PRESERVING
 //      | VOL_CAP_FMT_FAST_STATFS
 //      | VOL_CAP_FMT_2TB_FILESIZE
+//      | VOL_CAP_FMT_OPENDENYMODES
+//      | VOL_CAP_FMT_HIDDEN_FILES
+//      | VOL_CAP_FMT_PATH_FROM_ID
         ;
     attr->f_capabilities.valid[VOL_CAPABILITIES_FORMAT] = 0
         | VOL_CAP_FMT_PERSISTENTOBJECTIDS
@@ -560,6 +563,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_CASE_PRESERVING
         | VOL_CAP_FMT_FAST_STATFS
         | VOL_CAP_FMT_2TB_FILESIZE
+        | VOL_CAP_FMT_OPENDENYMODES
+        | VOL_CAP_FMT_HIDDEN_FILES
+        | VOL_CAP_FMT_PATH_FROM_ID
         ;
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
 //      | VOL_CAP_INT_SEARCHFS
@@ -574,6 +580,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_FLOCK
         | VOL_CAP_INT_EXTENDED_SECURITY
 //      | VOL_CAP_INT_USERACCESS
+//      | VOL_CAP_INT_MANLOCK
+//      | VOL_CAP_INT_EXTENDED_ATTR
+//      | VOL_CAP_INT_NAMEDSTREAMS
         ;
 
     if (data->dataflags & FSESS_VOL_RENAME) {
@@ -594,6 +603,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_FLOCK
         | VOL_CAP_INT_EXTENDED_SECURITY
         | VOL_CAP_INT_USERACCESS
+        | VOL_CAP_INT_MANLOCK
+        | VOL_CAP_INT_EXTENDED_ATTR
+        | VOL_CAP_INT_NAMEDSTREAMS
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_RESERVED1] = 0;
@@ -626,6 +638,8 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | ATTR_CMN_EXTENDED_SECURITY
 //      | ATTR_CMN_UUID
 //      | ATTR_CMN_GRPUUID
+//      | ATTR_CMN_FILEID
+//      | ATTR_CMN_PARENTID
         ;
     attr->f_attributes.validattr.volattr = 0
         | ATTR_VOL_FSTYPE
@@ -647,6 +661,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_VOL_ENCODINGSUSED
         | ATTR_VOL_CAPABILITIES
         | ATTR_VOL_ATTRIBUTES
+//      | ATTR_VOL_INFO
         ;
     attr->f_attributes.validattr.dirattr = 0
         | ATTR_DIR_LINKCOUNT
@@ -666,7 +681,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_FILE_RSRCLENGTH
 //      | ATTR_FILE_RSRCALLOCSIZE
         ;
+
     attr->f_attributes.validattr.forkattr = 0;
+//      | ATTR_FORK_TOTALSIZE
+//      | ATTR_FORK_ALLOCSIZE
+        ;
     
     // All attributes that we do support, we support natively.
     

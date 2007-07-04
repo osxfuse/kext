@@ -462,6 +462,8 @@ bringup:
     }
 #endif
 
+    cache_purge_negatives(dvp);
+
     fuse_ticket_drop(fdip->tick);
 
     FUSE_KNOTE(dvp, NOTE_WRITE);
@@ -719,16 +721,16 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-    if (data->noimplflags & FSESS_NOIMPL(GETXATTR)) {
-        return ENOTSUP;
-    }
-
     if (ap->a_name == NULL || ap->a_name[0] == '\0') {
         return EINVAL;
     }
 
     if (fuse_is_shortcircuit_xattr(ap->a_name)) {
+        return ENOTSUP;
+    }
+
+    data = fuse_get_mpdata(vnode_mount(vp));
+    if (data->noimplflags & FSESS_NOIMPL(GETXATTR)) {
         return ENOTSUP;
     }
 
@@ -1202,6 +1204,7 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
                 vnode_put(*vpp);
                 *vpp = NULL;
                 FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_overrides);
+                err = 0;
                 break; /* pretend it's a miss */
             }
             FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_hits);
@@ -1426,8 +1429,8 @@ calldaemon:
             cxche_enter(dvp, *vpp, cnp);
         }
 #endif
-
     }
+
 out:
     if (!lookup_err) {
         // as the looked up thing was simply found, the cleanup is left for us
@@ -3020,16 +3023,16 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-    if (data->noimplflags & FSESS_NOIMPL(SETXATTR)) {
-        return ENOTSUP;
-    }
-
     if (ap->a_name == NULL || ap->a_name[0] == '\0') {
         return EINVAL;
     }
 
     if (fuse_is_shortcircuit_xattr(ap->a_name)) {
+        return ENOTSUP;
+    }
+
+    data = fuse_get_mpdata(vnode_mount(vp));
+    if (data->noimplflags & FSESS_NOIMPL(SETXATTR)) {
         return ENOTSUP;
     }
 
