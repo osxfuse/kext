@@ -891,7 +891,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 }
 
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_MACFUSE_ENABLE_KQUEUE
 
 #include "fuse_knote.h"
 
@@ -964,7 +964,7 @@ fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
     return ENOTSUP;
 }
 
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_MACFUSE_ENABLE_KQUEUE */
 
 
 /*
@@ -3470,10 +3470,10 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_listxattr_desc,     (fuse_vnode_op_t) fuse_vnop_listxattr     },
 #endif /* M_MACFUSE_ENABLE_XATTR */
     { &vnop_lookup_desc,        (fuse_vnode_op_t) fuse_vnop_lookup        },
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_MACFUSE_ENABLE_KQUEUE
     { &vnop_kqfilt_add_desc,    (fuse_vnode_op_t) fuse_vnop_kqfilt_add    },
     { &vnop_kqfilt_remove_desc, (fuse_vnode_op_t) fuse_vnop_kqfilt_remove },
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_MACFUSE_ENABLE_KQUEUE */
     { &vnop_mkdir_desc,         (fuse_vnode_op_t) fuse_vnop_mkdir         },
     { &vnop_mknod_desc,         (fuse_vnode_op_t) fuse_vnop_mknod         },
     { &vnop_mmap_desc,          (fuse_vnode_op_t) fuse_vnop_mmap          },

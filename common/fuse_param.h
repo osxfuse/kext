@@ -9,7 +9,7 @@
 #define MACFUSE_BUNDLE_PATH            "/System/Library/Filesystems/fusefs.fs"
 
 #define M_MACFUSE_ENABLE_INIT_TIMEOUT  1
-#define M_MACFUSE_ENABLE_UNSUPPORTED   1
+#define M_MACFUSE_ENABLE_KQUEUE        1
 #define M_MACFUSE_ENABLE_XATTR         1
 
 /*

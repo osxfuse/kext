@@ -42,9 +42,9 @@ struct fuse_vnode_data {
     int        flags;
     uint32_t   c_flag;
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_MACFUSE_ENABLE_KQUEUE
     struct klist c_knotes;
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_MACFUSE_ENABLE_KQUEUE */
 
     /*
      * The nodelock must be held when data in the FUSE node is accessed or

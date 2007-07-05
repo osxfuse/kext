@@ -25,17 +25,15 @@
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.kpi.bsd</key>
-		<string>8.0.0</string>
+		<string>9.0.0b1</string>
 		<key>com.apple.kpi.iokit</key>
-		<string>8.0.0</string>
+		<string>9.0.0b1</string>
 		<key>com.apple.kpi.libkern</key>
-		<string>8.0.0</string>
+		<string>9.0.0b1</string>
 		<key>com.apple.kpi.mach</key>
-		<string>8.0.0</string>
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+		<string>9.0.0b1</string>
 		<key>com.apple.kpi.unsupported</key>
-		<string>8.0.0</string>
-#endif
+		<string>9.0.0b1</string>
 	</dict>
 </dict>
 </plist>

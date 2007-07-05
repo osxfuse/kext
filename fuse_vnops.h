@@ -44,7 +44,7 @@ static int fuse_vnop_inactive(struct vnop_inactive_args *ap);
 
 static int fuse_vnop_ioctl(struct vnop_ioctl_args *ap);
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_MACFUSE_ENABLE_KQUEUE
 static int fuse_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap);
 
 static int fuse_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap);

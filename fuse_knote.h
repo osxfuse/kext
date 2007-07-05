@@ -8,7 +8,7 @@
 
 #include <fuse_param.h>
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_MACFUSE_ENABLE_KQUEUE
 
 #include <sys/event.h>
 
@@ -72,6 +72,6 @@ extern struct filterops fusevnode_filtops;
 
 #else
 #define FUSE_KNOTE(vp, hint)    {}
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_MACFUSE_ENABLE_KQUEUE */
 
 #endif /* _FUSE_NODE_H_ */
