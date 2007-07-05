@@ -31,12 +31,12 @@ struct fuse_mount_args {
     uint32_t init_timeout;        // timeout in seconds for daemon handshake
     uint32_t iosize;              // maximum size for reading or writing
     dev_t    rdev;                // dev_t for the /dev/fuseN in question
-    uint32_t subtype;             // file system sub type (type is FUSE)
+    uint32_t fssubtype;           // file system sub type id (type is "fusefs")
     char     volname[MAXPATHLEN]; // volume name
 };
 typedef struct fuse_mount_args fuse_mount_args;
 
-/* file system subtypes */
+/* file system subtype identifiers */
 enum {
     FUSE_FSSUBTYPE_UNKNOWN = 0,
     FUSE_FSSUBTYPE_XMPFS,
@@ -91,7 +91,7 @@ enum {
 #define FUSE_MOPT_PING_DISKARB           0x0000000100000000ULL
 #define FUSE_MOPT_READDIR_INO            0x0000000200000000ULL
 #define FUSE_MOPT_ROOTMODE               0x0000000400000000ULL
-#define FUSE_MOPT_SUBTYPE                0x0000000800000000ULL
+#define FUSE_MOPT_FSSUBTYPE              0x0000000800000000ULL
 #define FUSE_MOPT_UID                    0x0000001000000000ULL
 #define FUSE_MOPT_UMASK                  0x0000002000000000ULL
 #define FUSE_MOPT_USE_INO                0x0000004000000000ULL

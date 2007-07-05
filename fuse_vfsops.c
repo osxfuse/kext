@@ -359,7 +359,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     data->max_read = max_read;
     data->mpri = FM_PRIMARY;
-    data->subtype = fusefs_args.subtype;
+    data->fssubtype = fusefs_args.fssubtype;
     data->mountaltflags = fusefs_args.altflags;
     data->noimplflags = (uint64_t)0;
 
@@ -834,7 +834,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_access_time, kZeroTime);
     VFSATTR_RETURN(attr, f_backup_time, kZeroTime);
 
-    VFSATTR_RETURN(attr, f_fssubtype, data->subtype);
+    VFSATTR_RETURN(attr, f_fssubtype, data->fssubtype);
 
     /* Daemon needs to pass this. */
     if (VFSATTR_IS_ACTIVE(attr, f_vol_name)) {

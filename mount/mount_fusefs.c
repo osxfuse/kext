@@ -56,6 +56,7 @@ struct mntopt mopts[] = {
     { "fd=",                 0, FUSE_MOPT_FD,                     1 },
     { "fsid=" ,              0, FUSE_MOPT_FSID,                   1 }, // kused
     { "fsname=",             0, FUSE_MOPT_FSNAME,                 1 }, // kused
+    { "fssubtype=",          0, FUSE_MOPT_FSSUBTYPE,              1 }, // kused
     { "gid=",                0, FUSE_MOPT_GID,                    1 }, // kused
     { "hard_remove",         0, FUSE_MOPT_HARD_REMOVE,            1 },
     { "init_timeout=",       0, FUSE_MOPT_INIT_TIMEOUT,           1 }, // kused
@@ -66,7 +67,6 @@ struct mntopt mopts[] = {
     { "ping_diskarb",        0, FUSE_MOPT_PING_DISKARB,           1 }, // kused
     { "readdir_ino",         0, FUSE_MOPT_READDIR_INO,            1 },
     { "rootmode=",           0, FUSE_MOPT_ROOTMODE,               1 },
-    { "subtype=",            0, FUSE_MOPT_SUBTYPE,                1 }, // kused
     { "uid=",                0, FUSE_MOPT_UID,                    1 }, // kused
     { "umask=",              0, FUSE_MOPT_UMASK,                  1 },
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
@@ -167,7 +167,7 @@ fuse_to_fsid(void **target, void *value, void *fallback)
 }
 
 static __inline__ int
-fuse_to_subtype(void **target, void *value, void *fallback)
+fuse_to_fssubtype(void **target, void *value, void *fallback)
 {
     int ret = 0;
     uint32_t u;
@@ -232,7 +232,7 @@ static uint32_t  fsid           = 0;
 static char     *fsname         = NULL;
 static uint32_t  init_timeout   = FUSE_DEFAULT_INIT_TIMEOUT;
 static uint32_t  iosize         = FUSE_DEFAULT_IOSIZE;
-static uint32_t  subtype        = 0;
+static uint32_t  fssubtype      = 0;
 static char     *volname        = NULL;
 
 struct mntval mvals[] = {
@@ -291,13 +291,13 @@ struct mntval mvals[] = {
         "invalid value for argument iosize"
     },
     {
-        FUSE_MOPT_SUBTYPE,
+        FUSE_MOPT_FSSUBTYPE,
         NULL,
         0,
-        fuse_to_subtype,
+        fuse_to_fssubtype,
         NULL,
-        (void **)&subtype,
-        "invalid value for argument subtype"
+        (void **)&fssubtype,
+        "invalid value for argument fssubtype"
     },
     {
         FUSE_MOPT_VOLNAME,
@@ -682,7 +682,7 @@ main(int argc, char **argv)
     args.index          = dindex;
     args.init_timeout   = init_timeout;
     args.iosize         = iosize;
-    args.subtype        = subtype;
+    args.fssubtype      = fssubtype;
 
     if (!fsname) {
         snprintf(args.fsname, MAXPATHLEN, "instance@fuse%d", dindex);
@@ -730,6 +730,7 @@ showhelp()
       "    -o defer_auth          defer permission checks to file operations themselves"
       "    -o extended_security   turn on Mac OS X extended security (ACLs)\n"
       "    -o fsid                set the second 32-bit component of the fsid\n"
+      "    -o fssubtype=<num>     set the file system's fssubtype identifier\n"
       "    -o fsname=<name>       set the file system's name\n"
       "    -o init_timeout=<s>    timeout in seconds for the init method to complete\n"
       "    -o iosize=<size>       specify maximum I/O size in bytes\n" 
@@ -746,7 +747,6 @@ showhelp()
       "    -o nosyncwrites        disable synchronous-writes behavior (dangerous)\n"
       "    -o noubc               disable the unified buffer cache for this file system\n"
       "    -o novncache           disable the vnode name cache for this file system\n"
-      "    -o subtype=<num>       set the file system's subtype identifier\n"
       "    -o volname=<name>      set the file system's volume name\n"      
     );
     exit(EX_USAGE);

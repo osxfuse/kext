@@ -162,7 +162,7 @@ struct fuse_data {
     uint32_t                   max_read;
     uint32_t                   blocksize;
     uint32_t                   iosize;
-    uint32_t                   subtype;
+    uint32_t                   fssubtype;
     char                       volname[MAXPATHLEN];
 
 #if M_MACFUSE_ENABLE_INIT_TIMEOUT
