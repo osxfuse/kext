@@ -121,12 +121,6 @@ enum {
 #define FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED          \
     FUSE_UNOTIFICATIONS_OBJECT ".mounted"
 
-#define FUSE_UNOTIFICATIONS_NOTIFY_PLATFORMMISMATCH \
-    FUSE_UNOTIFICATIONS_OBJECT ".platformmismatch"
-
-#define FUSE_UNOTIFICATIONS_NOTIFY_VERSIONMISMATCH  \
-    FUSE_UNOTIFICATIONS_OBJECT ".versionmismatch"
-
 /* User data keys. */
 
 #define kFUSEDevicePathKey "kFUSEDevicePath"
