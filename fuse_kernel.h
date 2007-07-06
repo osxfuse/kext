@@ -1,6 +1,6 @@
 /*
     FUSE: Filesystem in Userspace
-    Copyright (C) 2001-2006  Miklos Szeredi <miklos@szeredi.hu>
+    Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
 
     This program can be distributed under the terms of the GNU GPL.
     See the file COPYING.
@@ -374,7 +374,7 @@ struct fuse_dirent {
 	char name[0];
 };
 
-#define FUSE_NAME_OFFSET ((unsigned) ((struct fuse_dirent *) 0)->name)
+#define FUSE_NAME_OFFSET offsetof(struct fuse_dirent, name)
 #define FUSE_DIRENT_ALIGN(x) (((x) + sizeof(__u64) - 1) & ~(sizeof(__u64) - 1))
 #define FUSE_DIRENT_SIZE(d) \
 	FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + (d)->namelen)
