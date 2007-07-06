@@ -140,6 +140,10 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         mntopts |= FSESS_NO_ALERTS;
     }
 
+    if (fusefs_args.altflags & FUSE_MOPT_NO_AUTOEXTATTR) {
+        mntopts |= FSESS_NO_AUTOEXTATTR;
+    }
+
     if (fusefs_args.altflags & FUSE_MOPT_NO_BROWSE) {
         vfs_setflags(mp, MNT_DONTBROWSE);
     }

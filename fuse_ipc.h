@@ -213,6 +213,7 @@ enum {
 #define FSESS_NO_VNCACHE          0x00020000
 #define FSESS_NO_UBC              0x00040000
 #define FSESS_VOL_RENAME          0x00080000
+#define FSESS_NO_AUTOEXTATTR      0x00100000
 
 static __inline__
 struct fuse_data *

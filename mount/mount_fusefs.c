@@ -80,6 +80,7 @@ struct mntopt mopts[] = {
     { "attrcache",           1, FUSE_MOPT_NO_ATTRCACHE,           1 }, // kused
     { "authopaque",          1, FUSE_MOPT_NO_AUTH_OPAQUE,         1 }, // kused
     { "authopaqueaccess",    1, FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS,  1 }, // kused
+    { "autoextattr",         1, FUSE_MOPT_NO_AUTOEXTATTR,         1 }, // kused
     { "browse",              1, FUSE_MOPT_NO_BROWSE,              1 }, // kused
     { "localcaches",         1, FUSE_MOPT_NO_LOCALCACHES,         1 }, // kused
     { "noping_diskarb",      1, FUSE_MOPT_PING_DISKARB,           0 }, // kused
@@ -739,6 +740,7 @@ showhelp()
       "    -o noapplespecial      ignore Apple Double (._) and .DS_Store files entirely\n"
       "    -o noauthopaque        set MNTK_AUTH_OPAQUE in the kernel\n"
       "    -o noauthopaqueaccess  set MNTK_AUTH_OPAQUE_ACCESS in the kernel\n"
+      "    -o noautoextattr       do NOT handle ANY extended attributes automatically\n"
       "    -o nobrowse            set MNT_DONTBROWSE in the kernel\n"
       "    -o nolocalcaches       meta option equivalent to noreadahead,noubc,novncache\n"
       "    -o noping_diskarb      do not ping Disk Arbitration (pings by default)\n"
