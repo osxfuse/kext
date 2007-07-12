@@ -723,8 +723,10 @@ showhelp()
     fprintf(stderr,
       "    -o allow_other         allow access to others besides the user who mounted"
       "                             mounted the file system\n"
-      "    -o allow_recursion     allow a mount point that itself is on a MacFUSE volume"
-      "    -o allow_root          allow access to root (cannot be mixed with allow_other)"
+      "    -o allow_recursion     allow a mount point that itself resides on a MacFUSE\n"
+      "                           volume (by default, such mounting is disallowed)\n"
+      "    -o allow_root          allow access to root (mutually exclusive with the\n"
+      "                           allow_other option)\n"
       "    -o blocksize=<size>    specify block size in bytes of \"storage\"\n"
       "    -o daemon_timeout=<s>  timeout in seconds for kernel calls to daemon\n"
       "    -o debug               turn on debug information printing\n"
