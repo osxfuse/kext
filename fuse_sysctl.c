@@ -73,7 +73,7 @@ sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS
     } else {
         error = SYSCTL_IN(req, arg1, sizeof(int));
         if (error == 0) {
-            error = fuse_devices_kill_unit(*(int *)arg1);
+            error = fuse_devices_kill_unit(*(int *)arg1, req->p);
         }
         fuse_kill_fs = -1; /* set it back */
     }
@@ -81,14 +81,20 @@ sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS
     return error;
 }
 
-SYSCTL_PROC(_macfuse_control,                // our parent
-            OID_AUTO,                        // automatically assign object ID
-            kill_fs,                         // our name
-            (CTLTYPE_INT | CTLFLAG_WR),      // type flag/access flag
-            &fuse_kill_fs,                   // location of our data
-            0,                               // argument passed to our handler
-            sysctl_macfuse_control_kill_fs_handler, // our handler function
-            "I",                             // our data type (integer)
+SYSCTL_PROC(_macfuse_control, // our parent
+            OID_AUTO,         // automatically assign object ID
+            kill_fs,          // our name
+
+            // type flag/access flag
+            (CTLTYPE_INT | CTLFLAG_WR | CTLFLAG_ANYBODY),
+
+            &fuse_kill_fs,    // location of our data
+            0,                // argument passed to our handler
+
+            // our handler function
+            sysctl_macfuse_control_kill_fs_handler,
+
+            "I",              // our data type (integer)
             "MacFUSE Controls: Kill the Given File System");
 
 /* fuse.counters */

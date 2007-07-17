@@ -25,7 +25,8 @@ struct fuse_softc {
     pid_t  pid;
     dev_t  dev;
     void  *cdev;
-    void  *data;
+
+    struct fuse_data *data;
 };
 
 struct fuse_softc fuse_softc_table[FUSE_NDEVICES];
@@ -33,7 +34,7 @@ struct fuse_softc fuse_softc_table[FUSE_NDEVICES];
 #define FUSE_SOFTC_FROM_UNIT_FAST(u) (fuse_softc_t)&(fuse_softc_table[(u)])
 
 int
-fuse_devices_kill_unit(int unit)
+fuse_devices_kill_unit(int unit, struct proc *p)
 {
     int error = ENOENT;
     struct fuse_softc *fdev;
@@ -49,8 +50,15 @@ fuse_devices_kill_unit(int unit)
 
     FUSE_LOCK();
     if (fdev->data) {
-        fdata_kick_set(fdev->data);
-        error = 0;
+        error = EPERM;
+        if (p) {
+            kauth_cred_t request_cred = proc_ucred(p);
+            if (kauth_cred_issuser(request_cred) ||
+                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                fdata_kick_set(fdev->data);
+                error = 0;
+            }
+        }
     }
     FUSE_UNLOCK();
 

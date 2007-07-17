@@ -17,7 +17,7 @@ struct fuse_data;
 int fuse_devices_start(void);
 int fuse_devices_stop(void);
 
-int fuse_devices_kill_unit(int unit);
+int fuse_devices_kill_unit(int unit, struct proc *p);
 
 fuse_softc_t      fuse_softc_get(dev_t dev);
 int               fuse_softc_get_usecount(fuse_softc_t fdev);

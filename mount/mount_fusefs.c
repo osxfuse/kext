@@ -37,6 +37,8 @@
 
 #define PROGNAME "mount_" MACFUSE_FS_TYPE
 
+static int signal_idx = -1;
+
 void  showhelp(void);
 void  showversion(int doexit);
 
@@ -430,6 +432,21 @@ check_kext_status(void)
     return 0;
 }
 
+static void
+signal_idx_atexit_handler(void)
+{
+    if (signal_idx != -1) {
+
+        int32_t kill_fs_old = 0;
+        int32_t kill_fs_new = signal_idx;
+        size_t oldlen = sizeof(kill_fs_old);
+        size_t newlen = sizeof(kill_fs_new);
+
+        (void)sysctlbyname("macfuse.control.kill_fs", (void *)&kill_fs_old,
+                           &oldlen, (void *)&kill_fs_new, newlen);
+    }
+}
+
 // We will be called as follows by the FUSE library:
 //
 //   mount_<MACFUSE_FS_TYPE> -o OPTIONS... <fdnam> <mountpoint>
@@ -468,27 +485,6 @@ main(int argc, char **argv)
         ((!strncmp(argv[1], "--help", strlen("--help"))) ||
          (!strncmp(argv[1], "-h", strlen("-h"))))) {
         showhelp();
-    }
-
-    result = check_kext_status();
-
-    switch (result) {
-
-    case 0:
-        break;
-
-    case ESRCH:
-        errx(1, "the MacFUSE kernel extension is not loaded");
-        break;
-
-    case EINVAL:
-        errx(1, "the loaded MacFUSE kernel extension has a mismatched version");
-        break;
-
-    default:
-        errx(1, "failed to query the loaded MacFUSE kernel extension (%d)",
-             result);
-        break;
     }
 
     do {
@@ -563,13 +559,75 @@ main(int argc, char **argv)
         argc--;
     }
 
+    if (!fdnam) {
+        errx(1, "missing MacFUSE device file descriptor");
+    }
+
+    errno = 0;
+    fd = strtol(fdnam, NULL, 10);
+    if ((errno == EINVAL) || (errno == ERANGE)) {
+        errx(1, "invalid name (%s) for MacFUSE device file descriptor", fdnam);
+    }
+
+    {
+        char  ndev[MAXPATHLEN];
+        char *ndevbas;
+        struct stat sb;
+
+        if (fstat(fd, &sb) == -1) {
+            err(1, "fstat failed for FUSE device file descriptor");
+        }
+        args.rdev = sb.st_rdev;
+        strcpy(ndev, _PATH_DEV);
+        ndevbas = ndev + strlen(_PATH_DEV);
+        devname_r(sb.st_rdev, S_IFCHR, ndevbas,
+                  sizeof(ndev) - strlen(_PATH_DEV));
+
+        if (strncmp(ndevbas, FUSE_DEVICE_BASENAME,
+                    strlen(FUSE_DEVICE_BASENAME))) {
+            errx(1, "mounting inappropriate device");
+        }
+
+        errno = 0;
+        dindex = strtol(ndevbas + strlen(FUSE_DEVICE_BASENAME), NULL, 10);
+        if ((errno == EINVAL) || (errno == ERANGE) ||
+            (dindex < 0) || (dindex > FUSE_NDEVICES)) {
+            errx(1, "invalid FUSE device unit (#%d)\n", dindex);
+        }
+    }
+
+    signal_idx = dindex;
+
+    atexit(signal_idx_atexit_handler);
+
+    result = check_kext_status();
+
+    switch (result) {
+
+    case 0:
+        break;
+
+    case ESRCH:
+        errx(1, "the MacFUSE kernel extension is not loaded");
+        break;
+
+    case EINVAL:
+        errx(1, "the loaded MacFUSE kernel extension has a mismatched version");
+        break;
+
+    default:
+        errx(1, "failed to query the loaded MacFUSE kernel extension (%d)",
+             result);
+        break;
+    }
+
     if ((!mntpath) && argc > 0) {
         mntpath = *argv++;
         argc--;
     }
 
-    if (!(fdnam && mntpath)) {
-        errx(1, "missing FUSE fd name and/or mount point");
+    if (!mntpath) {
+        errx(1, "missing mount point");
     }
 
     (void)checkpath(mntpath, args.mntpath);
@@ -629,36 +687,6 @@ main(int argc, char **argv)
         altflags |= FUSE_MOPT_NO_ALERTS;
     }
 
-    errno = 0;
-    fd = strtol(fdnam, NULL, 10);
-    if ((errno == EINVAL) || (errno == ERANGE)) {
-        errx(1, "invalid name (%s) for FUSE device file descriptor", fdnam);
-    } else {
-        char  ndev[MAXPATHLEN];
-        char *ndevbas;
-        struct stat sb;
-
-        if (fstat(fd, &sb) == -1) {
-            err(1, "fstat failed for FUSE device file descriptor");
-        }
-        args.rdev = sb.st_rdev;
-        strcpy(ndev, _PATH_DEV);
-        ndevbas = ndev + strlen(_PATH_DEV);
-        devname_r(sb.st_rdev, S_IFCHR, ndevbas,
-                  sizeof(ndev) - strlen(_PATH_DEV));
-
-        if (strncmp(ndevbas, FUSE_DEVICE_BASENAME,
-                    strlen(FUSE_DEVICE_BASENAME))) {
-            errx(1, "mounting inappropriate device");
-        }
-
-        errno = 0;
-        dindex = strtol(ndevbas + strlen(FUSE_DEVICE_BASENAME), NULL, 10);
-        if ((errno == EINVAL) || (errno == ERANGE) ||
-            (dindex < 0) || (dindex > FUSE_NDEVICES)) {
-            errx(1, "invalid FUSE device unit (#%d)\n", dindex);
-        }
-    }
 
     if (daemon_timeout < FUSE_MIN_DAEMON_TIMEOUT) {
         daemon_timeout = FUSE_MIN_DAEMON_TIMEOUT;
@@ -708,6 +736,8 @@ main(int argc, char **argv)
         post_notification(FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED,
                           udata_keys, udata_values, 1);
     }
+
+    signal_idx = -1;
 
     exit(0);
 }
