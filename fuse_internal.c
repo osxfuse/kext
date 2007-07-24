@@ -597,7 +597,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
     if (!(vtype == VREG || vtype == VDIR)) {
         debug_printf("STRATEGY: unsupported vnode type\n");
-        return (EOPNOTSUPP);
+        return (ENOTSUP);
     }
  
     if (bflags & B_READ) {
