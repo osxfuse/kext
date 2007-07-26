@@ -7,6 +7,7 @@
 #define _FUSE_SYSCTL_H_
 
 extern int32_t  fuse_admin_group;
+extern int32_t  fuse_allow_other;
 extern int32_t  fuse_dev_use_count;
 extern int32_t  fuse_fh_current;
 extern uint32_t fuse_fh_reuse_count;

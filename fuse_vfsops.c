@@ -219,11 +219,11 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
             return EPERM;
         }
     } else if (fusefs_args.altflags & FUSE_MOPT_ALLOW_OTHER) {
-        mntopts |= FSESS_ALLOW_OTHER;
-        if (!fuse_vfs_context_issuser(context)) {
+        if (!fuse_allow_other && !fuse_vfs_context_issuser(context)) {
             debug_printf("only root can use \"allow_other\"\n");
             return EPERM;
         }
+        mntopts |= FSESS_ALLOW_OTHER;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) {
