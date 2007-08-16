@@ -294,6 +294,7 @@ static __inline__
 int
 fuse_is_shortcircuit_xattr(const char *name)
 {
+/*
     if (bcmp(name, XATTR_FINDERINFO_NAME, sizeof(XATTR_FINDERINFO_NAME)) == 0) {
         return 1;
     }
@@ -302,6 +303,7 @@ fuse_is_shortcircuit_xattr(const char *name)
              sizeof(XATTR_RESOURCEFORK_NAME)) == 0) {
         return 1;
     }
+*/
 
     if (bcmp(name, KAUTH_FILESEC_XATTR, sizeof(KAUTH_FILESEC_XATTR)) == 0) {
         return 1;
