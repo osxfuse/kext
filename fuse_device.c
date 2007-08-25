@@ -53,7 +53,7 @@ fuse_devices_kill_unit(int unit, struct proc *p)
         error = EPERM;
         if (p) {
             kauth_cred_t request_cred = proc_ucred(p);
-            if (kauth_cred_issuser(request_cred) ||
+            if ((kauth_cred_getuid(request_cred) == 0) ||
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
                 fdata_kick_set(fdev->data);
                 error = 0;

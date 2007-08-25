@@ -13,8 +13,6 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
-#include <fuse_param.h>
-
 static struct fuse_ticket *fticket_alloc(struct fuse_data *data);
 static void                fticket_refresh(struct fuse_ticket *ftick);
 static void                fticket_destroy(struct fuse_ticket *ftick);
@@ -242,6 +240,7 @@ again:
          * We will "hang" while this is showing.
          */
 
+#if M_MACFUSE_ENABLE_KUNC
         kr = KUNCUserNotificationDisplayAlert(
                  FUSE_DAEMON_TIMEOUT_ALERT_TIMEOUT,   // timeout
                  0,                                   // flags (stop alert)
@@ -254,6 +253,10 @@ again:
                  FUSE_DAEMON_TIMEOUT_ALTERNATE_BUTTON_TITLE,
                  FUSE_DAEMON_TIMEOUT_OTHER_BUTTON_TITLE,
                  &rf);
+#else
+        kr = KERN_SUCCESS;
+        rf = kKUNCOtherResponse;
+#endif
 
         if (kr != KERN_SUCCESS) {
             /* force ejection if we couldn't show the dialog */
@@ -293,7 +296,7 @@ alreadydead:
         err = ENOTCONN;
         fticket_set_answered(ftick);
 
-        vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
+        vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD | VQ_NOTRESP | VQ_ASSIST | VQ_UPDATE, 0);
 
         /* goto out; */
     }
@@ -414,15 +417,6 @@ fdata_alloc(struct fuse_softc *fdev, struct proc *p)
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     data->timeout_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    /* INIT_CALLOUT */
-    data->callout_status = INIT_CALLOUT_INACTIVE;
-    data->callout_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
-
-    data->thread_call = thread_call_allocate(
-                            fuse_internal_thread_call_expiry_handler, data);
-#endif
-
     return (data);
 }
 
@@ -432,16 +426,6 @@ fdata_destroy(struct fuse_data *data)
     struct fuse_ticket *ftick;
 
     debug_printf("data=%p, destroy.mntco = %d\n", data, data->mntco);
-
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    /* INIT_CALLOUT */
-    fuse_lck_mtx_lock(data->callout_mtx);
-    data->callout_status = INIT_CALLOUT_INACTIVE;
-    (void)thread_call_cancel(data->thread_call);
-    (void)thread_call_free(data->thread_call); 
-    data->thread_call = (thread_call_t)0xdeadca11;
-    fuse_lck_mtx_unlock(data->callout_mtx);
-#endif
 
     lck_mtx_free(data->ms_mtx, fuse_lock_group);
     data->ms_mtx = NULL;
@@ -459,10 +443,6 @@ fdata_destroy(struct fuse_data *data)
 
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     lck_mtx_free(data->timeout_mtx, fuse_lock_group);
-
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    lck_mtx_free(data->callout_mtx, fuse_lock_group);
-#endif
 
     while ((ftick = fuse_pop_allticks(data))) {
         fticket_destroy(ftick);

@@ -48,6 +48,7 @@ struct mntopt mopts[] = {
     { "allow_other",         0, FUSE_MOPT_ALLOW_OTHER,            1 }, // kused
     { "allow_recursion",     0, FUSE_MOPT_ALLOW_RECURSION,        1 }, // uused
     { "allow_root",          0, FUSE_MOPT_ALLOW_ROOT,             1 }, // kused
+    { "autoxattr",           0, FUSE_MOPT_AUTO_XATTR,             1 }, // kused
     { "blocksize=",          0, FUSE_MOPT_BLOCKSIZE,              1 }, // kused
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
     { "debug",               0, FUSE_MOPT_DEBUG,                  1 }, // kused
@@ -66,26 +67,23 @@ struct mntopt mopts[] = {
     { "jail_symlinks",       0, FUSE_MOPT_JAIL_SYMLINKS,          1 }, // kused
     { "kernel_cache",        0, FUSE_MOPT_KERNEL_CACHE,           1 },
     { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused 
-    { "ping_diskarb",        0, FUSE_MOPT_PING_DISKARB,           1 }, // kused
     { "readdir_ino",         0, FUSE_MOPT_READDIR_INO,            1 },
     { "rootmode=",           0, FUSE_MOPT_ROOTMODE,               1 },
     { "uid=",                0, FUSE_MOPT_UID,                    1 }, // kused
     { "umask=",              0, FUSE_MOPT_UMASK,                  1 },
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
-    { "volicon",             0, FUSE_MOPT_VOLICON,                1 }, // kused
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
 
     /* negative ones */
 
     { "alerts",              1, FUSE_MOPT_NO_ALERTS,              1 }, // kused
-    { "applespecial",        1, FUSE_MOPT_NO_APPLESPECIAL,        1 }, // kused
+    { "appledouble",         1, FUSE_MOPT_NO_APPLEDOUBLE,         1 }, // kused
+    { "applexattr",          1, FUSE_MOPT_NO_APPLEXATTR,          1 }, // kused
     { "attrcache",           1, FUSE_MOPT_NO_ATTRCACHE,           1 }, // kused
     { "authopaque",          1, FUSE_MOPT_NO_AUTH_OPAQUE,         1 }, // kused
     { "authopaqueaccess",    1, FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS,  1 }, // kused
-    { "autoextattr",         1, FUSE_MOPT_NO_AUTOEXTATTR,         1 }, // kused
     { "browse",              1, FUSE_MOPT_NO_BROWSE,              1 }, // kused
     { "localcaches",         1, FUSE_MOPT_NO_LOCALCACHES,         1 }, // kused
-    { "noping_diskarb",      1, FUSE_MOPT_PING_DISKARB,           0 }, // kused
     { "readahead",           1, FUSE_MOPT_NO_READAHEAD,           1 }, // kused
     { "synconclose",         1, FUSE_MOPT_NO_SYNCONCLOSE,         1 }, // kused
     { "syncwrites",          1, FUSE_MOPT_NO_SYNCWRITES,          1 }, // kused
@@ -459,7 +457,7 @@ main(int argc, char **argv)
     int       fd        = -1;
     int32_t   dindex    = -1;
     char     *fdnam     = NULL;
-    uint64_t  altflags  = 0 | FUSE_MOPT_PING_DISKARB;
+    uint64_t  altflags  = 0;
     char     *mntpath   = NULL;
 
     int i, ch = '\0', done = 0;
@@ -765,14 +763,11 @@ showhelp()
       "    -o fsid                set the second 32-bit component of the fsid\n"
       "    -o fssubtype=<num>     set the file system's fssubtype identifier\n"
       "    -o fsname=<name>       set the file system's name\n"
-      "    -o init_timeout=<s>    timeout in seconds for the init method to complete\n"
       "    -o iosize=<size>       specify maximum I/O size in bytes\n" 
       "    -o jail_symlinks       contain symbolic links within the mount\n"
       "    -o kill_on_unmount     kernel will send a signal (SIGKILL by default) to the\n                           daemon after unmount finishes\n" 
-      "    -o noapplespecial      ignore Apple Double (._) and .DS_Store files entirely\n"
-      "    -o noauthopaque        set MNTK_AUTH_OPAQUE in the kernel\n"
-      "    -o noauthopaqueaccess  set MNTK_AUTH_OPAQUE_ACCESS in the kernel\n"
-      "    -o noautoextattr       do NOT handle ANY extended attributes automatically\n"
+      "    -o noappledouble       ignore Apple Double (._) and .DS_Store files entirely\n"
+      "    -o noapplexattr        ignore all \"com.apple.*\" extended attributes\n"
       "    -o nobrowse            set MNT_DONTBROWSE in the kernel\n"
       "    -o nolocalcaches       meta option equivalent to noreadahead,noubc,novncache\n"
       "    -o noping_diskarb      do not ping Disk Arbitration (pings by default)\n"

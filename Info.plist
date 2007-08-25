@@ -32,8 +32,10 @@
 		<string>9.0.0b1</string>
 		<key>com.apple.kpi.mach</key>
 		<string>9.0.0b1</string>
+#if M_MACFUSE_ENABLE_UNSUPPORTED
 		<key>com.apple.kpi.unsupported</key>
 		<string>9.0.0b1</string>
+#endif
 	</dict>
 </dict>
 </plist>

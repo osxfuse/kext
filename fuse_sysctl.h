@@ -12,7 +12,6 @@ extern int32_t  fuse_dev_use_count;
 extern int32_t  fuse_fh_current;
 extern uint32_t fuse_fh_reuse_count;
 extern uint32_t fuse_fh_upcall_count;
-extern int32_t  fuse_init_backgrounded;
 extern int32_t  fuse_iov_credit;
 extern int32_t  fuse_iov_current;
 extern uint32_t fuse_iov_permanent_bufsize;

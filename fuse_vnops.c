@@ -326,7 +326,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
 
-    if (fuse_skip_apple_special_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
+    if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
         return EPERM;
     }
 
@@ -709,6 +709,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     struct fuse_getxattr_in  *fgxi; 
     struct fuse_getxattr_out *fgxo;
     struct fuse_data         *data;
+    mount_t mp;
 
     int err = 0;
     int namelen;      
@@ -725,13 +726,18 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         return EINVAL;
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-    if (data->noimplflags & FSESS_NOIMPL(GETXATTR)) {
+    mp = vnode_mount(vp);
+    data = fuse_get_mpdata(mp);
+
+    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+        return EPERM;
+    }
+
+    if (data->dataflags & FSESS_AUTO_XATTR) {
         return ENOTSUP;
     }
 
-    if (!(data->dataflags & FSESS_NO_AUTOEXTATTR) &&
-        fuse_is_shortcircuit_xattr(ap->a_name)) {
+    if (data->noimplflags & FSESS_NOIMPL(GETXATTR)) {
         return ENOTSUP;
     }
 
@@ -1070,6 +1076,11 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
     data = fuse_get_mpdata(vnode_mount(vp));
+
+    if (data->dataflags & FSESS_AUTO_XATTR) {
+        return ENOTSUP;
+    }
+
     if (data->noimplflags & FSESS_NOIMPL(LISTXATTR)) {
         return ENOTSUP;
     }
@@ -1153,7 +1164,7 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         return ENXIO;
     }
 
-    if (fuse_skip_apple_special_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
+    if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
         return ENOENT;
     }
 
@@ -2517,6 +2528,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
     int namelen;
     struct fuse_dispatcher fdi;
     struct fuse_data      *data;
+    mount_t mp;
 
     vnode_t vp = ap->a_vp;
     vfs_context_t context = ap->a_context;
@@ -2533,13 +2545,18 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         return (EINVAL);  /* invalid name */
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-    if (data->noimplflags & FSESS_NOIMPL(REMOVEXATTR)) {
+    mp = vnode_mount(vp);
+    data = fuse_get_mpdata(mp);
+
+    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+        return EPERM;
+    }
+
+    if (data->dataflags & FSESS_AUTO_XATTR) {
         return ENOTSUP;
     }
 
-    if (!(data->dataflags & FSESS_NO_AUTOEXTATTR) &&
-        fuse_is_shortcircuit_xattr(ap->a_name)) {
+    if (data->noimplflags & FSESS_NOIMPL(REMOVEXATTR)) {
         return ENOTSUP;
     }
 
@@ -3012,6 +3029,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     struct fuse_dispatcher   fdi;
     struct fuse_setxattr_in *fsxi;
     struct fuse_data        *data;
+    mount_t mp;
 
     vnode_t vp = ap->a_vp;
     uio_t uio = ap->a_uio;
@@ -3029,13 +3047,18 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         return EINVAL;
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-    if (data->noimplflags & FSESS_NOIMPL(SETXATTR)) {
+    mp = vnode_mount(vp);
+    data = fuse_get_mpdata(mp);
+
+    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+        return EPERM;
+    }
+
+    if (data->dataflags & FSESS_AUTO_XATTR) {
         return ENOTSUP;
     }
 
-    if (!(data->dataflags & FSESS_NO_AUTOEXTATTR) &&
-        fuse_is_shortcircuit_xattr(ap->a_name)) {
+    if (data->noimplflags & FSESS_NOIMPL(SETXATTR)) {
         return ENOTSUP;
     }
 

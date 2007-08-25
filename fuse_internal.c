@@ -404,8 +404,8 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         de->d_namlen = fudge->namelen;
 
         /* Filter out any ._* files if the mount is configured as such. */
-        if (fuse_skip_apple_special_mp(vnode_mount(vp),
-                                       fudge->name, fudge->namelen)) {
+        if (fuse_skip_apple_double_mp(vnode_mount(vp),
+                                      fudge->name, fudge->namelen)) {
             de->d_fileno = 0;
             de->d_type = DT_WHT;
         }
@@ -1111,7 +1111,7 @@ fuse_internal_newentry(vnode_t               dvp,
     
     debug_printf("context=%p\n", context);
 
-    if (fuse_skip_apple_special_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
+    if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
         return EACCES;
     }
     
@@ -1210,38 +1210,6 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int dorevoke)
 
 /* fuse start/stop */
 
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-
-__private_extern__
-void
-fuse_internal_thread_call_expiry_handler(void *param0, void *param1)
-{
-    (void)param1;
-    int pid = 0;
-    struct fuse_data *data = (struct fuse_data *)param0;
-    fuse_lck_mtx_lock(data->callout_mtx);
-    pid = data->daemonpid;
-    fdata_kick_set(data);
-
-    (void)KUNCUserNotificationDisplayNotice(
-                                      0,             // noticeTimeout
-                                      0,             // flags
-                                      NULL,          // iconPath
-                                      NULL,          // soundPath
-                                      NULL,          // localizationPath
-                                      data->volname, // alertHeader
-                                      FUSE_INIT_TIMEOUT_NOTICE_MESSAGE,
-                                      FUSE_INIT_TIMEOUT_DEFAULT_BUTTON_TITLE);
-
-    fuse_lck_mtx_unlock(data->callout_mtx);
-
-    if (pid) {
-        proc_signal(pid, FUSE_POSTUNMOUNT_SIGNAL);
-    }
-}
-
-#endif
-
 __private_extern__
 int
 fuse_internal_init_synchronous(struct fuse_ticket *ftick)
@@ -1294,70 +1262,9 @@ out:
 
 __private_extern__
 int
-fuse_internal_init_callback(struct fuse_ticket *ftick, uio_t uio)
-{
-    int err = 0;
-    struct fuse_data     *data = ftick->tk_data;
-    struct fuse_init_out *fiio;
-
-    if ((err = ftick->tk_aw_ohead.error)) {
-        goto out;
-    }
-
-    if ((err = fticket_pull(ftick, uio))) {
-        goto out;
-    }
-
-    fiio = fticket_resp(ftick)->base;
-
-    /* XXX: Do we want to check anything further besides this? */
-    if (fiio->major < 7) {
-        debug_printf("userpace version too low\n");
-        err = EPROTONOSUPPORT;
-        goto out;
-    }
-
-    data->fuse_libabi_major = fiio->major;
-    data->fuse_libabi_minor = fiio->minor;
-
-    if (fuse_libabi_geq(data, 7, 5)) {
-        if (fticket_resp(ftick)->len == sizeof(struct fuse_init_out)) {
-            data->max_write = fiio->max_write;
-        } else {
-            err = EINVAL;
-        }
-    } else {
-        /* Old fix values */
-        data->max_write = 4096;
-    }
-
-out:
-    fuse_ticket_drop(ftick);
-
-    if (err) {
-        fdata_kick_set(data);
-    }
-
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    /* INIT_CALLOUT */
-    fuse_lck_mtx_lock(data->callout_mtx);
-    (void)thread_call_cancel(data->thread_call);
-    data->callout_status = INIT_CALLOUT_INACTIVE;
-    fuse_lck_mtx_unlock(data->callout_mtx);
-#endif
-
-    fuse_lck_mtx_lock(data->ticket_mtx);
-    data->dataflags |= FSESS_INITED;
-    fuse_wakeup(&data->ticketer);
-    fuse_lck_mtx_unlock(data->ticket_mtx);
-
-    return (0);
-}
-
-__private_extern__
-int
 fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 {
+    int err = 0;
     struct fuse_init_in   *fiii;
     struct fuse_dispatcher fdi;
 
@@ -1369,42 +1276,18 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
     fiii->max_readahead = data->iosize * 16;
     fiii->flags = 0;
 
-    if (fuse_init_backgrounded) {
+    /* blocking FUSE_INIT up to user space */
 
-        /* non-blocking FUSE_INIT up to user space */
-
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    {
-        /* INIT_CALLOUT */
-        uint64_t deadline;
-        clock_interval_to_deadline(data->init_timeout.tv_sec, kSecondScale,
-                                   &deadline);
-        fuse_lck_mtx_lock(data->callout_mtx);
-        thread_call_enter_delayed(data->thread_call, deadline);
-        data->callout_status = INIT_CALLOUT_ACTIVE;
-        fuse_lck_mtx_unlock(data->callout_mtx);
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
+        IOLog("MacFUSE: user-space initialization failed (%d)\n", err);
+        return err;
     }
-#endif
 
-        fuse_insert_callback(fdi.tick, fuse_internal_init_callback);
-        fuse_insert_message(fdi.tick);
-    } else {
-
-        /* blocking FUSE_INIT up to user space */
-
-        int err = 0;
-
-        err = fdisp_wait_answ(&fdi);
-        if (err) {
-            IOLog("MacFUSE: user-space initialization failed (%d)\n", err);
-            return err;
-        }
-
-        err = fuse_internal_init_synchronous(fdi.tick);
-        if (err) {
-            IOLog("MacFUSE: in-kernel initialization failed (%d)\n", err);
-            return err;
-        }
+    err = fuse_internal_init_synchronous(fdi.tick);
+    if (err) {
+        IOLog("MacFUSE: in-kernel initialization failed (%d)\n", err);
+        return err;
     }
 
     return 0;

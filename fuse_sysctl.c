@@ -23,7 +23,6 @@ int32_t  fuse_dev_use_count          = 0;                                  // r
 int32_t  fuse_fh_current             = 0;                                  // r
 uint32_t fuse_fh_reuse_count         = 0;                                  // r
 uint32_t fuse_fh_upcall_count        = 0;                                  // r
-int32_t  fuse_init_backgrounded      = 0;                                  // rw
 int32_t  fuse_iov_credit             = FUSE_DEFAULT_IOV_CREDIT;            // rw
 int32_t  fuse_iov_current            = 0;                                  // r
 uint32_t fuse_iov_permanent_bufsize  = FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE; // rw
@@ -131,8 +130,6 @@ SYSCTL_INT(_macfuse_tunables, OID_AUTO, admin_group, CTLFLAG_RW,
            &fuse_admin_group, 0, "");
 SYSCTL_INT(_macfuse_tunables, OID_AUTO, allow_other, CTLFLAG_RW,
            &fuse_allow_other, 0, "");
-SYSCTL_INT(_macfuse_tunables, OID_AUTO, init_backgrounded, CTLFLAG_RW,
-           &fuse_init_backgrounded, 0, "");
 SYSCTL_INT(_macfuse_tunables, OID_AUTO, iov_credit, CTLFLAG_RW,
            &fuse_iov_credit, 0, "");
 SYSCTL_INT(_macfuse_tunables, OID_AUTO, iov_permanent_bufsize, CTLFLAG_RW,
@@ -172,7 +169,6 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__macfuse_resourceusage_vnodes,
     &sysctl__macfuse_tunables_admin_group,
     &sysctl__macfuse_tunables_allow_other,
-    &sysctl__macfuse_tunables_init_backgrounded,
     &sysctl__macfuse_tunables_iov_credit,
     &sysctl__macfuse_tunables_iov_permanent_bufsize,
     &sysctl__macfuse_tunables_max_freetickets,

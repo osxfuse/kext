@@ -165,12 +165,6 @@ struct fuse_data {
     uint32_t                   fssubtype;
     char                       volname[MAXPATHLEN];
 
-#if M_MACFUSE_ENABLE_INIT_TIMEOUT
-    uint32_t                   callout_status;
-    lck_mtx_t                 *callout_mtx;
-    thread_call_t              thread_call;
-#endif
-
     uint32_t                   timeout_status;
     lck_mtx_t                 *timeout_mtx;
     struct timespec            daemon_timeout;
@@ -184,11 +178,6 @@ enum {
     FUSE_DAEMON_TIMEOUT_DEAD       = 2,
 };
 
-enum {
-    INIT_CALLOUT_INACTIVE = 0,
-    INIT_CALLOUT_ACTIVE   = 1,
-};
-
 /* Not-Implemented Bits */
 
 #define FSESS_NOIMPL(MSG)         (1LL << FUSE_##MSG)
@@ -196,24 +185,26 @@ enum {
 #define FSESS_KICK                0x00000001 // session is to be closed
 #define FSESS_OPENED              0x00000002 // session device has been opened
 #define FSESS_INITED              0x00000004 // session has been inited
+
 #define FSESS_ALLOW_OTHER         0x00000008
 #define FSESS_ALLOW_ROOT          0x00000010
-#define FSESS_DEFAULT_PERMISSIONS 0x00000020
-#define FSESS_DEFER_AUTH          0x00000040
-#define FSESS_DIRECT_IO           0x00000080
-#define FSESS_EXTENDED_SECURITY   0x00000100
-#define FSESS_JAIL_SYMLINKS       0x00000200
-#define FSESS_KILL_ON_UNMOUNT     0x00000400
-#define FSESS_NO_ALERTS           0x00000800
-#define FSESS_NO_APPLESPECIAL     0x00001000
-#define FSESS_NO_ATTRCACHE        0x00002000
-#define FSESS_NO_READAHEAD        0x00004000
-#define FSESS_NO_SYNCWRITES       0x00008000
-#define FSESS_NO_SYNCONCLOSE      0x00010000
-#define FSESS_NO_VNCACHE          0x00020000
-#define FSESS_NO_UBC              0x00040000
-#define FSESS_VOL_RENAME          0x00080000
-#define FSESS_NO_AUTOEXTATTR      0x00100000
+#define FSESS_AUTO_XATTR          0x00000020
+#define FSESS_DEFAULT_PERMISSIONS 0x00000040
+#define FSESS_DEFER_AUTH          0x00000080
+#define FSESS_DIRECT_IO           0x00000100
+#define FSESS_EXTENDED_SECURITY   0x00000200
+#define FSESS_JAIL_SYMLINKS       0x00000400
+#define FSESS_KILL_ON_UNMOUNT     0x00000800
+#define FSESS_NO_ALERTS           0x00001000
+#define FSESS_NO_APPLEDOUBLE      0x00002000
+#define FSESS_NO_APPLEXATTR       0x00004000
+#define FSESS_NO_ATTRCACHE        0x00008000
+#define FSESS_NO_READAHEAD        0x00010000
+#define FSESS_NO_SYNCWRITES       0x00020000
+#define FSESS_NO_SYNCONCLOSE      0x00040000
+#define FSESS_NO_VNCACHE          0x00080000
+#define FSESS_NO_UBC              0x00100000
+#define FSESS_VOL_RENAME          0x00200000
 
 static __inline__
 struct fuse_data *

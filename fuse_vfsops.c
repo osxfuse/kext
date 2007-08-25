@@ -122,7 +122,9 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = ENOTSUP;
 
+#if M_MACFUSE_ENABLE_LOCKLOCAL
     vfs_setlocklocal(mp);
+#endif
 
     /* Option Processing. */
 
@@ -140,8 +142,8 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         mntopts |= FSESS_NO_ALERTS;
     }
 
-    if (fusefs_args.altflags & FUSE_MOPT_NO_AUTOEXTATTR) {
-        mntopts |= FSESS_NO_AUTOEXTATTR;
+    if (fusefs_args.altflags & FUSE_MOPT_AUTO_XATTR) {
+        mntopts |= FSESS_AUTO_XATTR;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_BROWSE) {
@@ -230,8 +232,12 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         mntopts |= FSESS_DEFAULT_PERMISSIONS;
     }
 
-    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLESPECIAL) {
-        mntopts |= FSESS_NO_APPLESPECIAL;
+    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEDOUBLE) {
+        mntopts |= FSESS_NO_APPLEDOUBLE;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEXATTR) {
+        mntopts |= FSESS_NO_APPLEXATTR;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_ATTRCACHE) {
@@ -585,7 +591,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_EXTENDED_SECURITY
 //      | VOL_CAP_INT_USERACCESS
 //      | VOL_CAP_INT_MANLOCK
-//      | VOL_CAP_INT_EXTENDED_ATTR
+        | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
         ;
 
