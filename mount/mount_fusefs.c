@@ -718,7 +718,17 @@ main(int argc, char **argv)
     }
 
     if (!volname) {
-        snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d", dindex);
+        char *daemon_name = NULL;
+        char *daemon_path = getenv("MOUNT_FUSEFS_DAEMON_PATH");
+        if (daemon_path) {
+            daemon_name = basename(daemon_path);
+        }
+        if (daemon_name) {
+            snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d (%s)",
+                     dindex, daemon_name);
+        } else {
+            snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d", dindex);
+        }
     } else {
         snprintf(args.volname, MAXPATHLEN, "%s", volname);
     }
