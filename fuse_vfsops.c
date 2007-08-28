@@ -553,9 +553,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_SPARSE_FILES
 //      | VOL_CAP_FMT_ZERO_RUNS
         | VOL_CAP_FMT_CASE_SENSITIVE
-//      | VOL_CAP_FMT_CASE_PRESERVING
+        | VOL_CAP_FMT_CASE_PRESERVING
 //      | VOL_CAP_FMT_FAST_STATFS
-//      | VOL_CAP_FMT_2TB_FILESIZE
+        | VOL_CAP_FMT_2TB_FILESIZE
 //      | VOL_CAP_FMT_OPENDENYMODES
 //      | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
