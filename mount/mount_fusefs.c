@@ -711,18 +711,23 @@ main(int argc, char **argv)
     args.iosize         = iosize;
     args.fssubtype      = fssubtype;
 
+    char *daemon_name = NULL;
+    char *daemon_path = getenv("MOUNT_FUSEFS_DAEMON_PATH");
+    if (daemon_path) {
+        daemon_name = basename(daemon_path);
+    }
+
     if (!fsname) {
-        snprintf(args.fsname, MAXPATHLEN, "instance@fuse%d", dindex);
+        if (daemon_name) {
+            snprintf(args.fsname, MAXPATHLEN, "%s@fuse%d", daemon_name, dindex);
+        } else {
+            snprintf(args.fsname, MAXPATHLEN, "instance@fuse%d", dindex);
+        }
     } else {
         snprintf(args.fsname, MAXPATHLEN, "%s", fsname);
     }
 
     if (!volname) {
-        char *daemon_name = NULL;
-        char *daemon_path = getenv("MOUNT_FUSEFS_DAEMON_PATH");
-        if (daemon_path) {
-            daemon_name = basename(daemon_path);
-        }
         if (daemon_name) {
             snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d (%s)",
                      dindex, daemon_name);
