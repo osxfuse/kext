@@ -254,12 +254,13 @@ again:
                  FUSE_DAEMON_TIMEOUT_OTHER_BUTTON_TITLE,
                  &rf);
 #else
-        kr = KERN_SUCCESS;
-        rf = kKUNCOtherResponse;
+        kr = KERN_FAILURE;
 #endif
 
         if (kr != KERN_SUCCESS) {
             /* force ejection if we couldn't show the dialog */
+            IOLog("MacFUSE: force ejecting (no response from user space %d)\n",
+                  kr);
             rf = kKUNCOtherResponse;
         }
 
@@ -296,9 +297,9 @@ alreadydead:
         err = ENOTCONN;
         fticket_set_answered(ftick);
 
-        vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD | VQ_NOTRESP | VQ_ASSIST | VQ_UPDATE, 0);
+        vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
 
-        /* goto out; */
+        goto out;
     }
 
     /*

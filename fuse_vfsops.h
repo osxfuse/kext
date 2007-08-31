@@ -12,10 +12,16 @@
 #include <sys/types.h>
 #include <sys/vnode.h>
 
+#include <fuse_param.h>
+
 struct fuse_data;
 struct fuse_ticket;
 
 extern struct vnodeopv_entry_desc fuse_vnode_operation_entries[];
+
+#if M_MACFUSE_ENABLE_SPECFS
+extern struct vnodeopv_entry_desc fuse_spec_operation_entries[];
+#endif
 
 /* VFS operations */
 

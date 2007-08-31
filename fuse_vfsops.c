@@ -26,9 +26,23 @@ static struct vnodeopv_desc fuse_vnode_operation_vector_desc = {
     fuse_vnode_operation_entries // opv_desc_ops
 };
 
-static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[1] =
+#if M_MACFUSE_ENABLE_SPECFS
+
+errno_t (**fuse_spec_operations)(void *);
+
+static struct vnodeopv_desc fuse_spec_operation_vector_desc = {
+    &fuse_spec_operations,      // opv_desc_vector_p
+    fuse_spec_operation_entries // opv_desc_ops
+};
+#endif
+
+static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[] =
 {
-    &fuse_vnode_operation_vector_desc
+    &fuse_vnode_operation_vector_desc,
+
+#if M_MACFUSE_ENABLE_SPECFS
+    &fuse_spec_operation_vector_desc,
+#endif
 };
 
 static struct vfsops fuse_vfs_ops = {
@@ -519,7 +533,8 @@ fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
                                          FUSE_ROOT_SIZE, // size
                                          &vp,            // ptr
                                          0,              // flags
-                                         NULL);          // oflags
+                                         NULL,           // oflags
+                                         0);             // rdev
 
     *vpp = vp;
 

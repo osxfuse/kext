@@ -28,7 +28,8 @@ FSNodeGetOrCreateFileVNodeByID(mount_t       mp,
                                uint64_t      insize,
                                vnode_t      *vnPtr,
                                int           flags,
-                               int          *oflags)
+                               int          *oflags,
+                               uint32_t      rdev)
 {
     int      err;
     int      junk;
@@ -102,9 +103,21 @@ FSNodeGetOrCreateFileVNodeByID(mount_t       mp,
             }
 
             params.vnfs_fsnode     = hn;
+
+#if M_MACFUSE_ENABLE_SPECFS
+            if ((vtyp == VBLK) || (vtyp == VCHR)) {
+                params.vnfs_vops   = fuse_spec_operations;
+            } else {
+                params.vnfs_vops   = fuse_vnode_operations;
+            }
+            params.vnfs_rdev       = (dev_t)rdev;
+#else
+            (void)rdev;
             params.vnfs_vops       = fuse_vnode_operations;
-            params.vnfs_marksystem = FALSE;
             params.vnfs_rdev       = 0;
+#endif
+
+            params.vnfs_marksystem = FALSE;
             params.vnfs_cnp        = NULL;
             params.vnfs_flags      = VNFS_NOCACHE | VNFS_CANTCACHE;
             params.vnfs_filesize   = size;
@@ -165,7 +178,8 @@ fuse_vget_i(mount_t               mp,
             enum vtype            vtyp,
             uint64_t              size,
    __unused enum vget_mode        mode,
-   __unused uint64_t              parentid)
+   __unused uint64_t              parentid,
+            uint32_t              rdev)
 {
     int err = 0;
 
@@ -188,7 +202,7 @@ fuse_vget_i(mount_t               mp,
 #endif
 
     err = FSNodeGetOrCreateFileVNodeByID(mp, context, nodeid, dvp,
-                                         vtyp, size, vpp, 0, NULL);
+                                         vtyp, size, vpp, 0, NULL, rdev);
     if (err) {
         return err;
     }

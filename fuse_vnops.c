@@ -385,7 +385,7 @@ good_old:
 bringup:
     feo = fdip->answ;
 
-    if ((err = fuse_internal_checkentry(feo, VREG))) {
+    if ((err = fuse_internal_checkentry(feo, VREG))) { // VBLK/VCHR not allowed
         fuse_ticket_drop(fdip->tick);
         goto undo;
     }
@@ -394,11 +394,12 @@ bringup:
                                          context,
                                          feo->nodeid,
                                          dvp,
-                                         VREG,
+                                         VREG, // VBLK/VCHR not allowed
                                          FUSE_ZERO_SIZE,
                                          vpp,
                                          (gone_good_old) ? 0 : FN_CREATING,
-                                         NULL); // oflags
+                                         NULL, // oflags
+                                         0);   // rdev
     if (err) {
        if (gone_good_old) {
            fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
@@ -612,6 +613,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         }
         return (err);
     }
+
+    /* check the sanity/volatility of va_mode here */
 
     cache_attrs(vp, (struct fuse_attr_out *)fdi.answ);
 
@@ -1252,6 +1255,7 @@ calldaemon:
         nid = ((struct fuse_entry_out *)fdi.answ)->nodeid;
         size = ((struct fuse_entry_out *)fdi.answ)->attr.size;
         if (!nid) {
+            fdi.answ_stat = ENOENT; /* XXX negative_timeout */
             lookup_err = ENOENT;
         } else if (nid == FUSE_ROOT_ID) {
             lookup_err = EINVAL;
@@ -1342,7 +1346,8 @@ calldaemon:
                                     IFTOVT(fattr->mode),
                                     size,
                                     VG_NORMAL,
-                                    0))) {
+                                    0,
+                                    fattr->rdev))) {
                 goto out;
             }
 
@@ -1374,7 +1379,8 @@ calldaemon:
                                     IFTOVT(fattr->mode),
                                     size,
                                     VG_NORMAL,
-                                    0))) {
+                                    0,
+                                    fattr->rdev))) {
                 goto out;
             }
 
@@ -1406,7 +1412,8 @@ calldaemon:
                                     IFTOVT(fattr->mode),
                                     size,
                                     VG_NORMAL,
-                                    0))) {
+                                    0,
+                                    fattr->rdev))) {
                 goto out;
             }
             if (vnode_vtype(vp) == VDIR) {
@@ -2036,7 +2043,7 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
             *retvalPtr = FUSE_LINK_MAX;
             break;
         case _PC_NAME_MAX:
-            *retvalPtr = __DARWIN_MAXNAMLEN;
+            *retvalPtr = MAXNAMLEN;
             break;
         case _PC_PATH_MAX:
             *retvalPtr = MAXPATHLEN;
@@ -3534,3 +3541,43 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_write_desc,         (fuse_vnode_op_t) fuse_vnop_write         },
     { NULL, NULL }
 };
+
+#if M_MACFUSE_ENABLE_SPECFS
+struct vnodeopv_entry_desc fuse_spec_operation_entries[] = {
+    { &vnop_advlock_desc,  (fuse_spec_op_t)err_advlock        },
+    { &vnop_blktooff_desc, (fuse_spec_op_t)fuse_vnop_blktooff },
+//  { &vnop_bwrite_desc,   (fuse_spec_op_t)fuse_vnop_bwrite   },
+    { &vnop_close_desc,    (fuse_spec_op_t)spec_close         },
+    { &vnop_copyfile_desc, (fuse_spec_op_t)err_copyfile       },
+    { &vnop_create_desc,   (fuse_spec_op_t)spec_create        },
+    { &vnop_default_desc,  (fuse_spec_op_t)vn_default_error   },
+    { &vnop_fsync_desc,    (fuse_spec_op_t)fuse_vnop_fsync    },
+    { &vnop_getattr_desc,  (fuse_spec_op_t)fuse_vnop_getattr  },
+    { &vnop_inactive_desc, (fuse_spec_op_t)fuse_vnop_inactive },
+    { &vnop_ioctl_desc,    (fuse_spec_op_t)spec_ioctl         },
+    { &vnop_link_desc,     (fuse_spec_op_t)spec_link          },
+    { &vnop_lookup_desc,   (fuse_spec_op_t)spec_lookup        },
+    { &vnop_mkdir_desc,    (fuse_spec_op_t)spec_mkdir         },
+    { &vnop_mknod_desc,    (fuse_spec_op_t)spec_mknod         },
+    { &vnop_mmap_desc,     (fuse_spec_op_t)spec_mmap          },
+    { &vnop_offtoblk_desc, (fuse_spec_op_t)fuse_vnop_offtoblk },
+    { &vnop_open_desc,     (fuse_spec_op_t)spec_open          },
+    { &vnop_pagein_desc,   (fuse_spec_op_t)fuse_vnop_pagein   },
+    { &vnop_pageout_desc,  (fuse_spec_op_t)fuse_vnop_pageout  },
+    { &vnop_pathconf_desc, (fuse_spec_op_t)spec_pathconf      },
+    { &vnop_read_desc,     (fuse_spec_op_t)spec_read          },
+    { &vnop_readdir_desc,  (fuse_spec_op_t)spec_readdir       },
+    { &vnop_readlink_desc, (fuse_spec_op_t)spec_readlink      },
+    { &vnop_reclaim_desc,  (fuse_spec_op_t)fuse_vnop_reclaim  },
+    { &vnop_remove_desc,   (fuse_spec_op_t)spec_remove        },
+    { &vnop_rename_desc,   (fuse_spec_op_t)spec_rename        },
+    { &vnop_revoke_desc,   (fuse_spec_op_t)spec_revoke        },
+    { &vnop_rmdir_desc,    (fuse_spec_op_t)spec_rmdir         },
+    { &vnop_select_desc,   (fuse_spec_op_t)spec_select        },
+    { &vnop_setattr_desc,  (fuse_spec_op_t)fuse_vnop_setattr  },
+    { &vnop_strategy_desc, (fuse_spec_op_t)spec_strategy      },
+    { &vnop_symlink_desc,  (fuse_spec_op_t)spec_symlink       },
+    { &vnop_write_desc,    (fuse_spec_op_t)spec_write         },
+    { (struct vnodeop_desc*)NULL, (fuse_spec_op_t)NULL        },
+};
+#endif /* M_MACFUSE_ENABLE_SPECFS */

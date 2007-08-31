@@ -10,6 +10,10 @@
 
 typedef int (*fuse_vnode_op_t)(void *);
 
+#if M_MACFUSE_ENABLE_SPECFS
+typedef int (*fuse_spec_op_t)(void *);
+#endif
+
 static int fuse_vnop_access(struct vnop_access_args *ap);
 
 // static int fuse_vnop_advlock(struct vnop_advlock_args *ap);
@@ -117,5 +121,48 @@ static int fuse_vnop_symlink(struct vnop_symlink_args *ap);
 // static int fuse_vnop_whiteout(struct vnop_whiteout_args *ap);
 
 static int fuse_vnop_write(struct vnop_write_args *ap);
+
+/* specfs */
+
+int     spec_ebadf(void *);
+int     spec_lookup (struct vnop_lookup_args *);
+#define spec_create (int (*) (struct  vnop_access_args *))err_create
+#define spec_mknod (int (*) (struct  vnop_access_args *))err_mknod
+int     spec_open (struct vnop_open_args *);
+int     spec_close (struct vnop_close_args *);
+#define spec_access (int (*) (struct  vnop_access_args *))spec_ebadf
+#define spec_getattr (int (*) (struct  vnop_getattr_args *))spec_ebadf
+#define spec_setattr (int (*) (struct  vnop_setattr_args *))spec_ebadf
+int     spec_read (struct vnop_read_args *);
+int     spec_write (struct vnop_write_args *);
+int     spec_ioctl (struct vnop_ioctl_args *);
+int     spec_select (struct vnop_select_args *);
+#define spec_revoke (int (*) (struct  vnop_access_args *))nop_revoke
+#define spec_mmap (int (*) (struct  vnop_access_args *))err_mmap
+int     spec_fsync (struct  vnop_fsync_args *);
+int     spec_fsync_internal (vnode_t, int, vfs_context_t);
+#define spec_remove (int (*) (struct  vnop_access_args *))err_remove
+#define spec_link (int (*) (struct  vnop_access_args *))err_link
+#define spec_rename (int (*) (struct  vnop_access_args *))err_rename
+#define spec_mkdir (int (*) (struct  vnop_access_args *))err_mkdir
+#define spec_rmdir (int (*) (struct  vnop_access_args *))err_rmdir
+#define spec_symlink (int (*) (struct  vnop_access_args *))err_symlink
+#define spec_readdir (int (*) (struct  vnop_access_args *))err_readdir
+#define spec_readlink (int (*) (struct  vnop_access_args *))err_readlink
+#define spec_inactive (int (*) (struct  vnop_access_args *))nop_inactive
+#define spec_reclaim (int (*) (struct  vnop_access_args *))nop_reclaim
+#define spec_lock (int (*) (struct  vnop_access_args *))nop_lock
+#define spec_unlock (int (*)(struct  vnop_access_args *))nop_unlock
+int     spec_strategy (struct vnop_strategy_args *);
+#define spec_islocked (int (*) (struct  vnop_access_args *))nop_islocked
+int     spec_pathconf (struct vnop_pathconf_args *);
+#define spec_advlock (int (*) (struct  vnop_access_args *))err_advlock
+#define spec_blkatoff (int (*) (struct  vnop_access_args *))err_blkatoff
+#define spec_valloc (int (*) (struct  vnop_access_args *))err_valloc
+#define spec_vfree (int (*) (struct  vnop_access_args *))err_vfree
+#define spec_bwrite (int (*) (struct  vnop_bwrite_args *))nop_bwrite
+int     spec_blktooff (struct  vnop_blktooff_args *);
+int     spec_offtoblk (struct  vnop_offtoblk_args *);
+int     spec_blockmap (struct  vnop_blockmap_args *);
 
 #endif /* _FUSE_VNOPS_H_ */

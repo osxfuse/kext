@@ -379,8 +379,13 @@ fuse_internal_readdir_processdata(vnode_t          vp,
          * }
          */
 
-        if (!fudge->namelen || fudge->namelen > MAXNAMLEN) {
+        if (!fudge->namelen) { 
             err = EINVAL;
+            break;
+        }
+
+        if (fudge->namelen > MAXNAMLEN) {
+            err = EIO;
             break;
         }
 
@@ -1080,7 +1085,8 @@ fuse_internal_newentry_core(vnode_t                 dvp,
                       vtyp,
                       FUSE_ZERO_SIZE,
                       VG_FORCENEW,
-                      VTOI(dvp));
+                      VTOI(dvp),
+                      feo->attr.rdev);
     if (err) {
         fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
         return err;

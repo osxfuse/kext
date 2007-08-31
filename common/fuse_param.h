@@ -8,14 +8,17 @@
 
 #define MACFUSE_BUNDLE_PATH "/Library/Filesystems/fusefs.fs"
 
+#define M_MACFUSE_ENABLE_FIFOFS            0
+#define M_MACFUSE_ENABLE_SPECFS            0
 #define M_MACFUSE_ENABLE_UNSUPPORTED       1
+#define M_MACFUSE_ENABLE_XATTR             1
+
 #if M_MACFUSE_ENABLE_UNSUPPORTED
   #define M_MACFUSE_ENABLE_KQUEUE          1
   #define M_MACFUSE_ENABLE_KUNC            0
   #define M_MACFUSE_ENABLE_LOCKLOCAL       1
 #endif
 
-#define M_MACFUSE_ENABLE_XATTR             1
 
 /*
  * This is the prefix ("fuse" by default) of the name of a FUSE device node

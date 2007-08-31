@@ -13,6 +13,7 @@
 #include <fuse_param.h>
 
 extern errno_t (**fuse_vnode_operations)(void *);
+extern errno_t (**fuse_spec_operations)(void *);
 
 enum {
     kFSNodeMagic    = 'FUSE',
@@ -129,7 +130,8 @@ FSNodeGetOrCreateFileVNodeByID(mount_t       mp,
                                uint64_t      insize,
                                vnode_t      *vnPtr,
                                int           flags,
-                               int          *oflags);
+                               int          *oflags,
+                               uint32_t      rdev);
 
 void FSNodeScrub(struct fuse_vnode_data *fvdat);
 
@@ -143,7 +145,8 @@ fuse_vget_i(mount_t               mp,
             enum vtype            vtyp,
             uint64_t              size,
             enum vget_mode        mode,
-            uint64_t              parentid);
+            uint64_t              parentid,
+            uint32_t              rdev);
 
 /* Name cache wrappers */
 
