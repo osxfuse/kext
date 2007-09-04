@@ -39,6 +39,20 @@ static __inline__
 fufh_type_t
 fuse_filehandle_xlate_from_mmap(int fflags)
 {
+    if (fflags & PROT_WRITE) {
+        if (fflags & (PROT_READ | PROT_EXEC)) {
+            return FUFH_RDWR;
+        } else {
+            return FUFH_WRONLY;
+        }
+    } else if (fflags & (PROT_READ | PROT_EXEC)) {
+        return FUFH_RDONLY;
+    } else {
+        IOLog("MacFUSE: mmap being attempted with no region accessibility\n");
+        return FUFH_INVALID;
+    }
+
+#if 0
     if (fflags & (PROT_READ | PROT_WRITE)) {
         return FUFH_RDWR;
     } else if (fflags & (PROT_WRITE)) {
@@ -48,6 +62,7 @@ fuse_filehandle_xlate_from_mmap(int fflags)
     } else {
         return FUFH_INVALID;
     }
+#endif
 }
 
 static __inline__

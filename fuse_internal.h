@@ -6,6 +6,7 @@
 #ifndef _FUSE_INTERNAL_H_
 #define _FUSE_INTERNAL_H_
 
+#include <kern/clock.h>
 #include <sys/types.h>
 #include <sys/kauth.h>
 #include <sys/kernel_types.h>
@@ -38,6 +39,23 @@ struct fuse_dispatcher;
 struct fuse_filehandle;
 struct fuse_iov;
 struct fuse_ticket;
+
+/* time */
+
+#define fuse_timespec_add(vvp, uvp)            \
+    do {                                       \
+           (vvp)->tv_sec += (uvp)->tv_sec;     \
+           (vvp)->tv_nsec += (uvp)->tv_nsec;   \
+           if ((vvp)->tv_nsec >= 1000000000) { \
+               (vvp)->tv_sec++;                \
+               (vvp)->tv_nsec -= 1000000000;   \
+           }                                   \
+    } while (0)
+
+#define fuse_timespec_cmp(tvp, uvp, cmp)       \
+        (((tvp)->tv_sec == (uvp)->tv_sec) ?    \
+         ((tvp)->tv_nsec cmp (uvp)->tv_nsec) : \
+         ((tvp)->tv_sec cmp (uvp)->tv_sec))
 
 /* miscellaneous */
 
@@ -333,13 +351,14 @@ fuse_blanket_deny(vnode_t vp, vfs_context_t context)
 
 /* access */
 
-#define FVP_ACCESS_NOOP    0x01
+/* FN_ACCESS_NOOP is in fuse_node.h */
 
 #define FACCESS_VA_VALID   0x01
 #define FACCESS_DO_ACCESS  0x02
 #define FACCESS_STICKY     0x04
 #define FACCESS_CHOWN      0x08
 #define FACCESS_NOCHECKSPY 0x10
+#define FACCESS_FROM_VNOP  0x20
 #define FACCESS_XQUERIES FACCESS_STICKY | FACCESS_CHOWN
 
 struct fuse_access_param {
@@ -481,26 +500,19 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
 #endif
 }
 
-#define timespecadd(vvp, uvp)                  \
-    do {                                       \
-           (vvp)->tv_sec += (uvp)->tv_sec;     \
-           (vvp)->tv_nsec += (uvp)->tv_nsec;   \
-           if ((vvp)->tv_nsec >= 1000000000) { \
-               (vvp)->tv_sec++;                \
-               (vvp)->tv_nsec -= 1000000000;   \
-           }                                   \
-    } while (0)
-
-#define cache_attrs(vp, fuse_out) do {                                         \
-    struct timespec uptsp_ ## __func__;                                        \
-                                                                               \
-    VTOFUD(vp)->cached_attrs_valid.tv_sec = (fuse_out)->attr_valid;            \
-    VTOFUD(vp)->cached_attrs_valid.tv_nsec = (fuse_out)->attr_valid_nsec;      \
-    nanouptime(&uptsp_ ## __func__);                                           \
-                                                                               \
-    timespecadd(&VTOFUD(vp)->cached_attrs_valid, &uptsp_ ## __func__);         \
-                                                                               \
-    fuse_internal_attr_fat2vat(vp, &(fuse_out)->attr, VTOVA(vp));              \
+/*
+ * XXX: Note that user space sends us a 64-bit tv_sec.
+ */
+#define cache_attrs(vp, fuse_out) do {                               \
+    struct timespec uptsp_ ## __func__;                              \
+                                                                     \
+    VTOFUD(vp)->attr_valid.tv_sec = (fuse_out)->attr_valid;          \
+    VTOFUD(vp)->attr_valid.tv_nsec = (fuse_out)->attr_valid_nsec;    \
+    nanouptime(&uptsp_ ## __func__);                                 \
+                                                                     \
+    fuse_timespec_add(&VTOFUD(vp)->attr_valid, &uptsp_ ## __func__); \
+                                                                     \
+    fuse_internal_attr_fat2vat(vp, &(fuse_out)->attr, VTOVA(vp));    \
 } while (0)
 
 /* fsync */

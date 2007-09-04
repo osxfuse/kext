@@ -26,19 +26,31 @@ static struct vnodeopv_desc fuse_vnode_operation_vector_desc = {
     fuse_vnode_operation_entries // opv_desc_ops
 };
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_MACFUSE_ENABLE_FIFOFS
+errno_t (**fuse_fifo_operations)(void *);
 
+static struct vnodeopv_desc fuse_fifo_operation_vector_desc = {
+    &fuse_fifo_operations,      // opv_desc_vector_p
+    fuse_fifo_operation_entries // opv_desc_ops
+};
+#endif /* M_MACFUSE_ENABLE_FIFOFS */
+
+#if M_MACFUSE_ENABLE_SPECFS
 errno_t (**fuse_spec_operations)(void *);
 
 static struct vnodeopv_desc fuse_spec_operation_vector_desc = {
     &fuse_spec_operations,      // opv_desc_vector_p
     fuse_spec_operation_entries // opv_desc_ops
 };
-#endif
+#endif /* M_MACFUSE_ENABLE_SPECFS */
 
 static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[] =
 {
     &fuse_vnode_operation_vector_desc,
+
+#if M_MACFUSE_ENABLE_FIFOFS
+    &fuse_fifo_operation_vector_desc,
+#endif
 
 #if M_MACFUSE_ENABLE_SPECFS
     &fuse_spec_operation_vector_desc,
@@ -81,8 +93,7 @@ struct vfs_fsentry fuse_vfs_entry = {
     MACFUSE_FS_TYPE,
 
     // Flags specifying file system capabilities
-    // VFS_TBLTHREADSAFE | VFS_TBLFSNODELOCK | VFS_TBLNOTYPENUM,
-    VFS_TBLNOTYPENUM,
+    VFS_TBL64BITREADY | VFS_TBLNOTYPENUM,
 
     // Reserved for future use
     { NULL, NULL }
@@ -192,6 +203,12 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfs_setflags(mp, MNT_SYNCHRONOUS);
     }
 
+    if (fusefs_args.altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) {
+        mntopts |= FSESS_DEFAULT_PERMISSIONS;
+        fusefs_args.altflags |= (FUSE_MOPT_NO_AUTH_OPAQUE |
+                                 FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS);
+    }
+
     if (!(fusefs_args.altflags & FUSE_MOPT_NO_AUTH_OPAQUE)) {
         // This sets MNTK_AUTH_OPAQUE in the mount point's mnt_kern_flag.
         vfs_setauthopaque(mp);
@@ -206,7 +223,9 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     if (fusefs_args.altflags & FUSE_MOPT_DEFER_AUTH) {
         if (fusefs_args.altflags &
-            (FUSE_MOPT_NO_AUTH_OPAQUE | FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS)) {
+            (FUSE_MOPT_NO_AUTH_OPAQUE        |
+             FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS |
+             FUSE_MOPT_DEFAULT_PERMISSIONS)) {
             return EINVAL;
         }
         mntopts |= FSESS_DEFER_AUTH;
@@ -240,10 +259,6 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
             return EPERM;
         }
         mntopts |= FSESS_ALLOW_OTHER;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) {
-        mntopts |= FSESS_DEFAULT_PERMISSIONS;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEDOUBLE) {
@@ -521,21 +536,21 @@ static errno_t
 fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
     int err = 0;
-    vnode_t vp = NULL;
+    vnode_t vp = NULLVP;
+    struct fuse_entry_out feo_root;
 
     fuse_trace_printf_vfsop();
 
-    err = FSNodeGetOrCreateFileVNodeByID(mp,             // mount
-                                         context,        // VFS context
-                                         FUSE_ROOT_ID,   // node id
-                                         NULLVP,         // parent
-                                         VDIR,           // type
-                                         FUSE_ROOT_SIZE, // size
-                                         &vp,            // ptr
-                                         0,              // flags
-                                         NULL,           // oflags
-                                         0);             // rdev
+    bzero(&feo_root, sizeof(feo_root));
+    feo_root.nodeid      = FUSE_ROOT_ID;
+    feo_root.generation  = 0;
+    feo_root.attr.ino    = FUSE_ROOT_ID;
+    feo_root.attr.size   = FUSE_ROOT_SIZE;
+    feo_root.attr.mode   = VTTOIF(VDIR);
 
+    err = FSNodeGetOrCreateFileVNodeByID(&vp, FN_IS_ROOT, &feo_root, mp,
+                                         NULLVP /* dvp */, context,
+                                         NULL /* oflags */);
     *vpp = vp;
 
     return (err);
@@ -895,23 +910,22 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     struct fuse_dispatcher  fdi;
     struct fuse_filehandle *fufh;
     struct fuse_data       *data;
+    mount_t mp;
 
     if (!vnode_hasdirtyblks(vp)) {
         return VNODE_RETURNED;
     }
 
-    if (fuse_isdeadfs_nop(vp)) {
+    mp = vnode_mount(vp);
+
+    if (fuse_isdeadfs_mp(mp)) {
         return VNODE_RETURNED_DONE;
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
-
-    if (fdata_kick_get(data)) {
-        return VNODE_RETURNED_DONE;
-    }
+    data = fuse_get_mpdata(mp);
 
     if (data->noimplflags & ((vnode_vtype(vp) == VDIR) ?
-                         FSESS_NOIMPL(FSYNCDIR) : FSESS_NOIMPL(FSYNC))) {
+                              FSESS_NOIMPL(FSYNCDIR) : FSESS_NOIMPL(FSYNC))) {
         return VNODE_RETURNED;
     }
 

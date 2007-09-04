@@ -324,7 +324,7 @@ extern errno_t HNodeLookupCreatingIfNecessary(dev_t dev, uint64_t ino, size_t fo
             }
             thisNode = LIST_NEXT(thisNode, hashLink);
         }
-        
+
         // If we didn't find it, we're creating a new HNode.  If we haven't already 
         // allocated newNode, we must do so.  This drops the mutex, so the hash table 
         // might have been changed by someone else, so we have to loop.

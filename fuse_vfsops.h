@@ -23,6 +23,10 @@ extern struct vnodeopv_entry_desc fuse_vnode_operation_entries[];
 extern struct vnodeopv_entry_desc fuse_spec_operation_entries[];
 #endif
 
+#if M_MACFUSE_ENABLE_FIFOFS
+extern struct vnodeopv_entry_desc fuse_fifo_operation_entries[];
+#endif
+
 /* VFS operations */
 
 static errno_t

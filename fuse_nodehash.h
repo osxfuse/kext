@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <sys/systm.h>
+#include <sys/vnode.h>
 #include <libkern/OSMalloc.h>
 
 typedef struct HNode * HNodeRef;

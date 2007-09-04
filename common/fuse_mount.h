@@ -17,22 +17,21 @@
 #include <fuse_version.h>
 
 /*
- * Shared between the kernel and user spaces.
+ * Shared between the kernel and user spaces. This is 64-bit invariant.
  */
 struct fuse_mount_args {
     char     mntpath[MAXPATHLEN]; // path to the mount point
-
+    char     fsname[MAXPATHLEN];  // file system description string (arbitrary)
+    char     volname[MAXPATHLEN]; // volume name
     uint64_t altflags;            // see mount-time flags below
     uint32_t blocksize;           // fictitious block size of our "storage"
     uint32_t daemon_timeout;      // timeout in seconds for upcalls to daemon
     uint32_t fsid;                // optional custom value for part of fsid[0]
-    char     fsname[MAXPATHLEN];  // file system description string (arbitrary)
     uint32_t index;               // the N in /dev/fuseN
     uint32_t init_timeout;        // timeout in seconds for daemon handshake
     uint32_t iosize;              // maximum size for reading or writing
-    dev_t    rdev;                // dev_t for the /dev/fuseN in question
+    uint32_t rdev;                // dev_t for the /dev/fuseN in question
     uint32_t fssubtype;           // file system sub type id (type is "fusefs")
-    char     volname[MAXPATHLEN]; // volume name
 };
 typedef struct fuse_mount_args fuse_mount_args;
 

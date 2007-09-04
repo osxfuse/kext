@@ -47,6 +47,7 @@ fuse_internal_access(vnode_t                   vp,
 {
     int err = 0;
     uint32_t mask = 0;
+    int default_error = 0;
     int dataflags;
     int vtype;
     mount_t mp;
@@ -62,12 +63,22 @@ fuse_internal_access(vnode_t                   vp,
     data = fuse_get_mpdata(mp);
     dataflags = data->dataflags;
 
+    /* Allow for now; let checks be handled inline later. */
     if (dataflags & FSESS_DEFER_AUTH) {
         return 0;
     }
 
-    if ((action & KAUTH_VNODE_GENERIC_WRITE_BITS) && vfs_isrdonly(mp)) {
-        return EACCES;
+    if (facp->facc_flags & FACCESS_FROM_VNOP) {
+        default_error = ENOTSUP;
+    }
+
+    /*
+     * (action & KAUTH_VNODE_GENERIC_WRITE_BITS) on a read-only file system
+     * would have been handled by higher layers.
+     */
+
+    if (fuse_get_mpdata(mp)->noimplflags & FSESS_NOIMPL(ACCESS)) {
+        return default_error;
     }
 
     /* Unless explicitly permitted, deny everyone except the fs owner. */
@@ -83,27 +94,8 @@ fuse_internal_access(vnode_t                   vp,
     }
 
     if (!(facp->facc_flags & FACCESS_DO_ACCESS)) {
-        return 0;
-    }
-
-    if (((vtype == VREG) && (action & KAUTH_VNODE_GENERIC_EXECUTE_BITS))) {
-#if M_MACFUSE_NEED_MOUNT_ARGUMENT_FOR_THIS
-        // Let the kernel handle this through open/close heuristics.
-        return ENOTSUP;
-#else
-        // Let the kernel handle this.
-        return 0;
-#endif
-    }
-
-    if (fuse_get_mpdata(mp)->noimplflags & FSESS_NOIMPL(ACCESS)) {
-        // Let the kernel handle this.
-        return 0;
-    }
-
-    if (dataflags & FSESS_DEFAULT_PERMISSIONS) {
-        // Let the kernel handle this.
-        return 0;
+        return default_error;
+        //return 0;
     }
 
     if (vtype == VDIR) {
@@ -136,7 +128,7 @@ fuse_internal_access(vnode_t                   vp,
         mask |= W_OK;
     }
 
-    if (action & (KAUTH_VNODE_WRITE_ATTRIBUTES |
+    if (action & (KAUTH_VNODE_WRITE_ATTRIBUTES    |
                   KAUTH_VNODE_WRITE_EXTATTRIBUTES |
                   KAUTH_VNODE_WRITE_SECURITY)) {
         mask |= W_OK;
@@ -161,7 +153,8 @@ fuse_internal_access(vnode_t                   vp,
          */
         vfs_clearauthopaque(mp);
         fuse_get_mpdata(mp)->noimplflags |= FSESS_NOIMPL(ACCESS);
-        err = 0;
+        //err = 0;
+        err = default_error;
     }
 
     if (err == ENOENT) {
@@ -309,7 +302,7 @@ fuse_internal_readdir(vnode_t                 vp,
         fri->fh = fufh->fh_id;
         fri->offset = uio_offset(uio);
         data = fuse_get_mpdata(vnode_mount(vp));
-        fri->size = min(uio_resid(uio), data->iosize); // mp->max_read
+        fri->size = min(uio_resid(uio), data->iosize);
 
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
@@ -1076,17 +1069,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
         goto out;
     }
 
-    err = fuse_vget_i(mp,
-                      feo->nodeid,
-                      context,
-                      dvp,
-                      vpp,
-                      cnp,
-                      vtyp,
-                      FUSE_ZERO_SIZE,
-                      VG_FORCENEW,
-                      VTOI(dvp),
-                      feo->attr.rdev);
+    err = fuse_vget_i(vpp, 0 /* flags */, feo, cnp, dvp, mp, context);
     if (err) {
         fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
         return err;

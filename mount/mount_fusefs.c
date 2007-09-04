@@ -52,7 +52,7 @@ struct mntopt mopts[] = {
     { "blocksize=",          0, FUSE_MOPT_BLOCKSIZE,              1 }, // kused
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
     { "debug",               0, FUSE_MOPT_DEBUG,                  1 }, // kused
-    { "default_permissions", 0, FUSE_MOPT_DEFAULT_PERMISSIONS,    1 },
+    { "default_permissions", 0, FUSE_MOPT_DEFAULT_PERMISSIONS,    1 }, // kused
     { "defer_auth",          0, FUSE_MOPT_DEFER_AUTH,             1 }, // kused
     { "direct_io",           0, FUSE_MOPT_DIRECT_IO,              1 }, // kused
     { "extended_security",   0, FUSE_MOPT_EXTENDED_SECURITY,      1 }, // kused
@@ -656,7 +656,7 @@ main(int argc, char **argv)
      */
     if ((altflags & FUSE_MOPT_NO_SYNCWRITES) &&
         (altflags & (FUSE_MOPT_NO_UBC | FUSE_MOPT_NO_READAHEAD))) {
-        errx(1, "disabling local caching is not allowed with 'nosyncwrites'");
+        errx(1, "disabling local caching can't be used with 'nosyncwrites'");
     }
 
     /*
@@ -672,13 +672,15 @@ main(int argc, char **argv)
      */
     if ((altflags & FUSE_MOPT_NO_VNCACHE) &&
         (altflags & FUSE_MOPT_EXTENDED_SECURITY)) {
-        errx(1, "'novncache' is not allowed with 'extended_security'");
+        errx(1, "'novncache' can't be used with 'extended_security'");
     }
 
     if ((altflags & FUSE_MOPT_DEFER_AUTH) &&
         (altflags &
-         (FUSE_MOPT_NO_AUTH_OPAQUE | FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS))) {
-        errx(1, "'defer_auth' is not allowed with 'noauthopaque*'");
+         (FUSE_MOPT_NO_AUTH_OPAQUE        |
+          FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS |
+          FUSE_MOPT_DEFAULT_PERMISSIONS))) {
+        errx(1, "'defer_auth' can't be used with 'noauthopaque*' or 'default_permissions'");
     }
 
     if (getenv("MOUNT_FUSEFS_NO_ALERTS")) {

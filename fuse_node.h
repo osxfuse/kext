@@ -8,12 +8,18 @@
 
 #include "fuse_file.h"
 #include "fuse_knote.h"
-#include "fuse_node.h"
 #include "fuse_nodehash.h"
 #include <fuse_param.h>
 
 extern errno_t (**fuse_vnode_operations)(void *);
+
+#if M_MACFUSE_ENABLE_FIFOFS
+extern errno_t (**fuse_fifo_operations)(void *);
+#endif /* M_MACFUSE_ENABLE_FIFOFS */
+
+#if M_MACFUSE_ENABLE_SPECFS
 extern errno_t (**fuse_spec_operations)(void *);
+#endif /* M_MACFUSE_ENABLE_SPECFS */
 
 enum {
     kFSNodeMagic    = 'FUSE',
@@ -21,31 +27,50 @@ enum {
     kHNodeMagic     = 'HNOD',
 };
 
-#define FN_CREATING  0x00000001
-#define FN_REVOKING  0x00000002
-#define FN_DIRECT_IO 0x00000004
-#define FN_HAS_ACL   0x00000008
-#define FN_REVOKED   0x00000010
+#define FN_IS_ROOT     0x00000001
+#define FN_CREATING    0x00000002
+#define FN_REVOKING    0x00000004
+#define FN_DIRECT_IO   0x00000008
+#define FN_HAS_ACL     0x00000010
+#define FN_REVOKED     0x00000020
+#define FN_ACCESS_NOOP 0x00000040
 
 struct fuse_vnode_data {
+
+    /** check **/
     uint32_t   fMagic;
     boolean_t  fInitialised;
-    uint64_t   nid;
-    uint64_t   nlookup;
-    enum vtype vtype;
-    uint64_t   parent_nid;
+
+    /** self **/
+    vnode_t    vp;
+    uint64_t   nodeid;
+    uint64_t   generation;
+
+    /** parent **/
+    vnode_t    parentvp;
+    uint64_t   parent_nodeid;
+
+    /** I/O **/
+    struct     fuse_filehandle fufh[FUFH_MAXTYPE];
+
+    /** flags **/
+    uint32_t   flag;
+    uint32_t   c_flag;
+
+    /** meta **/
+    struct timespec   entry_valid;
+    struct timespec   attr_valid;
+    struct vnode_attr cached_attr;
+    off_t             filesize; 
+    uint64_t          nlookup;
+    enum vtype        vtype;
+
+    /** locking **/
 
     lck_mtx_t *createlock;
     void      *creator;
-    /* XXX: Clean up this multi-flag nonsense. Really. */
-    int        flag;
-    int        flags;
-    uint32_t   c_flag;
 
-#if M_MACFUSE_ENABLE_KQUEUE
-    struct klist c_knotes;
-#endif /* M_MACFUSE_ENABLE_KQUEUE */
-
+#if M_MACFUSE_ENABLE_TSLOCKING
     /*
      * The nodelock must be held when data in the FUSE node is accessed or
      * modified. Typically, we would take this lock at the beginning of a
@@ -59,22 +84,20 @@ struct fuse_vnode_data {
      * file resize) unexpectedly.
      */
     lck_rw_t  *truncatelock;
+#endif
 
-    vnode_t    c_vp;
-    vnode_t    parent;
-    off_t      filesize; 
+    /** miscellaneous **/
 
-    struct     fuse_filehandle fufh[FUFH_MAXTYPE];
-
-    struct vnode_attr cached_attrs;
-    struct timespec   cached_attrs_valid;
+#if M_MACFUSE_ENABLE_KQUEUE
+    struct klist c_knotes;
+#endif /* M_MACFUSE_ENABLE_KQUEUE */
 };
 typedef struct fuse_vnode_data * fusenode_t;
 
 #define VTOFUD(vp) \
     ((struct fuse_vnode_data *)FSNodeGenericFromHNode(vnode_fsnode(vp)))
-#define VTOI(vp)    (VTOFUD(vp)->nid)
-#define VTOVA(vp)   (&(VTOFUD(vp)->cached_attrs))
+#define VTOI(vp)    (VTOFUD(vp)->nodeid)
+#define VTOVA(vp)   (&(VTOFUD(vp)->cached_attr))
 #define VTOILLU(vp) ((unsigned long long)(VTOFUD(vp) ? VTOI(vp) : 0))
 
 #define FUSE_NULL_ID 0
@@ -84,7 +107,7 @@ void
 fuse_invalidate_attr(vnode_t vp)
 {
     if (VTOFUD(vp)) {
-        bzero(&VTOFUD(vp)->cached_attrs_valid, sizeof(struct timespec));
+        bzero(&VTOFUD(vp)->attr_valid, sizeof(struct timespec));
     }
 }
 
@@ -92,8 +115,6 @@ void fuse_vnode_init(vnode_t vp, struct fuse_vnode_data *fvdat,
                      uint64_t nodeid, enum vtype vtyp, uint64_t parentid);
 void fuse_vnode_ditch(vnode_t vp, vfs_context_t context);
 void fuse_vnode_teardown(vnode_t vp, vfs_context_t context, enum vtype vtyp);
-
-enum vget_mode { VG_NORMAL, VG_WANTNEW, VG_FORCENEW };
 
 struct get_filehandle_param {
     enum fuse_opcode opcode;
@@ -105,48 +126,43 @@ struct get_filehandle_param {
     gid_t gid;
 };
 
-#define C_NEED_RVNODE_PUT    0x00001
-#define C_NEED_DVNODE_PUT    0x00002
-#define C_ZFWANTSYNC         0x00004
-#define C_FROMSYNC           0x00008
-#define C_MODIFIED           0x00010
-#define C_NOEXISTS           0x00020
-#define C_DELETED            0x00040
-#define C_HARDLINK           0x00080
-#define C_FORCEUPDATE        0x00100
-#define C_HASXATTRS          0x00200
-#define C_NEED_DATA_SETSIZE  0x01000
-#define C_NEED_RSRC_SETSIZE  0x02000
-
-#define C_CREATING           0x04000
-#define C_ACCESS_NOOP        0x08000
+#define C_NEED_RVNODE_PUT    0x000000001
+#define C_NEED_DVNODE_PUT    0x000000002
+#define C_ZFWANTSYNC         0x000000004
+#define C_FROMSYNC           0x000000008
+#define C_MODIFIED           0x000000010
+#define C_NOEXISTS           0x000000020
+#define C_DELETED            0x000000040
+#define C_HARDLINK           0x000000080
+#define C_FORCEUPDATE        0x000000100
+#define C_HASXATTRS          0x000000200
+#define C_NEED_DATA_SETSIZE  0x000001000
+#define C_NEED_RSRC_SETSIZE  0x000002000
+#define C_CREATING           0x000004000
+#define C_ACCESS_NOOP        0x000008000
+#define C_TOUCH_ACCTIME      0x000010000
+#define C_TOUCH_CHGTIME      0x000020000
+#define C_TOUCH_MODTIME      0x000040000
 
 errno_t
-FSNodeGetOrCreateFileVNodeByID(mount_t       mp,
-                               vfs_context_t context,
-                               uint64_t      nodeid,
-                               vnode_t       dvp,
-                               enum vtype    vtyp,
-                               uint64_t      insize,
-                               vnode_t      *vnPtr,
-                               int           flags,
-                               int          *oflags,
-                               uint32_t      rdev);
+FSNodeGetOrCreateFileVNodeByID(vnode_t               *vpp,
+                               uint32_t               flags,
+                               struct fuse_entry_out *feo,
+                               mount_t                mp,
+                               vnode_t                dvp,
+                               vfs_context_t          context,
+                               uint32_t              *oflags);
 
 void FSNodeScrub(struct fuse_vnode_data *fvdat);
 
 int
-fuse_vget_i(mount_t               mp,
-            uint64_t              nodeid,
-            vfs_context_t         context,
-            vnode_t               dvp,
-            vnode_t              *vpp,
-            struct componentname *cnp,
-            enum vtype            vtyp,
-            uint64_t              size,
-            enum vget_mode        mode,
-            uint64_t              parentid,
-            uint32_t              rdev);
+fuse_vget_i(vnode_t               *vpp,
+            uint32_t               flags,
+            struct fuse_entry_out *feo,
+            struct componentname  *cnp,
+            vnode_t                dvp,
+            mount_t                mp,
+            vfs_context_t          context);
 
 /* Name cache wrappers */
 

@@ -13,6 +13,8 @@ lck_grp_attr_t *fuse_group_attr = NULL;
 lck_grp_t      *fuse_lock_group = NULL;
 lck_mtx_t      *fuse_mutex      = NULL;
 
+#if M_MACFUSE_ENABLE_TSLOCKING
+
 /*
  * Largely identical to HFS+ locking. Much of the code is from hfs_cnode.c.
  */
@@ -66,7 +68,7 @@ fusefs_lockpair(fusenode_t cp1, fusenode_t cp2, enum fusefslocktype locktype)
      * Lock in cnode parent-child order (if there is a relationship);
      * otherwise lock in cnode address order.
      */
-    if ((cp1->vtype == VDIR) && (cp1->nid == cp2->parent_nid)) {
+    if ((cp1->vtype == VDIR) && (cp1->nodeid == cp2->parent_nodeid)) {
         first = cp1;
         last = cp2;
     } else if (cp1 < cp2) {
@@ -107,11 +109,11 @@ fusefs_isordered(fusenode_t cp1, fusenode_t cp2)
         return (0);
     }
 
-    if (cp1->nid == cp2->parent_nid) {
+    if (cp1->nodeid == cp2->parent_nodeid) {
         return (1);  /* cp1 is the parent and should go first */
     }
 
-    if (cp2->nid == cp1->parent_nid) {
+    if (cp2->nodeid == cp1->parent_nodeid) {
         return (0);  /* cp1 is the child and should go last */
     }
 
@@ -201,7 +203,7 @@ fusefs_unlock(fusenode_t cp)
 #endif
 
     if (c_flag & (C_NEED_DVNODE_PUT | C_NEED_DATA_SETSIZE)) {
-        vp = cp->c_vp;
+        vp = cp->vp;
     }
 
 #if M_MACFUSE_RSRC_FORK
@@ -319,6 +321,8 @@ fusefs_unlock_truncate(fusenode_t cp)
 {
     fusefs_lck_rw_done(cp->truncatelock);
 }
+
+#endif
 
 #include <IOKit/IOLocks.h>
 
