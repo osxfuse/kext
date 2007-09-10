@@ -95,18 +95,16 @@ fuse_internal_access(vnode_t                   vp,
 
     if (!(facp->facc_flags & FACCESS_DO_ACCESS)) {
         return default_error;
-        //return 0;
     }
 
     if (vtype == VDIR) {
-        if (action &
-            (KAUTH_VNODE_LIST_DIRECTORY | KAUTH_VNODE_READ_EXTATTRIBUTES)) {
+        if (action & (KAUTH_VNODE_LIST_DIRECTORY   |
+                      KAUTH_VNODE_READ_EXTATTRIBUTES)) {
             mask |= R_OK;
         }
-        if (action & (KAUTH_VNODE_ADD_FILE | KAUTH_VNODE_ADD_SUBDIRECTORY)) {
-            mask |= W_OK;
-        }
-        if (action & KAUTH_VNODE_DELETE_CHILD) {
+        if (action & (KAUTH_VNODE_ADD_FILE         |
+                      KAUTH_VNODE_ADD_SUBDIRECTORY |
+                      KAUTH_VNODE_DELETE_CHILD)) {
             mask |= W_OK;
         }
         if (action & KAUTH_VNODE_SEARCH) {
@@ -122,10 +120,6 @@ fuse_internal_access(vnode_t                   vp,
         if (action & KAUTH_VNODE_EXECUTE) {
             mask |= X_OK;
         }
-    }
-
-    if (action & KAUTH_VNODE_DELETE) {
-        mask |= W_OK;
     }
 
     if (action & (KAUTH_VNODE_WRITE_ATTRIBUTES    |
@@ -153,7 +147,6 @@ fuse_internal_access(vnode_t                   vp,
          */
         vfs_clearauthopaque(mp);
         fuse_get_mpdata(mp)->noimplflags |= FSESS_NOIMPL(ACCESS);
-        //err = 0;
         err = default_error;
     }
 
@@ -319,6 +312,7 @@ fuse_internal_readdir(vnode_t                 vp,
     }
 
 /* done: */
+
     fuse_ticket_drop(fdi.tick);
 
 out:
@@ -383,7 +377,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         }
 
 #define GENERIC_DIRSIZ(dp) \
-    ((sizeof (struct dirent) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
+  ((sizeof(struct dirent) - (MAXNAMLEN + 1)) + (((dp)->d_namlen + 1 + 3) & ~3))
 
         bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen); 
 
@@ -396,9 +390,9 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_adjust(cookediov, bytesavail);
 
         de = (struct dirent *)cookediov->base;
-        de->d_fileno = fudge->ino; /* XXX cast from 64 to 32 bits */
+        de->d_fileno = fudge->ino; /* XXX: truncation */
         de->d_reclen = bytesavail;
-        de->d_type = fudge->type; 
+        de->d_type   = fudge->type; 
         de->d_namlen = fudge->namelen;
 
         /* Filter out any ._* files if the mount is configured as such. */
@@ -584,13 +578,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
     data = fuse_get_mpdata(vnode_mount(vp));
 
-    /*
-     * XXX
-     * XXX: Wait, what happened here?
-     * XXX
-     */
-    //biosize = data->iosize;
-    //biosize = data->blocksize;
     biosize = data->blocksize;
 
     if (!(vtype == VREG || vtype == VDIR)) {
@@ -691,7 +678,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 buf_seterror(bp, EINVAL);
             }
             buf_biodone(bp);
-            // fufh->useco--;
             return 0;
         }
 
@@ -702,7 +688,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         if (buf_map(bp, &bufdat)) {
             IOLog("MacFUSE: failed to map buffer in strategy\n");
-            // fufh->useco--;
             return EFAULT;
         } else {
             mapped = TRUE;
@@ -773,23 +758,21 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         int merr = 0;
         off_t diff;
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
         /*
-         * Wanna experiment with some panics?
-         * Try doing something like:
+         * XXX: historical
+         *
+         * Panic? Try doing something like:
          *
          *   err = EIO;
          *   goto out;
          *
          * Investigate later.
          */
-#endif
 
         debug_printf("WRITE: preparing for write\n");
 
         if (buf_map(bp, &bufdat)) {
             IOLog("MacFUSE: failed to map buffer in strategy\n");
-            // fufh->useco--;
             return EFAULT;
         } else {
             mapped = TRUE;
@@ -800,7 +783,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         buf_setresid(bp, buf_count(bp));
         offset = (off_t)((off_t)buf_blkno(bp) * biosize);
 
-        // TBD: Check here for extension (writing past end)
+        /* XXX: TBD -- Check here for extension (writing past end) */
 
         left = buf_count(bp);
 
@@ -910,15 +893,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         debug_printf("no ticket on leave\n");
 
 out:
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    if (fufh) {
-        fufh->useco--;
-        if (didnewfh) {
-            debug_printf("strategy internal fufh count is %d\n", fufh->useco);
-        }
-    }
-#endif
 
     if (err) {
         debug_printf("STRATEGY: there was an error %d\n", err);
@@ -1213,8 +1187,8 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
 
     fiio = fticket_resp(ftick)->base;
 
-    /* XXX: Do we want to check anything further besides this? */
-    if (fiio->major < 7) {
+    if ((fiio->major < MACFUSE_MIN_USER_VERSION_MAJOR) ||
+        (fiio->minor < MACFUSE_MIN_USER_VERSION_MINOR)){
         debug_printf("userpace version too low\n");
         err = EPROTONOSUPPORT;
         goto out;
@@ -1223,7 +1197,8 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     data->fuse_libabi_major = fiio->major;
     data->fuse_libabi_minor = fiio->minor;
 
-    if (fuse_libabi_geq(data, 7, 5)) {
+    if (fuse_libabi_geq(data, MACFUSE_MIN_USER_VERSION_MAJOR,
+                              MACFUSE_MIN_USER_VERSION_MINOR)) {
         if (fticket_resp(ftick)->len == sizeof(struct fuse_init_out)) {
             data->max_write = fiio->max_write;
         } else {
@@ -1280,4 +1255,54 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
     }
 
     return 0;
+}
+
+/* other */
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+extern char *vnode_getname(vnode_t vp);
+extern void  vnode_putname(char *name);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
+static int
+fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
+{
+    char *name = NULL;
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+    name = vnode_getname(vp);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
+    if (name) {
+        IOLog("vp=%p ino=%lld parent=%lld inuse=%d %s\n",
+              vp, fvdat->nodeid, fvdat->parent_nodeid,
+              vnode_isinuse(vp, 0), name);
+    } else {
+        if (fvdat->nodeid == FUSE_ROOT_ID) {
+            IOLog("vp=%p ino=%lld parent=%lld inuse=%d /\n",
+                  vp, fvdat->nodeid, fvdat->parent_nodeid,
+                  vnode_isinuse(vp, 0));
+        } else {
+            IOLog("vp=%p ino=%lld parent=%lld inuse=%d\n",
+                  vp, fvdat->nodeid, fvdat->parent_nodeid,
+                  vnode_isinuse(vp, 0));
+        }
+    }
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+    if (name) {
+        vnode_putname(name);
+    }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+ 
+    return VNODE_RETURNED;
+}
+
+__private_extern__
+void
+fuse_internal_print_vnodes(mount_t mp)
+{
+    vnode_iterate(mp, VNODE_ITERATE_ALL,
+                  fuse_internal_print_vnodes_callback, NULL);
 }

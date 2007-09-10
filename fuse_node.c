@@ -13,10 +13,10 @@
 void
 FSNodeScrub(struct fuse_vnode_data *fvdat)
 {
-    lck_mtx_destroy(fvdat->createlock, fuse_lock_group);
+    lck_mtx_free(fvdat->createlock, fuse_lock_group);
 #if M_MACFUSE_ENABLE_TSLOCKING
-    lck_rw_destroy(fvdat->nodelock, fuse_lock_group);
-    lck_rw_destroy(fvdat->truncatelock, fuse_lock_group);
+    lck_rw_free(fvdat->nodelock, fuse_lock_group);
+    lck_rw_free(fvdat->truncatelock, fuse_lock_group);
 #endif
     fvdat->fMagic = kFSNodeBadMagic;
 }       
@@ -95,13 +95,13 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fvdat->c_flag       = 0;
 
             /* meta */
-            fvdat->entry_valid.tv_sec  = feo->entry_valid; /* XXX */
+            fvdat->entry_valid.tv_sec  = feo->entry_valid; /* XXX:truncation */
             fvdat->entry_valid.tv_nsec = feo->entry_valid_nsec;
-            fvdat->attr_valid.tv_sec   = 0; /* XXX */
-            fvdat->attr_valid.tv_nsec  = 0; /* XXX */
-            fvdat->filesize     = size;
-            fvdat->nlookup      = 0;
-            fvdat->vtype        = vtyp;
+            fvdat->attr_valid.tv_sec   = feo->attr_valid;  /* XXX:truncation */
+            fvdat->attr_valid.tv_nsec  = feo->attr_valid_nsec;
+            fvdat->filesize            = size;
+            fvdat->nlookup             = 0;
+            fvdat->vtype               = vtyp;
 
             /* locking */
             fvdat->createlock = lck_mtx_alloc_init(fuse_lock_group,
@@ -111,8 +111,8 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fvdat->nodelock = lck_rw_alloc_init(fuse_lock_group,
                                                 fuse_lock_attr);
             fvdat->nodelockowner = NULL;
-            fvdat->truncatelock = lck_rw_alloc_init(fuse_lock_group,
-                                                    fuse_lock_attr);
+            fvdat->truncatelock  = lck_rw_alloc_init(fuse_lock_group,
+                                                     fuse_lock_attr);
 #endif
         }
 
@@ -220,18 +220,6 @@ fuse_vget_i(vnode_t               *vpp,
         return EINVAL;
     }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    if (feo->nodeid == FUSE_ROOT_ID) {
-        *vpp = fuse_get_mpdata(mp)->rvp; //XROOT
-        err = vnode_get(*vpp);
-        if (err) {
-            *vpp = NULLVP;
-            return err;
-        }
-        goto found;
-    }
-#endif
-
     err = FSNodeGetOrCreateFileVNodeByID(vpp, flags, feo, mp, dvp,
                                          context, NULL);
     if (err) {
@@ -243,6 +231,7 @@ fuse_vget_i(vnode_t               *vpp,
     }
 
 /* found: */
+
     VTOFUD(*vpp)->nlookup++;
 
     return 0;

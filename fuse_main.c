@@ -33,9 +33,9 @@ kern_return_t fusefs_stop(kmod_info_t *ki, void *d);
 static void
 fini_stuff(void)
 {
-    if (fuse_mutex) {
-        lck_mtx_free(fuse_mutex, fuse_lock_group);
-        fuse_mutex = NULL;
+    if (fuse_device_mutex) {
+        lck_mtx_free(fuse_device_mutex, fuse_lock_group);
+        fuse_device_mutex = NULL;
     }
 
     if (fuse_lock_group) {
@@ -83,8 +83,8 @@ init_stuff(void)
     }
 
     if (ret == KERN_SUCCESS) {
-        fuse_mutex = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
-        if (fuse_mutex == NULL) {
+        fuse_device_mutex = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+        if (fuse_device_mutex == NULL) {
             ret = ENOMEM;
         }
     }
@@ -112,13 +112,14 @@ fusefs_start(__unused kmod_info_t *ki, __unused void *d)
         goto error;
     }
 
-    ret = fuse_devices_start();
-    if (ret != KERN_SUCCESS) {
+    ret = vfs_fsadd(&fuse_vfs_entry, &fuse_vfs_table_ref);
+    if (ret != 0) {
+        fuse_vfs_table_ref = NULL;
         goto error;
     }
 
-    ret = vfs_fsadd(&fuse_vfs_entry, &fuse_vfs_table_ref);
-    if (ret != 0) {
+    ret = fuse_devices_start();
+    if (ret != KERN_SUCCESS) {
         goto error;
     }
 
@@ -130,9 +131,11 @@ fusefs_start(__unused kmod_info_t *ki, __unused void *d)
     return KERN_SUCCESS;
 
 error:
+    if (fuse_vfs_table_ref) {
+        (void)vfs_fsremove(fuse_vfs_table_ref);
+    }
     HNodeTerm();
     fini_stuff();
-    fuse_devices_stop();
 
     return KERN_FAILURE;
 }

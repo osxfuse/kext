@@ -35,22 +35,22 @@ extern void fusefs_lck_rw_done(lck_rw_t *);
 extern lck_attr_t     *fuse_lock_attr;
 extern lck_grp_attr_t *fuse_group_attr;
 extern lck_grp_t      *fuse_lock_group;
-extern lck_mtx_t      *fuse_mutex;
+extern lck_mtx_t      *fuse_device_mutex;
 
 #ifdef FUSE_TRACE_LK
 
-#define FUSE_LOCK()                                                 \
-    {                                                               \
-        IOLog("0: FUSE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
-        lck_mtx_lock(fuse_mutex);                                   \
-        IOLog("1: FUSE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
+#define FUSE_DEVICE_LOCK()                                                 \
+    {                                                                      \
+        IOLog("0: FUSE_DEVICE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
+        lck_mtx_lock(fuse_device_mutex);                                   \
+        IOLog("1: FUSE_DEVICE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
     }
 
-#define FUSE_UNLOCK()                                               \
-    {                                                               \
-        IOLog("1: FUSE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
-        lck_mtx_unlock(fuse_mutex);                                 \
-        IOLog("0: FUSE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
+#define FUSE_DEVICE_UNLOCK()                                               \
+    {                                                                      \
+        IOLog("1: FUSE_DEVICE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
+        lck_mtx_unlock(fuse_device_mutex);                                 \
+        IOLog("0: FUSE_DEVICE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
     }
 
 #define fuse_lck_mtx_lock(m)                                                  \
@@ -68,8 +68,8 @@ extern lck_mtx_t      *fuse_mutex;
     }
 
 #else
-#define FUSE_LOCK()            lck_mtx_lock(fuse_mutex)
-#define FUSE_UNLOCK()          lck_mtx_unlock(fuse_mutex)
+#define FUSE_DEVICE_LOCK()     lck_mtx_lock(fuse_device_mutex)
+#define FUSE_DEVICE_UNLOCK()   lck_mtx_unlock(fuse_device_mutex)
 #define fuse_lck_mtx_lock(m)   lck_mtx_lock((m))
 #define fuse_lck_mtx_unlock(m) lck_mtx_unlock((m))
 #endif

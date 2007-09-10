@@ -799,7 +799,7 @@ extern void HNodePrintState(void)
     }
 }
 
-// == XXX ==
+// == DEVICE KILL ==
 
 extern errno_t
 HNodeLookupRealQuickIfExists(dev_t     dev,

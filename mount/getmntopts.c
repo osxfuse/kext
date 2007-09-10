@@ -76,7 +76,8 @@ getmntopts(options, m0, flagp, altflagp)
 	u_int64_t *altflagp;
 {
 	const struct mntopt *m;
-	int negative, len;
+	int negative;
+        size_t len;
 	char *opt, *optbuf, *p;
 
 	/* Copy option string, since it is about to be torn asunder... */
@@ -117,7 +118,9 @@ getmntopts(options, m0, flagp, altflagp)
 				else
 					*altflagp &= ~m->m_flag;
 			} else {
-				int m_flag32 = m->m_flag & 0xFFFFFFFF;
+				u_int32_t m_flag32;
+
+                                m_flag32  = (u_int32_t)(m->m_flag & 0xFFFFFFFF);
 				if (negative == m->m_inverse)
 					*flagp |= m_flag32;
 				else

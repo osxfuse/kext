@@ -389,7 +389,7 @@ fdata_alloc(struct fuse_softc *fdev, struct proc *p)
 
     bzero(data, sizeof(struct fuse_data));
 
-    data->mpri = FM_NOMOUNTED;
+    data->mount_state = FM_NOTMOUNTED;
     data->fdev = fdev;
     data->dataflags = 0;
     data->ms_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
@@ -406,11 +406,6 @@ fdata_alloc(struct fuse_softc *fdev, struct proc *p)
     data->daemonpid = proc_pid(p);
     kauth_cred_ref(data->daemoncred);
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    data->mhierlock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
-    LIST_INIT(&data->slaves_head);
-#endif
-
 #if M_MACFUSE_EXCPLICIT_RENAME_LOCK
     data->rename_lock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
 #endif
@@ -426,16 +421,14 @@ fdata_destroy(struct fuse_data *data)
 {
     struct fuse_ticket *ftick;
 
-    debug_printf("data=%p, destroy.mntco = %d\n", data, data->mntco);
-
     lck_mtx_free(data->ms_mtx, fuse_lock_group);
     data->ms_mtx = NULL;
 
     lck_mtx_free(data->aw_mtx, fuse_lock_group);
     data->aw_mtx = NULL;
 
-    lck_mtx_free(data->ticket_mtx, fuse_lock_group); /* XXX */
-    data->ticket_mtx = NULL; /* XXX */
+    lck_mtx_free(data->ticket_mtx, fuse_lock_group); /* XXX: can do? */
+    data->ticket_mtx = NULL;                         /* XXX: can do? */
 
 #if M_MACFUSE_EXPLICIT_RENAME_LOCK
     lck_rw_free(data->rename_lock, fuse_lock_group);
@@ -453,11 +446,6 @@ fdata_destroy(struct fuse_data *data)
     kauth_cred_unref(&(data->daemoncred));
 #else
     kauth_cred_rele(data->daemoncred);
-#endif
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    lck_rw_free(data->mhierlock, fuse_lock_group);
-    data->mhierlock = NULL;
 #endif
 
     FUSE_OSFree(data, sizeof(struct fuse_data), fuse_malloc_tag);
@@ -878,7 +866,7 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
         ihead->uid = vfs_context_ucred(context)->cr_uid;
         ihead->gid = vfs_context_ucred(context)->cr_gid;
     } else {
-        /* XXX: The following needs more thought. */
+        /* XXX: more thought */
         ihead->pid = proc_pid((proc_t)current_proc());
         ihead->uid = kauth_cred_getuid(kauth_cred_get());
         ihead->gid = kauth_cred_getgid(kauth_cred_get());

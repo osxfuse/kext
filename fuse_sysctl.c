@@ -19,18 +19,19 @@ int32_t  fuse_admin_group            = 0;                                  // rw
 int32_t  fuse_allow_other            = 0;                                  // rw
 uint32_t fuse_api_major              = FUSE_KERNEL_VERSION;                // r
 uint32_t fuse_api_minor              = FUSE_KERNEL_MINOR_VERSION;          // r
-int32_t  fuse_dev_use_count          = 0;                                  // r
 int32_t  fuse_fh_current             = 0;                                  // r
 uint32_t fuse_fh_reuse_count         = 0;                                  // r
 uint32_t fuse_fh_upcall_count        = 0;                                  // r
 int32_t  fuse_iov_credit             = FUSE_DEFAULT_IOV_CREDIT;            // rw
 int32_t  fuse_iov_current            = 0;                                  // r
 uint32_t fuse_iov_permanent_bufsize  = FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE; // rw
-int32_t  fuse_kill_fs                = -1;                                 // w
+int32_t  fuse_kill                   = -1;                                 // w
+int32_t  fuse_print_vnodes           = -1;                                 // w
 uint32_t fuse_lookup_cache_hits      = 0;                                  // r
 uint32_t fuse_lookup_cache_misses    = 0;                                  // r
 uint32_t fuse_lookup_cache_overrides = 0;                                  // r
 uint32_t fuse_max_freetickets        = FUSE_DEFAULT_MAX_FREE_TICKETS;      // rw
+int32_t  fuse_mount_count            = 0;                                  // r
 int32_t  fuse_memory_allocated       = 0;                                  // r
 int32_t  fuse_realloc_count          = 0;                                  // r
 int32_t  fuse_tickets_current        = 0;                                  // r
@@ -50,10 +51,11 @@ SYSCTL_NODE(_macfuse, OID_AUTO, version, CTLFLAG_RW, 0,
 
 /* fuse.control */
 
-int sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS;
+int sysctl_macfuse_control_kill_handler SYSCTL_HANDLER_ARGS;
+int sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS;
 
 int
-sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS
+sysctl_macfuse_control_kill_handler SYSCTL_HANDLER_ARGS
 {
     int error = 0;
     (void)oidp;
@@ -73,9 +75,38 @@ sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS
     } else {
         error = SYSCTL_IN(req, arg1, sizeof(int));
         if (error == 0) {
-            error = fuse_devices_kill_unit(*(int *)arg1, req->p);
+            error = fuse_devices_kill(*(int *)arg1, req->p);
         }
-        fuse_kill_fs = -1; /* set it back */
+        fuse_kill = -1; /* set it back */
+    }
+
+    return error;
+}
+
+int
+sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS
+{
+    int error = 0;
+    (void)oidp;
+
+    if (arg1) {
+        error = SYSCTL_OUT(req, arg1, sizeof(int));
+    } else {
+        error = SYSCTL_OUT(req, &arg2, sizeof(int));
+    }
+
+    if (error || !req->newptr) {
+        return error;
+    }
+
+    if (!arg1) {
+        error = EPERM;
+    } else {
+        error = SYSCTL_IN(req, arg1, sizeof(int));
+        if (error == 0) {
+            error = fuse_devices_print_vnodes(*(int *)arg1, req->p);
+        }
+        fuse_print_vnodes = -1; /* set it back */
     }
 
     return error;
@@ -83,23 +114,37 @@ sysctl_macfuse_control_kill_fs_handler SYSCTL_HANDLER_ARGS
 
 SYSCTL_PROC(_macfuse_control, // our parent
             OID_AUTO,         // automatically assign object ID
-            kill_fs,          // our name
+            kill,             // our name
 
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_WR | CTLFLAG_ANYBODY),
 
-            &fuse_kill_fs,    // location of our data
+            &fuse_kill,       // location of our data
             0,                // argument passed to our handler
 
             // our handler function
-            sysctl_macfuse_control_kill_fs_handler,
+            sysctl_macfuse_control_kill_handler,
 
             "I",              // our data type (integer)
             "MacFUSE Controls: Kill the Given File System");
 
+SYSCTL_PROC(_macfuse_control,   // our parent
+            OID_AUTO,           // automatically assign object ID
+            print_vnodes,       // our name
+
+            // type flag/access flag
+            (CTLTYPE_INT | CTLFLAG_WR),
+
+            &fuse_print_vnodes, // location of our data
+            0,                  // argument passed to our handler
+
+            // our handler function
+            sysctl_macfuse_control_print_vnodes_handler,
+
+            "I",                // our data type (integer)
+            "MacFUSE Controls: Print Vnodes for the Given File System");
+
 /* fuse.counters */
-SYSCTL_INT(_macfuse_counters, OID_AUTO, device_use, CTLFLAG_RD,
-           &fuse_dev_use_count, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, filehandle_reuse, CTLFLAG_RD,
            &fuse_fh_reuse_count, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, filehandle_upcalls, CTLFLAG_RD,
@@ -110,6 +155,8 @@ SYSCTL_INT(_macfuse_counters, OID_AUTO, lookup_cache_misses, CTLFLAG_RD,
            &fuse_lookup_cache_misses, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, lookup_cache_overrides,
            CTLFLAG_RD, &fuse_lookup_cache_overrides, 0, "");
+SYSCTL_INT(_macfuse_counters, OID_AUTO, mount_count,
+           CTLFLAG_RD, &fuse_mount_count, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
            &fuse_realloc_count, 0, "");
 
@@ -154,14 +201,15 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__macfuse_resourceusage,
     &sysctl__macfuse_tunables,
     &sysctl__macfuse_version,
-    &sysctl__macfuse_control_kill_fs,
-    &sysctl__macfuse_counters_device_use,
+    &sysctl__macfuse_control_kill,
+    &sysctl__macfuse_control_print_vnodes,
     &sysctl__macfuse_counters_filehandle_reuse,
     &sysctl__macfuse_counters_filehandle_upcalls,
     &sysctl__macfuse_counters_lookup_cache_hits,
     &sysctl__macfuse_counters_lookup_cache_misses,
     &sysctl__macfuse_counters_lookup_cache_overrides,
     &sysctl__macfuse_counters_memory_reallocs,
+    &sysctl__macfuse_counters_mount_count,
     &sysctl__macfuse_resourceusage_filehandles,
     &sysctl__macfuse_resourceusage_ipc_iovs,
     &sysctl__macfuse_resourceusage_ipc_tickets,

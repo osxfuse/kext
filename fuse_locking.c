@@ -8,10 +8,10 @@
 #include "fuse_node.h"
 #include "fuse_locking.h"
 
-lck_attr_t     *fuse_lock_attr  = NULL;
-lck_grp_attr_t *fuse_group_attr = NULL;
-lck_grp_t      *fuse_lock_group = NULL;
-lck_mtx_t      *fuse_mutex      = NULL;
+lck_attr_t     *fuse_lock_attr    = NULL;
+lck_grp_attr_t *fuse_group_attr   = NULL;
+lck_grp_t      *fuse_lock_group   = NULL;
+lck_mtx_t      *fuse_device_mutex = NULL;
 
 #if M_MACFUSE_ENABLE_TSLOCKING
 

@@ -107,11 +107,11 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     int err               = 0;
     int mntopts           = 0;
-    int max_read_set      = 0;
     unsigned int max_read = ~0;
+    int mounted           = 0;
 
-    struct fuse_softc *fdev;
-    struct fuse_data  *data;
+    struct fuse_softc *fdev = NULL;
+    struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
 
     fuse_trace_printf_vfsop();
@@ -151,7 +151,8 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     vfs_setlocklocal(mp);
 #endif
 
-    /* Option Processing. */
+    /** Option Processing. **/
+
 
     if ((fusefs_args.daemon_timeout > FUSE_MAX_DAEMON_TIMEOUT) ||
         (fusefs_args.daemon_timeout < FUSE_MIN_DAEMON_TIMEOUT)) {
@@ -175,10 +176,99 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfs_setflags(mp, MNT_DONTBROWSE);
     }
 
+    if (fusefs_args.altflags & FUSE_MOPT_JAIL_SYMLINKS) {
+        mntopts |= FSESS_JAIL_SYMLINKS;
+    }
+
+    /*
+     * Note that unlike Linux, which keeps allow_root in user-space and
+     * passes allow_other in that case to the kernel, we let allow_root
+     * reach the kernel. The 'if' ordering is important here.
+     */
+    if (fusefs_args.altflags & FUSE_MOPT_ALLOW_ROOT) {
+        int is_member = 0;
+        if ((kauth_cred_ismember_gid(kauth_cred_get(), fuse_admin_group,
+                                    &is_member) == 0) && is_member) {
+            mntopts |= FSESS_ALLOW_ROOT;
+        } else {
+            debug_printf("only a member of group %d can use \"allow_root\"\n",
+                         fuse_admin_group);
+            return EPERM;
+        }
+    } else if (fusefs_args.altflags & FUSE_MOPT_ALLOW_OTHER) {
+        if (!fuse_allow_other && !fuse_vfs_context_issuser(context)) {
+            debug_printf("only root can use \"allow_other\"\n");
+            return EPERM;
+        }
+        mntopts |= FSESS_ALLOW_OTHER;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEDOUBLE) {
+        mntopts |= FSESS_NO_APPLEDOUBLE;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEXATTR) {
+        mntopts |= FSESS_NO_APPLEXATTR;
+    }
+
+    if ((fusefs_args.altflags & FUSE_MOPT_FSID) && (fusefs_args.fsid != 0)) {
+        fsid_t   fsid;
+        mount_t  other_mp;
+        uint32_t target_dev;
+
+        target_dev = FUSE_MAKEDEV(FUSE_CUSTOM_FSID_DEVICE_MAJOR,
+                                  fusefs_args.fsid);
+
+        fsid.val[0] = target_dev;
+        fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
+
+        other_mp = vfs_getvfs(&fsid);
+        if (other_mp != NULL) {
+            err = EPERM;
+            goto out;
+        }
+
+        vfs_statfs(mp)->f_fsid.val[0] = target_dev;
+        vfs_statfs(mp)->f_fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
+
+    } else {
+        vfs_getnewfsid(mp);    
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_KILL_ON_UNMOUNT) {
+        mntopts |= FSESS_KILL_ON_UNMOUNT;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_ATTRCACHE) {
+        mntopts |= FSESS_NO_ATTRCACHE;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_READAHEAD) {
+        mntopts |= FSESS_NO_READAHEAD;
+    }
+
+    if (fusefs_args.altflags & (FUSE_MOPT_NO_UBC | FUSE_MOPT_DIRECT_IO)) {
+        mntopts |= FSESS_NO_UBC;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_NO_VNCACHE) {
+        if (fusefs_args.altflags & FUSE_MOPT_EXTENDED_SECURITY) {
+            /* 'novncache' and 'extended_security' don't mix well. */
+            return EINVAL;
+        }
+        mntopts |= FSESS_NO_VNCACHE;
+        mntopts |= (FSESS_NO_ATTRCACHE | FSESS_NO_READAHEAD | FSESS_NO_UBC);
+    }
+
     if (fusefs_args.altflags & FUSE_MOPT_NO_LOCALCACHES) {
         fusefs_args.altflags |= FUSE_MOPT_NO_READAHEAD;
         fusefs_args.altflags |= FUSE_MOPT_NO_UBC;
         fusefs_args.altflags |= FUSE_MOPT_NO_VNCACHE;
+    }
+
+    if (mntopts & FSESS_NO_UBC) {
+        /* If no buffer cache, disallow exec from file system. */
+        vfs_setflags(mp, MNT_NOEXEC);
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_SYNCWRITES) {
@@ -234,109 +324,46 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         err = 0;
     }
 
-    if (fusefs_args.altflags & FUSE_MOPT_JAIL_SYMLINKS) {
-        mntopts |= FSESS_JAIL_SYMLINKS;
-    }
-
-    /*
-     * Note that unlike Linux, which keeps allow_root in user-space and
-     * passes allow_other in that case to the kernel, we let allow_root
-     * reach the kernel. The 'if' ordering is important here.
-     */
-    if (fusefs_args.altflags & FUSE_MOPT_ALLOW_ROOT) {
-        int is_member = 0;
-        if ((kauth_cred_ismember_gid(kauth_cred_get(), fuse_admin_group,
-                                    &is_member) == 0) && is_member) {
-            mntopts |= FSESS_ALLOW_ROOT;
-        } else {
-            debug_printf("only a member of group %d can use \"allow_root\"\n",
-                         fuse_admin_group);
-            return EPERM;
-        }
-    } else if (fusefs_args.altflags & FUSE_MOPT_ALLOW_OTHER) {
-        if (!fuse_allow_other && !fuse_vfs_context_issuser(context)) {
-            debug_printf("only root can use \"allow_other\"\n");
-            return EPERM;
-        }
-        mntopts |= FSESS_ALLOW_OTHER;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEDOUBLE) {
-        mntopts |= FSESS_NO_APPLEDOUBLE;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_APPLEXATTR) {
-        mntopts |= FSESS_NO_APPLEXATTR;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_ATTRCACHE) {
-        mntopts |= FSESS_NO_ATTRCACHE;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_READAHEAD) {
-        mntopts |= FSESS_NO_READAHEAD;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_UBC) {
-        mntopts |= FSESS_NO_UBC;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_NO_VNCACHE) {
-        if (fusefs_args.altflags & FUSE_MOPT_EXTENDED_SECURITY) {
-            /* 'novncache' and 'extended_security' don't mix well. */
-            return EINVAL;
-        }
-        mntopts |= FSESS_NO_VNCACHE;
-        mntopts |= (FSESS_NO_ATTRCACHE | FSESS_NO_READAHEAD | FSESS_NO_UBC);
-    }
-
     if (fusefs_args.altflags & FUSE_MOPT_EXTENDED_SECURITY) {
         mntopts |= FSESS_EXTENDED_SECURITY;
         vfs_setextendedsecurity(mp);
     }
-
-    if (fusefs_args.altflags & FUSE_MOPT_KILL_ON_UNMOUNT) {
-        mntopts |= FSESS_KILL_ON_UNMOUNT;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_DIRECT_IO) {
-        mntopts |= FSESS_NO_UBC;
-    }
-
-    if (mntopts & FSESS_NO_UBC) {
-        /* If no buffer cache, disallow exec from file system. */
-        vfs_setflags(mp, MNT_NOEXEC);
-    }
-
-    err = 0;
 
     vfs_setfsprivate(mp, NULL);
 
     if ((fusefs_args.index < 0) || (fusefs_args.index >= FUSE_NDEVICES)) {
         return EINVAL;
     }
+
+    FUSE_DEVICE_LOCK();
+
     fdev = fuse_softc_get(fusefs_args.rdev);
+    data = fuse_softc_get_data(fdev);
 
-    FUSE_LOCK();
-    {
-        data = fuse_softc_get_data(fdev);
-        if (data && (data->dataflags & FSESS_OPENED)) {
-            data->mntco++;
-            debug_printf("a.inc:mntco = %d\n", data->mntco);
-        } else {
-            FUSE_UNLOCK();
-            return (ENXIO);
-        }    
+    if (!data) {
+        FUSE_DEVICE_UNLOCK();
+        return ENXIO;
     }
-    FUSE_UNLOCK();
 
-    max_read_set = 0;
+    if (data->mount_state != FM_NOTMOUNTED) {
+        FUSE_DEVICE_UNLOCK();
+        return EALREADY;
+    }
+
+    if (!(data->dataflags & FSESS_OPENED)) {
+        FUSE_DEVICE_UNLOCK();
+        err = ENXIO;
+        goto out;
+    }
+
+    data->mount_state = FM_MOUNTED;
+    fuse_mount_count++;
+    mounted = 1;
+
+    FUSE_DEVICE_UNLOCK();
 
     if (fdata_kick_get(data)) {
         err = ENOTCONN;
-    }
-
-    if (err) {
         goto out;
     }
 
@@ -344,41 +371,11 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         panic("MacFUSE: daemon found but identity unknown");
     }
 
-    if (data->mpri != FM_NOMOUNTED) {
-        debug_printf("already mounted\n");
-        err = EALREADY;
-        goto out;
-    }
-
     if (fuse_vfs_context_issuser(context) &&
         vfs_context_ucred(context)->cr_uid != data->daemoncred->cr_uid) {
         debug_printf("not allowed to do the first mount\n");
         err = EPERM;
         goto out;
-    }
-
-    if ((fusefs_args.altflags & FUSE_MOPT_FSID) && (fusefs_args.fsid != 0)) {
-        fsid_t   fsid;
-        mount_t  other_mp;
-        uint32_t target_dev;
-
-        target_dev = FUSE_MAKEDEV(FUSE_CUSTOM_FSID_DEVICE_MAJOR,
-                                  fusefs_args.fsid);
-
-        fsid.val[0] = target_dev;
-        fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
-
-        other_mp = vfs_getvfs(&fsid);
-        if (other_mp != NULL) {
-            err = EPERM;
-            goto out;
-        }
-
-        vfs_statfs(mp)->f_fsid.val[0] = target_dev;
-        vfs_statfs(mp)->f_fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
-
-    } else {
-        vfs_getnewfsid(mp);    
     }
 
     data->mp = mp;
@@ -397,7 +394,6 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     data->init_timeout.tv_nsec = 0;
 
     data->max_read = max_read;
-    data->mpri = FM_PRIMARY;
     data->fssubtype = fusefs_args.fssubtype;
     data->mountaltflags = fusefs_args.altflags;
     data->noimplflags = (uint64_t)0;
@@ -426,15 +422,19 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
 out:
     if (err) {
-        data->mntco--;
-        debug_printf("b.dec: mntco=%d\n", data->mntco);
-
-        FUSE_LOCK();
-        if ((data->mntco == 0) && !(data->dataflags & FSESS_OPENED)) {
-            fuse_softc_set_data(fdev, NULL);
-            fdata_destroy(data);
+        vfs_setfsprivate(mp, NULL);
+        FUSE_DEVICE_LOCK();
+        data->mount_state = FM_NOTMOUNTED;
+        if (mounted) {
+            fuse_mount_count--;
         }
-        FUSE_UNLOCK();
+        if (!(data->dataflags & FSESS_OPENED)) {
+            fuse_softc_set_data(fdev, NULL);
+            FUSE_DEVICE_UNLOCK();
+            fdata_destroy(data);
+        } else {
+            FUSE_DEVICE_UNLOCK();
+        }
     }
 
     return (err);
@@ -467,7 +467,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
         /*
          * If the file system daemon is dead, it's pointless to try to do
          * any unmount-time operations that go out to user space. Therefore,
-         * we pretend that this is a force unmount. However, this isn't much
+         * we pretend that this is a force unmount. However, this isn't of much
          * use. That's because if any non-root vnode is in use, the vflush()
          * that the kernel does before calling our VFS_UNMOUNT will fail
          * if the original unmount wasn't forcible already. That earlier
@@ -511,17 +511,20 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
 alreadydead:
 
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
-
-    data->mpri = FM_NOMOUNTED;
-    data->mntco--;
     daemonpid = data->daemonpid;
-    FUSE_LOCK();
+
+    FUSE_DEVICE_LOCK();
+
+    data->mount_state = FM_NOTMOUNTED;
+    fuse_mount_count--;
     fdev = data->fdev;
-    if (data->mntco == 0 && !(data->dataflags & FSESS_OPENED)) {
-        fuse_softc_set_data(fdev, NULL);
+    if (!(data->dataflags & FSESS_OPENED)) {
+        fuse_softc_close_finalize(fdev);
+        FUSE_DEVICE_UNLOCK();
         fdata_destroy(data);
+    } else {
+        FUSE_DEVICE_UNLOCK();
     }
-    FUSE_UNLOCK();
 
     vfs_setfsprivate(mp, NULL);
 
@@ -1042,4 +1045,43 @@ fuse_vfs_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 
 out:
     return error;
+}
+
+__private_extern__
+int
+fuse_setextendedsecurity(mount_t mp, int state)
+{
+    int err = EINVAL;
+    struct fuse_data *data;
+
+    data = fuse_get_mpdata(mp);
+
+    if (!data) {
+        return ENXIO;
+    }
+
+    if (state == 1) {
+        /* Turning on extended security. */
+        if ((data->dataflags & FSESS_NO_VNCACHE) ||
+            (data->dataflags & FSESS_DEFER_AUTH)) {
+            return EINVAL;
+        }
+        data->dataflags |= (FSESS_EXTENDED_SECURITY |
+                            FSESS_DEFAULT_PERMISSIONS);;
+        if (vfs_authopaque(mp)) {
+            vfs_clearauthopaque(mp);
+        }
+        if (vfs_authopaqueaccess(mp)) {
+            vfs_clearauthopaqueaccess(mp);
+        }
+        vfs_setextendedsecurity(mp);
+        err = 0;
+    } else if (state == 0) {
+        /* Turning off extended security. */
+        data->dataflags &= ~FSESS_EXTENDED_SECURITY;
+        vfs_clearextendedsecurity(mp);
+        err = 0;
+    }
+
+    return err;
 }

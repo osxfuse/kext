@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/sysctl.h>
 
 #include <grp.h>
 #include <string.h>
@@ -60,7 +61,7 @@ main(__unused int argc, __unused const char *argv[])
     /* some version of MacFUSE is already loaded; let us check it out */
 
     result = sysctlbyname(SYSCTL_MACFUSE_VERSION_NUMBER, version,
-                          &version_len, NULL, NULL);
+                          &version_len, NULL, (size_t)0);
     if (result) {
         if (errno == ENOENT) {
             /* too old; doesn't even have the sysctl variable */

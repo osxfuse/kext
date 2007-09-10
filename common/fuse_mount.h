@@ -99,7 +99,7 @@ enum {
 #define FUSE_MOPT_VOL_RENAME             0x0000020000000000ULL
 
 #define FUSE_MAKEDEV(x, y)              ((dev_t)(((x) << 24) | (y)))
-#define FUSE_MINOR_MASK                 0xFFFFFF
+#define FUSE_MINOR_MASK                 0x00FFFFFFUL
 #define FUSE_CUSTOM_FSID_DEVICE_MAJOR   255
 #define FUSE_CUSTOM_FSID_VAL1           0x55464553
 

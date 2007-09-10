@@ -18,14 +18,14 @@
             (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
             (var) = (tvar))
 
-static int fuse_cdev_major      = -1;
+static int    fuse_cdev_major          = -1;
+static UInt32 fuse_interface_available = FALSE;
 
 struct fuse_softc {
-    int    usecount;
-    pid_t  pid;
-    dev_t  dev;
-    void  *cdev;
-
+    int               usecount;
+    pid_t             pid;
+    dev_t             dev;
+    void             *cdev;
     struct fuse_data *data;
 };
 
@@ -34,7 +34,7 @@ struct fuse_softc fuse_softc_table[FUSE_NDEVICES];
 #define FUSE_SOFTC_FROM_UNIT_FAST(u) (fuse_softc_t)&(fuse_softc_table[(u)])
 
 int
-fuse_devices_kill_unit(int unit, struct proc *p)
+fuse_devices_kill(int unit, struct proc *p)
 {
     int error = ENOENT;
     struct fuse_softc *fdev;
@@ -48,19 +48,59 @@ fuse_devices_kill_unit(int unit, struct proc *p)
         return ENOENT;
     }
 
-    FUSE_LOCK();
+    FUSE_DEVICE_LOCK();
+
     if (fdev->data) {
         error = EPERM;
         if (p) {
             kauth_cred_t request_cred = proc_ucred(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                FUSE_DEVICE_UNLOCK();
+                /* The following can block. */
                 fdata_kick_set(fdev->data);
                 error = 0;
             }
         }
+    } else {
+        FUSE_DEVICE_UNLOCK();
     }
-    FUSE_UNLOCK();
+
+    return error;
+}
+
+int
+fuse_devices_print_vnodes(int unit_flags, struct proc *p)
+{
+    int error = ENOENT;
+    struct fuse_softc *fdev;
+
+    int unit = unit_flags;
+
+    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+        return EINVAL;
+    }
+
+    fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
+    if (!fdev) {
+        return ENOENT;
+    }
+
+    FUSE_DEVICE_LOCK();
+
+    if (fdev->data) {
+        error = EPERM;
+        if (p) {
+            kauth_cred_t request_cred = proc_ucred(p);
+            if ((kauth_cred_getuid(request_cred) == 0) ||
+                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                fuse_internal_print_vnodes(fdev->data->mp);
+                error = 0;
+            }
+        }
+    }
+
+    FUSE_DEVICE_UNLOCK();
 
     return error;
 }
@@ -77,6 +117,7 @@ fuse_softc_get(dev_t dev)
     return FUSE_SOFTC_FROM_UNIT_FAST(unit);
 }
 
+/* Must be called under lock. */
 __inline__
 int
 fuse_softc_get_usecount(fuse_softc_t fdev)
@@ -88,6 +129,7 @@ fuse_softc_get_usecount(fuse_softc_t fdev)
     return fdev->usecount;
 }
 
+/* Must be called under lock. */
 __inline__
 struct fuse_data *
 fuse_softc_get_data(fuse_softc_t fdev)
@@ -99,17 +141,19 @@ fuse_softc_get_data(fuse_softc_t fdev)
     return NULL;
 }
 
+/* Must be called under lock. */
 __inline__
 void
 fuse_softc_set_data(fuse_softc_t fdev, struct fuse_data *data)
 {
-    if (fdev) {
+    if (!fdev) {
        return;
     }
 
     fdev->data = data;
 }
 
+/* Must be called under lock. */
 dev_t
 fuse_softc_get_dev(fuse_softc_t fdev)
 {
@@ -118,6 +162,18 @@ fuse_softc_get_dev(fuse_softc_t fdev)
     }
 
     return fdev->dev;
+}
+
+/* Must be called under lock. */
+__inline__
+void
+fuse_softc_close_finalize(fuse_softc_t fdev)
+{
+    if (fdev) {
+        fdev->data = NULL;
+        fdev->pid = -1;
+        fdev->usecount--;
+    }
 }
 
 static int
@@ -159,39 +215,52 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
 
     fuse_trace_printf_func();
 
-    if (fuse_dev_use_count < 0) {
+    if (fuse_interface_available == FALSE) {
         return ENOENT;
     }
 
-    FUSE_OSAddAtomic(1, (SInt32 *)&fuse_dev_use_count);
-
     unit = minor(dev);
     if (unit >= FUSE_NDEVICES) {
+        FUSE_DEVICE_UNLOCK();
         return ENOENT;
     }
 
     fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
     if (!fdev) {
-        FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_dev_use_count);
+        FUSE_DEVICE_UNLOCK();
+        IOLog("MacFUSE: device with no softc!\n");
         return ENXIO;
     }
 
-    if (fdev->usecount > 0) {
-        FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_dev_use_count);
+    FUSE_DEVICE_LOCK();
+
+    if (fdev->usecount != 0) {
+        FUSE_DEVICE_UNLOCK();
         return EBUSY;
     }
 
     fdev->usecount++;
 
+    FUSE_DEVICE_UNLOCK();
+
+    /* Could block. */
     fdata = fdata_alloc(fdev, p);
 
-    FUSE_LOCK();
+    FUSE_DEVICE_LOCK();
 
     if (fdev->data) {
-        FUSE_UNLOCK();
-        fdata_destroy(fdata);
-        FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_dev_use_count);
+        /*
+         * This slot isn't currently open by a user daemon. However, it was
+         * used earlier for a mount that's still lingering, even though the
+         * user daemon is dead.
+         */
+
         fdev->usecount--;
+
+        FUSE_DEVICE_UNLOCK();
+
+        fdata_destroy(fdata);
+
         return EBUSY;
     } else {
         fdata->dataflags |= FSESS_OPENED;
@@ -199,7 +268,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
         fdev->pid = proc_pid(p);
     }       
 
-    FUSE_UNLOCK();
+    FUSE_DEVICE_UNLOCK();
 
     return KERN_SUCCESS;
 }
@@ -224,20 +293,29 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         return ENXIO;
     }
 
-    FUSE_LOCK();
-
     data = fdev->data;
     if (!data) {
         panic("MacFUSE: no softc data upon device close");
     }
 
     fdata_kick_set(data);
+
+    FUSE_DEVICE_LOCK();
+
     data->dataflags &= ~FSESS_OPENED;
+
+    FUSE_DEVICE_UNLOCK();
 
     fuse_lck_mtx_lock(data->aw_mtx);
 
-    if (data->mntco > 0) {
+    FUSE_DEVICE_LOCK();
+
+    if (data->mount_state == FM_MOUNTED) {
         struct fuse_ticket *ftick;
+
+        skip_destroy = 1;
+
+        FUSE_DEVICE_UNLOCK();
 
         while ((ftick = fuse_aw_pop(data))) {
             fuse_lck_mtx_lock(ftick->tk_aw_mtx);
@@ -248,20 +326,26 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         }
 
         fuse_lck_mtx_unlock(data->aw_mtx);
-
-        skip_destroy = 1;
+    } else {
+        FUSE_DEVICE_UNLOCK();
     }
 
-    fdev->data = NULL;
-    fdev->pid = -1;
-    fdev->usecount--;
-    FUSE_UNLOCK();
+    FUSE_DEVICE_LOCK();
+
+    //fdev->data = NULL;
+    //fdev->pid = -1;
+    //fdev->usecount--;
+    if (!skip_destroy) {
+        fdev->data = NULL;
+        fdev->pid = -1;
+        fdev->usecount--;
+    }
+
+    FUSE_DEVICE_UNLOCK();
 
     if (!skip_destroy) {
         fdata_destroy(data);
     }
-
-    FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_dev_use_count);
 
     return KERN_SUCCESS;
 }
@@ -269,8 +353,10 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 int
 fuse_device_read(dev_t dev, uio_t uio, __unused int ioflag)
 {
-    int i, buflen[3], err = 0;
+    int i, err = 0;
     void *buf[] = { NULL, NULL, NULL };
+    int buflen[3];
+
     struct fuse_softc  *fdev;
     struct fuse_data   *data;
     struct fuse_ticket *ftick;
@@ -286,7 +372,8 @@ fuse_device_read(dev_t dev, uio_t uio, __unused int ioflag)
 
     fuse_lck_mtx_lock(data->ms_mtx);
 
-    // The read loop (upgoing messages to the user daemon).
+    /* The read loop (outgoing messages to the user daemon). */
+
 again:
     if (fdata_kick_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
@@ -346,7 +433,7 @@ again:
     }
 
     /*
-     * The 'FORGET' message is an example of a ticket that has explicitly
+     * The FORGET message is an example of a ticket that has explicitly
      * been invalidated by the sender. The sender is not expecting or wanting
      * a reply, so he sets the FT_INVALID bit in the ticket.
      */
@@ -383,15 +470,15 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         ret = 0;
         break;
 
-    case FUSEDEVIOCISHANDSHAKECOMPLETE:
-        if (data->mpri == FM_NOMOUNTED) {
+    case FUSEDEVIOCGETHANDSHAKECOMPLETE:
+        if (data->mount_state == FM_NOTMOUNTED) {
             return ENXIO;
         }
         *(u_int32_t *)udata = (data->dataflags & FSESS_INITED);
         ret = 0;
         break;
 
-    case FUSEDEVIOCDAEMONISDYING:
+    case FUSEDEVIOCSETDAEMONDEAD:
         fdata_kick_set(data);
         fuse_lck_mtx_lock(data->timeout_mtx);
         data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
@@ -455,12 +542,12 @@ int
 fuse_ohead_audit(struct fuse_out_header *ohead, uio_t uio)
 {
     if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead->len) {
-        debug_printf("format error: body size differs from that in header\n");
+        IOLog("MacFUSE: message body size does not match that in the header\n");
         return (EINVAL); 
     }   
     
     if (uio_resid(uio) && ohead->error) {
-        debug_printf("format error: non-zero error for message with body\n");
+        IOLog("MacFUSE: non-zero error for a message with a body\n");
         return (EINVAL);
     }
 
@@ -486,18 +573,15 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     }
 
     if (uio_resid(uio) < sizeof(struct fuse_out_header)) {
-        debug_printf("returning EINVAL (header size issue)\n");
         return (EINVAL);
     }
 
     if ((err = uiomove((caddr_t)&ohead, sizeof(struct fuse_out_header), uio))
         != 0) {
-        debug_printf("returning %d (uiomove issue)\n", err);
         return (err);
     }
 
     if ((err = fuse_ohead_audit(&ohead, uio))) {
-        debug_printf("returning %d (audit failed)\n", err);
         return (err);
     }
 
@@ -535,13 +619,15 @@ fuse_devices_start(void)
 {
     int i = 0;
 
+    bzero((void *)fuse_softc_table, sizeof(fuse_softc_table));
+
     if ((fuse_cdev_major = cdevsw_add(-1, &fuse_device_cdevsw)) == -1) {
         goto error;
     }
 
     for (i = 0; i < FUSE_NDEVICES; i++) {
+
         dev_t dev = makedev(fuse_cdev_major, i);
-        fuse_softc_table[i].dev = dev;
         fuse_softc_table[i].cdev = devfs_make_node(dev,
                                                    DEVFS_CHAR,
                                                    UID_ROOT,
@@ -553,9 +639,13 @@ fuse_devices_start(void)
             goto error;
         }
 
-        fuse_softc_table[i].data = NULL;
+        fuse_softc_table[i].data     = NULL;
+        fuse_softc_table[i].dev      = dev;
+        fuse_softc_table[i].pid      = -1;
         fuse_softc_table[i].usecount = 0;
     }
+
+    fuse_interface_available = TRUE;
 
     return KERN_SUCCESS;
 
@@ -563,7 +653,7 @@ error:
     for (--i; i >= 0; i--) {
         devfs_remove(fuse_softc_table[i].cdev);
         fuse_softc_table[i].cdev = NULL;
-        fuse_softc_table[i].dev = 0;
+        fuse_softc_table[i].dev  = 0;
     }
 
     (void)cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
@@ -577,32 +667,56 @@ fuse_devices_stop(void)
 {
     int i, ret;
 
+    fuse_interface_available = FALSE;
+
+    FUSE_DEVICE_LOCK();
+
     if (fuse_cdev_major == -1) {
+        FUSE_DEVICE_UNLOCK();
         return KERN_SUCCESS;
     }
 
-    FUSE_LOCK();
-
     for (i = 0; i < FUSE_NDEVICES; i++) {
-        if ((fuse_softc_table[i].data != NULL) ||
-            (fuse_softc_table[i].usecount != 0)) {
-            FUSE_UNLOCK();
-            debug_printf("/dev/fuse%d seems to be still active\n", i);
+
+        char p_comm[MAXCOMLEN + 1] = { '?', '\0' };
+
+        if (fuse_softc_table[i].usecount != 0) {
+            fuse_interface_available = TRUE;
+            FUSE_DEVICE_UNLOCK();
+            proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
+            IOLog("MacFUSE: /dev/fuse%d is still active (pid=%d %s)\n",
+                  i, fuse_softc_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
+
+        if (fuse_softc_table[i].data != NULL) {
+            fuse_interface_available = TRUE;
+            FUSE_DEVICE_UNLOCK();
+            proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
+            /* The pid can't possibly be active here. */
+            IOLog("MacFUSE: /dev/fuse%d has a lingering mount (pid=%d, %s)\n",
+                  i, fuse_softc_table[i].pid, p_comm);
+            return KERN_FAILURE;
+        }
+    }
+
+    /* No device is in use. */
+
+    for (i = 0; i < FUSE_NDEVICES; i++) {
         devfs_remove(fuse_softc_table[i].cdev);
         fuse_softc_table[i].cdev = NULL;
-        fuse_softc_table[i].dev = 0;
+        fuse_softc_table[i].dev  = 0;
+        fuse_softc_table[i].pid  = -1;
     }
 
     ret = cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
     if (ret != fuse_cdev_major) {
-        debug_printf("fuse_cdev_major != return value from cdevsw_remove()\n");
+        IOLog("MacFUSE: fuse_cdev_major != return from cdevsw_remove()\n");
     }
 
     fuse_cdev_major = -1;
 
-    FUSE_UNLOCK();
+    FUSE_DEVICE_UNLOCK();
 
     return KERN_SUCCESS;
 }

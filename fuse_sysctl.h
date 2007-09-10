@@ -8,7 +8,6 @@
 
 extern int32_t  fuse_admin_group;
 extern int32_t  fuse_allow_other;
-extern int32_t  fuse_dev_use_count;
 extern int32_t  fuse_fh_current;
 extern uint32_t fuse_fh_reuse_count;
 extern uint32_t fuse_fh_upcall_count;
@@ -20,6 +19,7 @@ extern uint32_t fuse_lookup_cache_misses;
 extern uint32_t fuse_lookup_cache_overrides;
 extern uint32_t fuse_max_freetickets;
 extern int32_t  fuse_memory_allocated;
+extern int32_t  fuse_mount_count;
 extern int32_t  fuse_realloc_count;
 extern int32_t  fuse_tickets_current;
 extern int32_t  fuse_vnodes_current;

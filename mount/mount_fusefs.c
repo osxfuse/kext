@@ -38,6 +38,7 @@
 #define PROGNAME "mount_" MACFUSE_FS_TYPE
 
 static int signal_idx = -1;
+static int signal_fd  = -1;
 
 void  showhelp(void);
 void  showversion(int doexit);
@@ -98,7 +99,7 @@ typedef int (* converter_t)(void **target, void *value, void *fallback);
 struct mntval {
     uint64_t    mv_mntflag;
     void       *mv_value;
-    int         mv_len;
+    size_t      mv_len;
     converter_t mv_converter;
     void       *mv_fallback;
     void      **mv_target;
@@ -425,7 +426,7 @@ check_kext_status(void)
         return EINVAL;
     }
 
-    /* what's currently loaded is good */
+    /* What's currently loaded is good */
 
     return 0;
 }
@@ -435,13 +436,19 @@ signal_idx_atexit_handler(void)
 {
     if (signal_idx != -1) {
 
-        int32_t kill_fs_old = 0;
-        int32_t kill_fs_new = signal_idx;
-        size_t oldlen = sizeof(kill_fs_old);
-        size_t newlen = sizeof(kill_fs_new);
+        (void)ioctl(signal_fd, FUSEDEVIOCSETDAEMONDEAD, &signal_fd);
 
-        (void)sysctlbyname("macfuse.control.kill_fs", (void *)&kill_fs_old,
-                           &oldlen, (void *)&kill_fs_new, newlen);
+        /*
+         * Originally, I did kill_fs from here.
+         *
+         * int32_t kill_fs_old = 0;
+         * int32_t kill_fs_new = signal_idx;
+         * size_t oldlen = sizeof(kill_fs_old);
+         * size_t newlen = sizeof(kill_fs_new);
+         *
+         * (void)sysctlbyname("macfuse.control.kill_fs", (void *)&kill_fs_old,
+         *                    &oldlen, (void *)&kill_fs_new, newlen);
+         */
     }
 }
 
@@ -566,6 +573,8 @@ main(int argc, char **argv)
     if ((errno == EINVAL) || (errno == ERANGE)) {
         errx(1, "invalid name (%s) for MacFUSE device file descriptor", fdnam);
     }
+
+    signal_fd = fd;
 
     {
         char  ndev[MAXPATHLEN];

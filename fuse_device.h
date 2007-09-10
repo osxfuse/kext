@@ -17,13 +17,15 @@ struct fuse_data;
 int fuse_devices_start(void);
 int fuse_devices_stop(void);
 
-int fuse_devices_kill_unit(int unit, struct proc *p);
+int fuse_devices_kill(int unit, struct proc *p);
+int fuse_devices_print_vnodes(int unit_flags, struct proc *p);
 
+void              fuse_softc_close_finalize(fuse_softc_t fdev);
 fuse_softc_t      fuse_softc_get(dev_t dev);
-int               fuse_softc_get_usecount(fuse_softc_t fdev);
 struct fuse_data *fuse_softc_get_data(fuse_softc_t fdev);
+dev_t             fuse_softc_get_dev(fuse_softc_t fdev);
+int               fuse_softc_get_usecount(fuse_softc_t fdev);
 void              fuse_softc_set_data(fuse_softc_t fdev,
                                       struct fuse_data *data);
-dev_t             fuse_softc_get_dev(fuse_softc_t fdev);
 
 #endif /* _FUSE_DEVICE_H_ */

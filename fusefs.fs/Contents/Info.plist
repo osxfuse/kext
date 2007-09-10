@@ -98,6 +98,13 @@
 			<key>FSSubType</key>
 			<integer>10</integer>
 		</dict>
+		<key>BraveFS</key>
+		<dict>
+			<key>FSName</key>
+			<string>BraveFS (MacFUSE)</string>
+			<key>FSSubType</key>
+			<integer>42</integer>
+		</dict>
 	</dict>
 </dict>
 </plist>

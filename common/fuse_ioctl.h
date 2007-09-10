@@ -10,14 +10,17 @@
 
 /* FUSEDEVIOCxxx */
 
-/* Tell the kernel which operations the daemon implements. */
-#define FUSEDEVIOCSETIMPLEMENTEDBITS  _IOW('F', 1,  u_int64_t)
+/* Get mounter's pid. */
+#define FUSEDEVGETMOUNTERPID           _IOR('F', 1,  u_int32_t)
 
 /* Check if FUSE_INIT kernel-user handshake is complete. */
-#define FUSEDEVIOCISHANDSHAKECOMPLETE _IOR('F', 2,  u_int32_t)
+#define FUSEDEVIOCGETHANDSHAKECOMPLETE _IOR('F', 2,  u_int32_t)
 
 /* Mark the daemon as dead. */
-#define FUSEDEVIOCDAEMONISDYING       _IOW('F', 3,  u_int32_t)
+#define FUSEDEVIOCSETDAEMONDEAD        _IOW('F', 3,  u_int32_t)
+
+/* Tell the kernel which operations the daemon implements. */
+#define FUSEDEVIOCSETIMPLEMENTEDBITS   _IOW('F', 4,  u_int64_t)
 
 /*
  * The 'AVFI' (alter-vnode-for-inode) ioctls all require an inode number
@@ -44,7 +47,7 @@ struct fuse_avfi_ioctl {
 };
 
 /* Alter the vnode (if any) specified by the given inode. */
-#define FUSEDEVIOCALTERVNODEFORINODE  _IOW('F', 4,  struct fuse_avfi_ioctl)
+#define FUSEDEVIOCALTERVNODEFORINODE  _IOW('F', 5,  struct fuse_avfi_ioctl)
 #define FSCTLALTERVNODEFORINODE       IOCBASECMD(FUSEDEVIOCALTERVNODEFORINODE)
 
 /*
@@ -56,7 +59,7 @@ struct fuse_avfi_ioctl {
 #define FUSE_AVFI_PURGEVNCACHE   0x00000004 /* no flags   */
 #define FUSE_AVFI_UBC            0x00000008 /* uses flags */
 
-#define FUSE_SETACLSTATE              _IOW('F', 5, int32_t)
+#define FUSE_SETACLSTATE              _IOW('h', 10, int32_t)
 #define FSCTLSETACLSTATE              IOCBASECMD(FUSE_SETACLSTATE)
 
 #endif /* _FUSE_IOCTL_H_ */

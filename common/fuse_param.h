@@ -6,7 +6,7 @@
 #ifndef _FUSE_PARAM_H_
 #define _FUSE_PARAM_H_
 
-#define MACFUSE_BUNDLE_PATH "/Library/Filesystems/fusefs.fs"
+/* Compile-time tunables (M_MACFUSE*) */
 
 #define M_MACFUSE_ENABLE_FIFOFS            0
 #define M_MACFUSE_ENABLE_SPECFS            0
@@ -20,6 +20,10 @@
   #define M_MACFUSE_ENABLE_LOCKLOCAL       1
 #endif
 
+#define MACFUSE_BUNDLE_PATH "/Library/Filesystems/fusefs.fs"
+
+#define MACFUSE_MIN_USER_VERSION_MAJOR     7
+#define MACFUSE_MIN_USER_VERSION_MINOR     5
 
 /*
  * This is the prefix ("fuse" by default) of the name of a FUSE device node

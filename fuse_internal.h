@@ -26,10 +26,10 @@
 #include <UserNotification/KUNCUserNotifications.h>
 #else
 enum {
-    kKUNCDefaultResponse        = 0,
-    kKUNCAlternateResponse      = 1,
-    kKUNCOtherResponse          = 2,
-    kKUNCCancelResponse         = 3
+    kKUNCDefaultResponse   = 0,
+    kKUNCAlternateResponse = 1,
+    kKUNCOtherResponse     = 2,
+    kKUNCCancelResponse    = 3
 };
 #endif
 
@@ -120,7 +120,6 @@ fuse_isdirectio_mp(mount_t mp)
     return (fuse_get_mpdata(mp)->dataflags & FSESS_DIRECT_IO);
 }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
 static __inline__
 int
 fuse_isnoattrcache(vnode_t vp)
@@ -139,7 +138,6 @@ fuse_isnoattrcache_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NO_ATTRCACHE);
 }
-#endif
 
 static __inline__
 int
@@ -353,18 +351,15 @@ fuse_blanket_deny(vnode_t vp, vfs_context_t context)
 
 /* FN_ACCESS_NOOP is in fuse_node.h */
 
-#define FACCESS_VA_VALID   0x01
-#define FACCESS_DO_ACCESS  0x02
-#define FACCESS_STICKY     0x04
-#define FACCESS_CHOWN      0x08
-#define FACCESS_NOCHECKSPY 0x10
-#define FACCESS_FROM_VNOP  0x20
-#define FACCESS_XQUERIES FACCESS_STICKY | FACCESS_CHOWN
+#define FACCESS_VA_VALID   0x00000001
+#define FACCESS_DO_ACCESS  0x00000002
+#define FACCESS_NOCHECKSPY 0x00000004
+#define FACCESS_FROM_VNOP  0x00000008
 
 struct fuse_access_param {
-    uid_t xuid;
-    gid_t xgid;
-    unsigned facc_flags;
+    uid_t    xuid;
+    gid_t    xgid;
+    uint32_t facc_flags;
 };
 
 int
@@ -413,13 +408,16 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      * va_total_alloc
      */
 
-    t.tv_sec = fat->atime; t.tv_nsec = fat->atimensec;
+    t.tv_sec = (typeof(t.tv_sec))fat->atime; /* XXX: truncation */
+    t.tv_nsec = fat->atimensec;
     VATTR_RETURN(vap, va_access_time, t);
 
-    t.tv_sec = fat->ctime; t.tv_nsec = fat->ctimensec;
+    t.tv_sec = (typeof(t.tv_sec))fat->ctime; /* XXX: truncation */
+    t.tv_nsec = fat->ctimensec;
     VATTR_RETURN(vap, va_change_time, t);
 
-    t.tv_sec = fat->mtime; t.tv_nsec = fat->mtimensec;
+    t.tv_sec = (typeof(t.tv_sec))fat->mtime; /* XXX: truncation */
+    t.tv_nsec = fat->mtimensec;
     VATTR_RETURN(vap, va_modify_time, t);
 
     VATTR_RETURN(vap, va_mode, fat->mode & ~S_IFMT);
@@ -447,14 +445,19 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
 {
     mount_t mp = vnode_mount(vp);
     struct vnode_attr *in_vap = VTOVA(vp);
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
     if (in_vap == out_vap) {
         return;
     }
 
     VATTR_RETURN(out_vap, va_fsid, in_vap->va_fsid);
+
     VATTR_RETURN(out_vap, va_fileid, in_vap->va_fileid);
     VATTR_RETURN(out_vap, va_linkid, in_vap->va_linkid);
+    VATTR_RETURN(out_vap, va_gen,
+        (typeof(out_vap->va_gen))fvdat->generation); /* XXX: truncation */
+    VATTR_RETURN(out_vap, va_parentid, fvdat->parent_nodeid);
 
     /*
      * If we have asynchronous writes enabled, our local in-kernel size
@@ -462,14 +465,14 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
      */
     /* ATTR_FUDGE_CASE */
     if (!vfs_issynchronous(mp)) {
-        VATTR_RETURN(out_vap, va_data_size, VTOFUD(vp)->filesize);
-        VATTR_RETURN(in_vap,  va_data_size, VTOFUD(vp)->filesize);
+        VATTR_RETURN(out_vap, va_data_size, fvdat->filesize);
+        VATTR_RETURN(in_vap,  va_data_size, fvdat->filesize);
     } else {
 #if WORKS_ON_TIGER_BUT_NOT_ON_LEOPARD
         VATTR_RETURN(out_vap, va_data_size, in_vap->va_data_size);
 #endif
-        VATTR_RETURN(out_vap, va_data_size, VTOFUD(vp)->filesize);
-        VATTR_RETURN(in_vap,  va_data_size, VTOFUD(vp)->filesize);
+        VATTR_RETURN(out_vap, va_data_size, fvdat->filesize);
+        VATTR_RETURN(in_vap,  va_data_size, fvdat->filesize);
     }
 
     VATTR_RETURN(out_vap, va_access_time, in_vap->va_access_time);
@@ -487,21 +490,11 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
     VATTR_RETURN(out_vap, va_iosize, in_vap->va_iosize);
 
     VATTR_RETURN(out_vap, va_flags, in_vap->va_flags);
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    if (fuse_isextendedsecurity(vp)) {
-        if (VATTR_IS_ACTIVE(out_vap, va_acl)) {
-            if ((VTOFUD(vp)->flag & FN_HAS_ACL) == 0) {
-                out_vap->va_acl = (struct kauth_acl *)KAUTH_FILESEC_NONE;
-                VATTR_SET_SUPPORTED(out_vap, va_acl);
-            }
-        }
-    }
-#endif
 }
 
 /*
- * XXX: Note that user space sends us a 64-bit tv_sec.
+ * XXX: truncation
+ * Note that user space sends us a 64-bit tv_sec.
  */
 #define cache_attrs(vp, fuse_out) do {                               \
     struct timespec uptsp_ ## __func__;                              \
@@ -683,5 +676,9 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int dorevoke);
 
 int fuse_internal_init_synchronous(struct fuse_ticket *ftick);
 int fuse_internal_send_init(struct fuse_data *data, vfs_context_t context);
+
+/* other */
+
+void fuse_internal_print_vnodes(mount_t mp);
 
 #endif /* _FUSE_INTERNAL_H_ */

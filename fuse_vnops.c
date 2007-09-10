@@ -334,7 +334,6 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     bzero(&fdi, sizeof(fdi));
 
-    // XXX: Will we ever want devices?
     if ((vap->va_type != VREG) ||
         fuse_get_mpdata(mp)->noimplflags & FSESS_NOIMPL(CREATE)) {
         goto good_old;
@@ -352,7 +351,9 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     foi = fdip->indata;
     foi->mode = mode;
-    foi->flags = O_CREAT | O_RDWR; // XXX: We /always/ creat() like this.
+
+    /* XXX: We /always/ creat() like this. */
+    foi->flags = O_CREAT | O_RDWR;
 
     memcpy((char *)fdip->indata + sizeof(*foi), cnp->cn_nameptr,
            cnp->cn_namelen);
@@ -800,6 +801,8 @@ fuse_vnop_inactive(struct vnop_inactive_args *ap)
     return 0;
 }
 
+extern int fuse_setextendedsecurity(mount_t mp, int state);
+
 /*
     struct vnop_ioctl_args {
         struct vnodeop_desc *a_desc;
@@ -847,15 +850,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 
             state = *(int *)ap->a_data;
 
-            if (state == 0) {
-                vfs_clearextendedsecurity(mp);
-            } else if (state == 1) {
-                vfs_setextendedsecurity(mp);
-            } else {
-                return EINVAL;
-            }
-
-            return 0;
+            return fuse_setextendedsecurity(mp, state);
         }
         break;
 
@@ -1141,7 +1136,6 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     struct fuse_dispatcher fdi;
     enum fuse_opcode op;
     uint64_t nodeid, parent_nodeid;
-    __unused struct fuse_access_param facp;
 
     *vpp = NULLVP;
 
@@ -1164,16 +1158,6 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     if (cnp->cn_namelen > MAXNAMLEN) {
         return ENAMETOOLONG;
     }
-
-#if 0 //BABA
-    bzero(&facp, sizeof(facp));
-    if (vnode_isvroot(dvp)) { /* early permission check hack */
-        if ((err = fuse_internal_access(dvp, KAUTH_VNODE_GENERIC_EXECUTE_BITS,
-                                        context, &facp))) {
-            return err;
-        }
-    }
-#endif
 
     if (flags & ISDOTDOT) {
         isdotdot = TRUE;
@@ -1240,7 +1224,7 @@ calldaemon:
         nodeid = ((struct fuse_entry_out *)fdi.answ)->nodeid;
         size = ((struct fuse_entry_out *)fdi.answ)->attr.size;
         if (!nodeid) {
-            fdi.answ_stat = ENOENT; /* XXX negative_timeout */
+            fdi.answ_stat = ENOENT; /* XXX: negative_timeout case */
             lookup_err = ENOENT;
         } else if (nodeid == FUSE_ROOT_ID) {
             lookup_err = EINVAL;
@@ -1395,76 +1379,32 @@ calldaemon:
 
 out:
     if (!lookup_err) {
-        // as the looked up thing was simply found, the cleanup is left for us
-        if (err) {
-            // though inode found, err exit with no vnode
-            if (op == FUSE_LOOKUP)
-                fuse_internal_forget_send(vnode_mount(dvp), context, nodeid, 1, &fdi);
+
+        /* No lookup error; need to clean up. */
+
+        if (err) { /* Found inode; exit with no vnode. */
+            if (op == FUSE_LOOKUP) {
+                fuse_internal_forget_send(vnode_mount(dvp), context,
+                                          nodeid, 1, &fdi);
+            }
             return (err);
         } else {
-            // if (islastcn && flags & ISOPEN) // XXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
-            //if (islastcn)
-                //VTOFUD(*vpp)->flags |= FVP_ACCESS_NOOP;
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-#ifndef NO_EARLY_PERM_CHECK_HACK
             if (!islastcn) {
-                /* We have the attributes of the next item
-                 * *now*, and it's a fact, and we do not have
-                 * to do extra work for it (ie, beg the
-                 * daemon), and it neither depends on such
-                 * accidental things like attr caching. So the
-                 * big idea: check credentials *now*, not at
-                 * the beginning of the next call to lookup.
-                 *
-                 * The first item of the lookup chain (fs root)
-                 * won't be checked then here, of course, as
-                 * its never "the next". But go and see that
-                 * the root is taken care about at the very
-                 * beginning of this function.
-                 *
-                 * Now, given we want to do the access check
-                 * this way, one might ask: so then why not do
-                 * the access check just after fetching the
-                 * inode and its attributes from the daemon?
-                 * Why bother with producing the corresponding
-                 * vnode at all if something is not OK? We know
-                 * what's the deal as soon as we get those
-                 * attrs... There is one bit of info though not
-                 * given us by the daemon: whether his response
-                 * is authorative or not... His response should
-                 * be ignored if something is mounted over the
-                 * dir in question. But that can be known only
-                 * by having the vnode...
-                 */
+
                 int tmpvtype = vnode_vtype(*vpp);
 
-                bzero(&facp, sizeof(facp));
-                // the early perm check hack
-                facp.facc_flags |= FACCESS_VA_VALID;
-
-                //if ((*vpp)->v_type != VDIR && (*vpp)->v_type != VLNK)
-                if (tmpvtype != VDIR && tmpvtype != VLNK)
+                if ((tmpvtype != VDIR) && (tmpvtype != VLNK)) {
                     err = ENOTDIR;
-
-                if (!err && !vnode_mountedhere(*vpp)) {
-                    err = fuse_internal_access(*vpp,
-                                               KAUTH_VNODE_GENERIC_EXECUTE_BITS,
-                                               context,
-                                               &facp);
                 }
 
+                /* if (!err && !vnode_mountedhere(*vpp)) { ... */
+
                 if (err) {
-                    //if ((*vpp)->v_type == VLNK)
-                    if (tmpvtype == VLNK)
-                        ; // DEBUG("weird, permission error with a symlink?\n");
                     vnode_put(*vpp);
-                    // vput(*vpp);
                     *vpp = NULL;
                 }
             }
-#endif
-#endif /* M_MACFUSE_EXPERIMENTAL_JUNK */
         }
             
         fuse_ticket_drop(fdi.tick);
@@ -2226,11 +2166,16 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
         return EINVAL;
     }
 
+#define DE_SIZE (int)(sizeof(struct fuse_dirent))
+
     if ((uio_iovcnt(uio) > 1)                            ||
-        ((uio_offset(uio) % sizeof(struct dirent)) != 0) ||
-        (uio_resid(uio) < (user_ssize_t)sizeof(struct dirent))) {
+        (uio_resid(uio) < (user_ssize_t)DE_SIZE)) {
         return EINVAL;
     }
+
+    /*
+     *  if ((uio_offset(uio) % DE_SIZE) != 0) { ...
+     */
 
     fvdat = VTOFUD(vp);
 
@@ -2246,6 +2191,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     }
 
 #define DIRCOOKEDSIZE FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + MAXNAMLEN + 1)
+
     fiov_init(&cookediov, DIRCOOKEDSIZE);
 
     err = fuse_internal_readdir(vp, uio, context, fufh, &cookediov);
@@ -2441,6 +2387,13 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     if (err == 0) {
         FUSE_KNOTE(vp, NOTE_DELETE);
         FUSE_KNOTE(dvp, NOTE_WRITE);
+        fuse_vncache_purge(vp);
+        /*
+         * If we really want, we could...
+         * if (!vnode_isinuse(vp, 0)) {
+         *     vnode_recycle(vp);
+         * }
+         */
     }
 
     return err;
@@ -2687,41 +2640,39 @@ fuse_vnop_select(__unused struct vnop_select_args *ap)
 static int
 fuse_vnop_setattr(struct vnop_setattr_args *ap)
 {
-    vnode_t vp = ap->a_vp;
-    struct vnode_attr *vap = ap->a_vap;
-    vfs_context_t context = ap->a_context;
+    vnode_t            vp      = ap->a_vp;
+    struct vnode_attr *vap     = ap->a_vap;
+    vfs_context_t      context = ap->a_context;
 
-    struct fuse_dispatcher   fdi;
-    struct fuse_setattr_in  *fsai;
-    struct fuse_access_param facp;
+    struct fuse_dispatcher  fdi;
+    struct fuse_setattr_in *fsai;
 
     int err = 0;
-    int action;
-    enum vtype vtyp;
     uid_t nuid;
     gid_t ngid;
+    enum vtype vtyp;
     int sizechanged = 0;
     uint64_t newsize = 0;
+
+    fuse_trace_printf_vnop();
 
     /*
      * XXX: Locking
      *
-     * We need to worry about the file size changing in setattr. If the call
+     * We need to worry about the file size changing in setattr(). If the call
      * is indeed altering the size, then:
      *
      * lock_exclusive(truncatelock)
-     * lock(nodelock)
-     * set the new size
-     * unlock(nodelock)
-     * adjust ubc
-     * lock(nodelock)
-     * do cleanup
-     * unlock(nodelock)
+     *   lock(nodelock)
+     *     set the new size
+     *   unlock(nodelock)
+     *   adjust ubc
+     *   lock(nodelock)
+     *     do cleanup
+     *   unlock(nodelock)
      * unlock(truncatelock)
      * ...
      */
- 
-    fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_nop(vp)) {
         return EBADF;
@@ -2729,43 +2680,21 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-#define VAP_ENSURE_EQUALITY(lhs, rhs, message) \
-    if ((lhs) != (rhs)) { \
-        debug_printf(message); \
-        return (EINVAL); \
-    }
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    if ((vap->va_type != VNON) || (vap->va_nlink != VNOVAL) ||
-        (vap->va_fsid != VNOVAL) || (vap->va_fileid != VNOVAL) ||
-        (vap->va_iosize != VNOVAL) || (vap->va_rdev != VNOVAL) ||
-        ((int)vap->va_total_size != VNOVAL) || (vap->va_gen != VNOVAL) ||
-         (vap->va_flags != VNOVAL))
-        return (EINVAL);
-#endif
-
     fdisp_init(&fdi, sizeof(*fsai));
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
     fsai = fdi.indata;
 
-    bzero(&facp, sizeof(facp));
-
 #define FUSEATTR(x) x
-
-    facp.xuid = vap->va_uid;
-    facp.xgid = vap->va_gid;
 
     nuid = VATTR_IS_ACTIVE(vap, va_uid) ? vap->va_uid : (uid_t)VNOVAL;
     ngid = VATTR_IS_ACTIVE(vap, va_gid) ? vap->va_gid : (gid_t)VNOVAL;
 
     if (nuid != (uid_t)VNOVAL) {
-        facp.facc_flags |= FACCESS_CHOWN;
         fsai->FUSEATTR(uid) = nuid;
         fsai->valid |= FATTR_UID;
     }
 
     if (ngid != (gid_t)VNOVAL) {
-        facp.facc_flags |= FACCESS_CHOWN;
         fsai->FUSEATTR(gid) = ngid;
         fsai->valid |= FATTR_GID;
     }
@@ -2804,13 +2733,13 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     /*
      * Possible timestamps:
      *
-     * Mac OS X                                          Linux
+     * Mac OS X                                          Linux  FUSE API
      *  
-     * va_access_time    last access time                atime
-     * va_backup_time    last backup time                -
-     * va_change_time    last metadata change time       ctime*
-     * va_create_time    creation time                   ctime*
-     * va_modify_time    last data modification time     mtime
+     * va_access_time    last access time                atime  atime
+     * va_backup_time    last backup time                -      -
+     * va_change_time    last metadata change time       ctime* -
+     * va_create_time    creation time                   ctime* -
+     * va_modify_time    last data modification time     mtime  mtime
      *
      * FUSE has knowledge of atime, ctime, and mtime. A setattr call to
      * the daemon can take atime and mtime.
@@ -2838,17 +2767,17 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     VATTR_SET_SUPPORTED(vap, va_change_time);
     VATTR_SET_SUPPORTED(vap, va_modify_time);
 
-    /* Don't support va_{backup, change, create}_time */
-
-    /* XXX: What about VA_UTIMES_NULL? */
+    /* We don't support va_{backup, create}_time */
 
     if (VATTR_IS_ACTIVE(vap, va_mode)) {
-        //if (vap->va_mode & S_IFMT) {
-            fsai->FUSEATTR(mode) = vap->va_mode & ALLPERMS;
-            fsai->valid |= FATTR_MODE;
-        //}
+        fsai->FUSEATTR(mode) = vap->va_mode & ALLPERMS;
+        fsai->valid |= FATTR_MODE;
     }
     VATTR_SET_SUPPORTED(vap, va_mode);
+
+    /*
+     * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.
+     */
 
 #undef FUSEATTR
 
@@ -2863,33 +2792,8 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         goto out;
     }
 
-    if (vfs_flags(vnode_mount(vp)) & MNT_RDONLY &&
-        (fsai->valid & ~FATTR_SIZE || vtyp == VREG)) {
+    if (vnode_vfsisrdonly(vp) && (fsai->valid & ~FATTR_SIZE || vtyp == VREG)) {
         err = EROFS;
-        goto out;
-    }
-
-    if (fsai->valid & ~FATTR_SIZE) {
-        // err = fuse_internal_access(vp, VADMIN, context, &facp); // XXX
-        err = 0;
-    }
-
-    facp.facc_flags &= ~FACCESS_XQUERIES;
-
-    action = KAUTH_VNODE_WRITE_ATTRIBUTES;
-    if (VATTR_IS_ACTIVE(vap, va_acl)    ||
-        VATTR_IS_ACTIVE(vap, va_uuuid)  ||
-        VATTR_IS_ACTIVE(vap, va_guuid)) {
-        action |= KAUTH_VNODE_WRITE_SECURITY;
-    }
-
-    if (err && !(fsai->valid & ~(FATTR_ATIME | FATTR_MTIME)) &&
-        vap->va_vaflags & VA_UTIMES_NULL) {
-        err = fuse_internal_access(vp, action, context, &facp);
-    }
-
-    if (err) {
-        fuse_invalidate_attr(vp);
         goto out;
     }
 
@@ -3373,6 +3277,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
      */
 
 /* errexit: */
+
     if (error) {
         debug_printf("WRITE: we had a failed write (%d)\n", error);
         if (ioflag & IO_UNIT) {

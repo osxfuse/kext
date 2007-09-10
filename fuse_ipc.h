@@ -16,6 +16,7 @@
 #include <sys/dirent.h>
 #include <sys/uio.h>
 #include <sys/proc.h>
+#include <sys/vm.h>
 #include <sys/fcntl.h>
 #include <kern/assert.h>
 #include <libkern/libkern.h>
@@ -123,14 +124,13 @@ fticket_invalidate(struct fuse_ticket *ftick)
 
 int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
-enum mountpri { FM_NOMOUNTED, FM_PRIMARY, FM_SECONDARY };
+enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
 
 /*
  * The data representing a FUSE session.
  */
 struct fuse_data {
-    enum mountpri              mpri;
-    int                        mntco;
+    enum mount_state           mount_state;
     struct fuse_softc         *fdev;
     mount_t                    mp;
     kauth_cred_t               daemoncred;
@@ -212,7 +212,7 @@ fuse_get_mpdata(mount_t mp)
 {
     struct fuse_data *data = vfs_fsprivate(mp);
     kdebug_printf("-> mp=%p\n", mp);
-    return (data->mpri == FM_PRIMARY ? data : NULL);
+    return (data->mount_state == FM_MOUNTED ? data : NULL);
 }
 
 static __inline__
@@ -282,22 +282,6 @@ fuse_libabi_geq(struct fuse_data *data, uint32_t abi_maj, uint32_t abi_min)
     return (data->fuse_libabi_major > abi_maj ||
             (data->fuse_libabi_major == abi_maj &&
              data->fuse_libabi_minor >= abi_min));
-}
-
-struct fuse_secondary_data {
-    enum mountpri     mpri;
-    mount_t           mp;
-    struct fuse_data *master;
-
-    LIST_ENTRY(fuse_secondary_data) slaves_link;
-};
-
-static __inline__
-struct fuse_secondary_data *
-fuse_get_secondary_mpdata(mount_t mp)
-{
-    struct fuse_secondary_data *fsdat = vfs_fsprivate(mp);
-    return (fsdat->mpri == FM_SECONDARY ? fsdat : NULL);
 }
 
 struct fuse_data *fdata_alloc(struct fuse_softc *fdev, struct proc *p);

@@ -66,6 +66,10 @@ extern struct filterops fusevnode_filtops;
 #define KNOTE_ATTACH(list, kn)  knote_attach(list, kn)
 #define KNOTE_DETACH(list, kn)  knote_detach(list, kn)
 
+extern void knote(struct klist *klist, long hint);
+extern int  knote_attach(struct klist *list, struct knote *kn);
+extern int  knote_detach(struct klist *list, struct knote *kn);
+
 //#endif /* !KERNEL_PRIVATE */
 
 #define FUSE_KNOTE(vp, hint)    KNOTE(&VTOFUD(vp)->c_knotes, (hint))
