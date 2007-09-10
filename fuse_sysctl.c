@@ -155,8 +155,6 @@ SYSCTL_INT(_macfuse_counters, OID_AUTO, lookup_cache_misses, CTLFLAG_RD,
            &fuse_lookup_cache_misses, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, lookup_cache_overrides,
            CTLFLAG_RD, &fuse_lookup_cache_overrides, 0, "");
-SYSCTL_INT(_macfuse_counters, OID_AUTO, mount_count,
-           CTLFLAG_RD, &fuse_mount_count, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
            &fuse_realloc_count, 0, "");
 
@@ -169,6 +167,8 @@ SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, ipc_tickets, CTLFLAG_RD,
            &fuse_tickets_current, 0, "");
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, memory_bytes, CTLFLAG_RD,
            &fuse_memory_allocated, 0, "");
+SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, mounts, CTLFLAG_RD,
+           &fuse_mount_count, 0, "");
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
            &fuse_vnodes_current, 0, "");
 
@@ -209,11 +209,11 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__macfuse_counters_lookup_cache_misses,
     &sysctl__macfuse_counters_lookup_cache_overrides,
     &sysctl__macfuse_counters_memory_reallocs,
-    &sysctl__macfuse_counters_mount_count,
     &sysctl__macfuse_resourceusage_filehandles,
     &sysctl__macfuse_resourceusage_ipc_iovs,
     &sysctl__macfuse_resourceusage_ipc_tickets,
     &sysctl__macfuse_resourceusage_memory_bytes,
+    &sysctl__macfuse_resourceusage_mounts,
     &sysctl__macfuse_resourceusage_vnodes,
     &sysctl__macfuse_tunables_admin_group,
     &sysctl__macfuse_tunables_allow_other,

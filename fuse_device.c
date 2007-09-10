@@ -60,6 +60,19 @@ fuse_devices_kill(int unit, struct proc *p)
                 /* The following can block. */
                 fdata_kick_set(fdev->data);
                 error = 0;
+
+                fuse_lck_mtx_lock(fdev->data->aw_mtx);
+                {
+                    struct fuse_ticket *ftick;
+                    while ((ftick = fuse_aw_pop(fdev->data))) {
+                        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+                        fticket_set_answered(ftick);
+                        ftick->tk_aw_errno = ENOTCONN;
+                        fuse_wakeup(ftick);
+                        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+                    }
+                }
+                fuse_lck_mtx_unlock(fdev->data->aw_mtx);
             }
         }
     } else {
