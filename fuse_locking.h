@@ -74,4 +74,14 @@ extern lck_mtx_t      *fuse_device_mutex;
 #define fuse_lck_mtx_unlock(m) lck_mtx_unlock((m))
 #endif
 
+#define fuse_lck_rw_lock_shared(l)      lck_rw_lock_shared((l))
+#define fuse_lck_rw_lock_exclusive(l)   lck_rw_lock_exclusive((l))
+#define fuse_lck_rw_unlock_shared(l)    lck_rw_unlock_shared((l))
+#define fuse_lck_rw_unlock_exclusive(l) lck_rw_unlock_exclusive((l))
+
+#define FUSE_DATA_LOCK_SHARED(d)      fuse_lck_rw_lock_shared((d)->rwlock)
+#define FUSE_DATA_LOCK_EXCLUSIVE(d)   fuse_lck_rw_lock_exclusive((d)->rwlock)
+#define FUSE_DATA_UNLOCK_SHARED(d)    fuse_lck_rw_unlock_shared((d)->rwlock)
+#define FUSE_DATA_UNLOCK_EXCLUSIVE(d) fuse_lck_rw_unlock_exclusive((d)->rwlock)
+
 #endif /* _FUSE_LOCKING_H_ */

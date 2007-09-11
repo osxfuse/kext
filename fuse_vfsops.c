@@ -927,8 +927,8 @@ fuse_sync_callback(vnode_t vp, void *cargs)
 
     data = fuse_get_mpdata(mp);
 
-    if (data->noimplflags & ((vnode_vtype(vp) == VDIR) ?
-                              FSESS_NOIMPL(FSYNCDIR) : FSESS_NOIMPL(FSYNC))) {
+    if (!fuse_implemented(data, (vnode_vtype(vp) == VDIR) ?
+        FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC))) {
         return VNODE_RETURNED;
     }
 

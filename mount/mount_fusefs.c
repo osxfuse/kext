@@ -749,11 +749,10 @@ main(int argc, char **argv)
         snprintf(args.volname, MAXPATHLEN, "%s", volname);
     }
 
-    if (mount(MACFUSE_FS_TYPE, mntpath, mntflags, (void *)&args) < 0) {
+    result = mount(MACFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
+    if (result < 0) {
         err(EX_OSERR, "failed to mount %s@/dev/fuse%d", mntpath, dindex);
-    }
-
-    {
+    } else {
         char *udata_keys[]   = { kFUSEMountPathKey };
         char *udata_values[] = { mntpath };
            

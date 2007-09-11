@@ -251,7 +251,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
     }
 
     data = fuse_get_mpdata(vnode_mount(vp));
-    if (!(data->noimplflags & FSESS_NOIMPL(FLUSH))) {
+    if (fuse_implemented(data, FSESS_NOIMPLBIT(FLUSH))) {
 
         struct fuse_dispatcher  fdi;
         struct fuse_flush_in   *ffi;
@@ -271,7 +271,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
             fuse_ticket_drop(fdi.tick);
         } else {
             if (err == ENOSYS) {
-                data->noimplflags |= FSESS_NOIMPL(FLUSH);
+                fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
                 err = 0;
             }
         }
@@ -315,6 +315,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     int err;
     int gone_good_old = 0;
+    struct fuse_data *data = NULL;
 
     mount_t mp = vnode_mount(dvp);
     uint64_t parent_nodeid = VTOFUD(dvp)->nodeid;
@@ -334,19 +335,17 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     bzero(&fdi, sizeof(fdi));
 
-    if ((vap->va_type != VREG) ||
-        fuse_get_mpdata(mp)->noimplflags & FSESS_NOIMPL(CREATE)) {
+    data = fuse_get_mpdata(mp);
+
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(CREATE)) ||
+        (vap->va_type != VREG)) {
+        debug_printf("eh, daemon doesn't implement create?\n");
         goto good_old;
     }
 
     debug_printf("parent nodeid = %llu, mode = %x\n", parent_nodeid, mode);
 
     fdisp_init(fdip, sizeof(*foi) + cnp->cn_namelen + 1);
-    if (fuse_get_mpdata(vnode_mount(dvp))->noimplflags & FSESS_NOIMPL(CREATE)) {
-        debug_printf("eh, daemon doesn't implement create?\n");
-        goto good_old;
-    }
-
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
 
     foi = fdip->indata;
@@ -363,7 +362,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     if (err == ENOSYS) {
         debug_printf("create: got ENOSYS from daemon\n");
-        fuse_get_mpdata(vnode_mount(dvp))->noimplflags |= FSESS_NOIMPL(CREATE);
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(CREATE));
         fdip->tick = NULL;
         goto good_old;
     } else if (err) {
@@ -519,13 +518,15 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     microtime(&tv);
 #endif
 
-    // vnode and ubc are in lock-step.
-    // can call vnode_isinuse().
-    // can call ubc_sync_range().
+    /*
+     * - UBC and vnode are in lock-step.
+     * - Can call vnode_isinuse().
+     * - Can call ubc_sync_range().
+     */
 
-    if (fuse_get_mpdata(vnode_mount(vp))->noimplflags &
-        ((vnode_vtype(vp) == VDIR) ?
-            FSESS_NOIMPL(FSYNCDIR) : FSESS_NOIMPL(FSYNC))) {
+    if (!fuse_implemented(fuse_get_mpdata(vnode_mount(vp)),
+            ((vnode_vtype(vp) == VDIR) ?
+                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
         goto out;
     }
 
@@ -724,7 +725,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         return ENOTSUP;
     }
 
-    if (data->noimplflags & FSESS_NOIMPL(GETXATTR)) {
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(GETXATTR))) {
         return ENOTSUP;
     }
 
@@ -746,7 +747,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     err = fdisp_wait_answ(&fdi);
     if (err) {
         if (err == ENOSYS) {
-            data->noimplflags |= FSESS_NOIMPL(GETXATTR);
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(GETXATTR));
             return ENOTSUP;
         }
         return err;  
@@ -1062,7 +1063,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         return ENOTSUP;
     }
 
-    if (data->noimplflags & FSESS_NOIMPL(LISTXATTR)) {
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(LISTXATTR))) {
         return ENOTSUP;
     }
 
@@ -1078,7 +1079,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     err = fdisp_wait_answ(&fdi);
     if (err) {
         if (err == ENOSYS) {
-            data->noimplflags |= FSESS_NOIMPL(LISTXATTR);
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(LISTXATTR));
             return ENOTSUP;
         }
         return err;
@@ -2444,7 +2445,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         return ENOTSUP;
     }
 
-    if (data->noimplflags & FSESS_NOIMPL(REMOVEXATTR)) {
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR))) {
         return ENOTSUP;
     }
 
@@ -2461,7 +2462,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         fuse_ticket_drop(fdi.tick);
     } else {
         if (err == ENOSYS) {
-            data->noimplflags |= FSESS_NOIMPL(REMOVEXATTR);
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR));
             return ENOTSUP;
         }
     }
@@ -2897,7 +2898,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         return ENOTSUP;
     }
 
-    if (data->noimplflags & FSESS_NOIMPL(SETXATTR)) {
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(SETXATTR))) {
         return ENOTSUP;
     }
 
@@ -2946,7 +2947,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
             int a_spacetype = UIO_USERSPACE;
 
-            data->noimplflags |= FSESS_NOIMPL(SETXATTR);
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETXATTR));
 
             if (iov_err) {
                 return EAGAIN;

@@ -20,6 +20,7 @@
 #include <fuse_ioctl.h>
 #include "fuse_ipc.h"
 #include "fuse_kludges.h"
+#include "fuse_locking.h"
 #include "fuse_node.h"
 
 #if M_MACFUSE_ENABLE_KUNC
@@ -678,6 +679,43 @@ int fuse_internal_init_synchronous(struct fuse_ticket *ftick);
 int fuse_internal_send_init(struct fuse_data *data, vfs_context_t context);
 
 /* other */
+
+static __inline__
+int
+fuse_implemented(struct fuse_data *data, uint64_t which)
+{
+    int result;
+
+    /* FUSE_DATA_LOCK_SHARED(data); */
+    result = !(int)(data->noimplflags & which);
+    /* FUSE_DATA_UNLOCK_SHARED(data); */
+
+    return result;
+}
+
+static __inline__
+void
+fuse_clear_implemented(struct fuse_data *data, uint64_t which) 
+{
+    /* FUSE_DATA_LOCK_EXCLUSIVE(data); */
+    data->noimplflags |= which;
+    /* FUSE_DATA_UNLOCK_EXCLUSIVE(data); */
+}
+
+static __inline__
+int
+fuse_set_noimplflags(struct fuse_data *data, uint64_t flags)
+{
+    if (!data) {
+        return EINVAL;
+    }
+
+    FUSE_DATA_LOCK_EXCLUSIVE(data);
+    data->noimplflags = flags;
+    FUSE_DATA_UNLOCK_EXCLUSIVE(data);
+
+    return 0;
+}
 
 void fuse_internal_print_vnodes(mount_t mp);
 

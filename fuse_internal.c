@@ -77,7 +77,7 @@ fuse_internal_access(vnode_t                   vp,
      * would have been handled by higher layers.
      */
 
-    if (fuse_get_mpdata(mp)->noimplflags & FSESS_NOIMPL(ACCESS)) {
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(ACCESS))) {
         return default_error;
     }
 
@@ -146,7 +146,7 @@ fuse_internal_access(vnode_t                   vp,
          * Make sure we don't come in here again.
          */
         vfs_clearauthopaque(mp);
-        fuse_get_mpdata(mp)->noimplflags |= FSESS_NOIMPL(ACCESS);
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(ACCESS));
         err = default_error;
     }
 
@@ -178,9 +178,9 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
     if (ftick->tk_aw_ohead.error == ENOSYS) {
         if (fticket_opcode(ftick) == FUSE_FSYNC) {
-            ftick->tk_data->noimplflags |= FSESS_NOIMPL(FSYNC);
+            fuse_clear_implemented(ftick->tk_data, FSESS_NOIMPLBIT(FSYNC));
         } else if (fticket_opcode(ftick) == FUSE_FSYNCDIR) {
-            ftick->tk_data->noimplflags |= FSESS_NOIMPL(FSYNCDIR);
+            fuse_clear_implemented(ftick->tk_data, FSESS_NOIMPLBIT(FSYNCDIR));
         } else {
             IOLog("MacFUSE: unexpected opcode in sync handling\n");
         }
@@ -1001,14 +1001,7 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
 {
     debug_printf("fdip=%p, context=%p\n", fdip, context);
 
-    fdip->iosize = bufsize + cnp->cn_namelen + 1;
-
-    fdisp_make(fdip, op, mp, dnid, context);
-    memcpy(fdip->indata, buf, bufsize);
-    memcpy((char *)fdip->indata + bufsize, cnp->cn_nameptr, cnp->cn_namelen);
-    ((char *)fdip->indata)[bufsize + cnp->cn_namelen] = '\0';
-
-    fdip->iosize = bufsize + cnp->cn_namelen + 1;
+    fdisp_init(fdip, bufsize + cnp->cn_namelen + 1);
 
     fdisp_make(fdip, op, mp, dnid, context);
     memcpy(fdip->indata, buf, bufsize);

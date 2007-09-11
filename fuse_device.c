@@ -345,9 +345,6 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     FUSE_DEVICE_LOCK();
 
-    //fdev->data = NULL;
-    //fdev->pid = -1;
-    //fdev->usecount--;
     if (!skip_destroy) {
         fdev->data = NULL;
         fdev->pid = -1;
@@ -456,6 +453,9 @@ again:
     return (err);
 }
 
+/*
+ * XXX: This function needs locking in many places!
+ */
 int
 fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
                   __unused int flags, __unused proc_t proc)
@@ -476,11 +476,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
     switch (cmd) {
     case FUSEDEVIOCSETIMPLEMENTEDBITS:
-        {
-            uint64_t fuse_noimpl = *(uint64_t *)udata;
-            data->noimplflags = fuse_noimpl;
-        }
-        ret = 0;
+        ret = fuse_set_noimplflags(data, *(uint64_t *)udata);
         break;
 
     case FUSEDEVIOCGETHANDSHAKECOMPLETE:

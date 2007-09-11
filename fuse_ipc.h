@@ -139,6 +139,8 @@ struct fuse_data {
     uint64_t                   mountaltflags; /* as-is copy of altflags    */
     uint64_t                   noimplflags;   /* not-implemented flags     */
 
+    lck_rw_t                  *rwlock;
+
     lck_mtx_t                 *ms_mtx;
     STAILQ_HEAD(, fuse_ticket) ms_head;
 
@@ -180,7 +182,7 @@ enum {
 
 /* Not-Implemented Bits */
 
-#define FSESS_NOIMPL(MSG)         (1LL << FUSE_##MSG)
+#define FSESS_NOIMPLBIT(MSG)      (1LL << FUSE_##MSG)
 
 #define FSESS_KICK                0x00000001 // session is to be closed
 #define FSESS_OPENED              0x00000002 // session device has been opened

@@ -392,6 +392,7 @@ fdata_alloc(struct fuse_softc *fdev, struct proc *p)
     data->mount_state = FM_NOTMOUNTED;
     data->fdev = fdev;
     data->dataflags = 0;
+    data->rwlock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
     data->ms_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
     STAILQ_INIT(&data->ms_head);
     data->ticket_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
@@ -442,11 +443,9 @@ fdata_destroy(struct fuse_data *data)
         fticket_destroy(ftick);
     }
 
-#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= MAC_OS_X_VERSION_10_5
     kauth_cred_unref(&(data->daemoncred));
-#else
-    kauth_cred_rele(data->daemoncred);
-#endif
+
+    lck_rw_free(data->rwlock, fuse_lock_group);
 
     FUSE_OSFree(data, sizeof(struct fuse_data), fuse_malloc_tag);
 }
