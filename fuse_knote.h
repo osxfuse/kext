@@ -12,7 +12,8 @@
 
 #include <sys/event.h>
 
-//#ifndef KERNEL_PRIVATE
+/* What a kludge! */
+#ifndef KNOTE
 
 SLIST_HEAD(klist, knote);
 
@@ -70,7 +71,7 @@ extern void knote(struct klist *klist, long hint);
 extern int  knote_attach(struct klist *list, struct knote *kn);
 extern int  knote_detach(struct klist *list, struct knote *kn);
 
-//#endif /* !KERNEL_PRIVATE */
+#endif /* !KNOTE */
 
 #define FUSE_KNOTE(vp, hint)    KNOTE(&VTOFUD(vp)->c_knotes, (hint))
 

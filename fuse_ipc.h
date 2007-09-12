@@ -226,6 +226,14 @@ fuse_ms_push(struct fuse_ticket *ftick)
 }
 
 static __inline__
+void
+fuse_ms_push_head(struct fuse_ticket *ftick)
+{
+    kdebug_printf("-> ftick=%p\n", ftick);
+    STAILQ_INSERT_HEAD(&ftick->tk_data->ms_head, ftick, tk_ms_link);
+}
+
+static __inline__
 struct fuse_ticket *
 fuse_ms_pop(struct fuse_data *data)
 {
@@ -276,6 +284,7 @@ void fuse_ticket_drop(struct fuse_ticket *ftick);
 void fuse_ticket_drop_invalid(struct fuse_ticket *ftick);
 void fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler);
 void fuse_insert_message(struct fuse_ticket *ftick);
+void fuse_insert_message_head(struct fuse_ticket *ftick);
 
 static __inline__
 int

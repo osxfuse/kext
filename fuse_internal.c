@@ -565,10 +565,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     int respsize;
     int vtype = vnode_vtype(vp);
 
-    caddr_t  bufdat;
-    int32_t  bflags = buf_flags(bp);
-    off_t    left;
-    off_t    offset;
+    caddr_t bufdat;
+    off_t   left;
+    off_t   offset;
+    int32_t bflags = buf_flags(bp);
 
     fufh_type_t             fufh_type;
     struct fuse_dispatcher  fdi;
@@ -587,10 +587,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
  
     if (bflags & B_READ) {
         mode = FREAD;
-        fufh_type = FUFH_RDONLY; // FUFH_RDWR will also do
+        fufh_type = FUFH_RDONLY; /* FUFH_RDWR will also do */
     } else {
         mode = FWRITE;
-        fufh_type = FUFH_WRONLY; // FUFH_RDWR will also do
+        fufh_type = FUFH_WRONLY; /* FUFH_RDWR will also do */
     }
 
     fufh = &(fvdat->fufh[fufh_type]);
@@ -621,6 +621,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_reuse_count);
         debug_printf("STRATEGY: using existing fufh of type %d\n", fufh_type);
     }
+
     if (err) {
 
          /* A more typical error case. */
@@ -637,6 +638,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
           * panic()?
           */
          IOLog("MacFUSE: failed to get fh from strategy (err=%d)\n", err);
+
          if (!vfs_issynchronous(vnode_mount(vp))) {
              IOLog("MacFUSE: asynchronous write failed!\n");
          }
@@ -648,11 +650,13 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
     fufh = &(fvdat->fufh[fufh_type]);
 
-#define B_INVAL         0x00040000      /* Does not contain valid info. */
-#define B_ERROR         0x00080000      /* I/O error occurred. */
+#define B_INVAL 0x00040000 /* Does not contain valid info. */
+#define B_ERROR 0x00080000 /* I/O error occurred. */
+
     if (bflags & B_INVAL) {
         debug_printf("*** WHOA: B_INVAL\n");
     } 
+
     if (bflags & B_ERROR) {
         debug_printf("*** WHOA: B_ERROR\n");
     }
@@ -828,63 +832,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         if (merr) {
             goto out;
         }
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-        bufdat += buf_dirtyoff(bp);
-        offset = (off_t)buf_blkno(bp) * biosize + buf_dirtyoff(bp);
-
-        debug_printf("WRITE: dirtyoff = %d, dirtyend = %d, count = %d\n",
-                     buf_dirtyoff(bp), buf_dirtyend(bp), buf_count(bp));
-
-        while (buf_dirtyend(bp) > buf_dirtyoff(bp)) {
-
-            debug_printf("WRITE: taking a shot\n");
-            chunksize = min(buf_dirtyend(bp) - buf_dirtyoff(bp),
-                            data->iosize); // get v_mount's max w 
-    
-            fdi.iosize = sizeof(*fwi);
-            op = op ?: FUSE_WRITE;
-            fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
-        
-            fwi = fdi.indata;
-            fwi->fh = fufh->fh_id;
-            // fwi->offset = (off_t)buf_blkno(bp) * biosize + buf_dirtyoff(bp);
-            fwi->offset = offset;
-            fwi->size = chunksize;
-            fdi.tick->tk_ms_type = FT_M_BUF;
-            fdi.tick->tk_ms_bufdata = bufdat;
-            fdi.tick->tk_ms_bufsize = chunksize;
-            debug_printf("WRITE: about to write at offset %lld chunksize %d\n",
-                   offset, chunksize);
-            if ((err = fdisp_wait_answ(&fdi))) {
-                IOLog("MacFUSE: daemon returned error %d in strategy\n", err);
-                merr = 1;
-                break;
-            }
-    
-            fwo = fdi.answ;
-            diff = chunksize - fwo->size;
-            if (diff < 0) {
-                err = EINVAL;
-                break;
-            }
-    
-            buf_setdirtyoff(bp, buf_dirtyoff(bp) + fwo->size);
-            offset += fwo->size;
-        }
-
-        if (buf_dirtyend(bp) == buf_dirtyoff(bp)) {
-            buf_setdirtyend(bp, 0);
-            buf_setdirtyoff(bp, 0);
-        }
-
-        buf_setresid(bp, buf_dirtyend(bp) - buf_dirtyoff(bp));
-
-        if (merr)
-            goto out;
-
-        fuse_invalidate_attr(vp);
-#endif
     }
 
     if (fdi.tick)
@@ -1140,7 +1087,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     fii = fdi.indata;
     fii->unique = ftick->tk_unique;
     fticket_invalidate(fdi.tick);
-    fuse_insert_message(fdi.tick);
+    fuse_insert_message_head(fdi.tick);
 }
 
 __private_extern__

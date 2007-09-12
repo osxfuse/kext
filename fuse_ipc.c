@@ -302,10 +302,15 @@ alreadydead:
         goto out;
     }
 
+#if M_MACFUSE_ENABLE_INTERRUPT
     /*
      * If interrupted, we want to do:
      *     fuse_internal_interrupt_send(ftick);
      */
+    else if (err == -1) {
+       fuse_internal_interrupt_send(ftick);
+    }
+#endif
 
 out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
@@ -658,6 +663,25 @@ fuse_insert_message(struct fuse_ticket *ftick)
 
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push(ftick);
+    fuse_wakeup_one((caddr_t)ftick->tk_data);
+    fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
+}
+
+void
+fuse_insert_message_head(struct fuse_ticket *ftick)
+{
+    if (ftick->tk_flag & FT_DIRTY) {
+        panic("MacFUSE: ticket reused without being refreshed");
+    }
+
+    ftick->tk_flag |= FT_DIRTY;
+
+    if (fdata_kick_get(ftick->tk_data)) {
+        return;
+    }
+
+    fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
+    fuse_ms_push_head(ftick);
     fuse_wakeup_one((caddr_t)ftick->tk_data);
     fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
 }

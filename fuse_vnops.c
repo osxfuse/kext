@@ -417,6 +417,7 @@ bringup:
     fdip->answ = gone_good_old ? NULL : feo + 1;
 
     if (!gone_good_old) {
+
         uint64_t x_fh_id = ((struct fuse_open_out *)(feo + 1))->fh;
         uint32_t x_open_flags = ((struct fuse_open_out *)(feo + 1))->open_flags;
         struct fuse_vnode_data *fvdat = VTOFUD(*vpp);
@@ -426,19 +427,6 @@ bringup:
         fufh->open_flags = x_open_flags;
 
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-        struct fuse_dispatcher x_fdi;
-        struct fuse_release_in *x_fri;
-        fdisp_init(&x_fdi, sizeof(*x_fri));
-        fdisp_make_vp(&x_fdi, FUSE_RELEASE, *vpp, context);
-        x_fri = x_fdi.indata;
-        x_fri->fh = x_fh_id;
-        x_fri->flags = O_WRONLY;
-        fuse_insert_callback(x_fdi.tick, NULL);
-        fuse_insert_message(x_fdi.tick);
-#endif
-
     }
 
 #if M_MACFUSE_EXPERIMENTAL_JUNK
@@ -1756,6 +1744,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
     error = fuse_filehandle_get(vp, context, fufh_type, mode);
     if (error) {
+        IOLog("MacFUSE: filehandle_get failed in open (type=%d, err=%d)\n",
+              fufh_type, error);
         if (error == ENOENT) {
             cache_purge(vp);
         }
@@ -2184,6 +2174,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     if (!(fufh->fufh_flags & FUFH_VALID)) {
         err = fuse_filehandle_get(vp, context, FUFH_RDONLY, 0 /* mode */);
         if (err) {
+            IOLog("MacFUSE: filehandle_get failed in readdir (err=%d)\n", err);
             return err;
         }
         freefufh = 1;
@@ -3208,7 +3199,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
 
     /* !direct_io */
 
-    // Be wary of a size change here.
+    /* Be wary of a size change here. */
 
     original_size = fvdat->filesize;
 
@@ -3266,11 +3257,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
         FUSE_KNOTE(vp, NOTE_WRITE);
     }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-     if (original_resid > uio_resid(uio)) {
-         dep->de_flag |= DE_UPDATE;
-     }
-#endif
+    /*
+     * If original_resid > uio_resid(uio), we could set an internal
+     * flag bit to "update" (e.g., dep->de_flag |= DE_UPDATE).
+     */
         
     /*
      * If the write failed and they want us to, truncate the file back
@@ -3282,32 +3272,31 @@ fuse_vnop_write(struct vnop_write_args *ap)
     if (error) {
         debug_printf("WRITE: we had a failed write (%d)\n", error);
         if (ioflag & IO_UNIT) {
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-            detrunc(dep, original_size, ioflag & IO_SYNC, context);
-#endif
+            /*
+             * e.g.: detrunc(dep, original_size, ioflag & IO_SYNC, context);
+             */
             uio_setoffset(uio, original_offset);
             uio_setresid(uio, original_resid);
         } else {
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-            detrunc(dep, dep->de_FileSize, ioflag & IO_SYNC, context);
-#endif
+            /*
+             * e.g.: detrunc(dep, dep->de_FileSize, ioflag & IO_SYNC, context);
+             */
             if (uio_resid(uio) != original_resid) {
                 error = 0;
             }
         }
     } else if (ioflag & IO_SYNC) {
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-        error = deupdat(dep, 1, context);
-#endif
-        ;
+        /*
+         * e.g.: error = deupdat(dep, 1, context);
+         */
     }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
+    /*
     if ((original_resid > uio_resid(uio)) &&
         !fuse_vfs_context_issuser(context)) {
-        /* clear setuid/setgid here */
+        // clear setuid/setgid here
     }
-#endif
+     */
 
     return error;
 }

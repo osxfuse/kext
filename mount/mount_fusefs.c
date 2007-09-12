@@ -49,7 +49,7 @@ struct mntopt mopts[] = {
     { "allow_other",         0, FUSE_MOPT_ALLOW_OTHER,            1 }, // kused
     { "allow_recursion",     0, FUSE_MOPT_ALLOW_RECURSION,        1 }, // uused
     { "allow_root",          0, FUSE_MOPT_ALLOW_ROOT,             1 }, // kused
-    { "autoxattr",           0, FUSE_MOPT_AUTO_XATTR,             1 }, // kused
+    { "auto_xattr",          0, FUSE_MOPT_AUTO_XATTR,             1 }, // kused
     { "blocksize=",          0, FUSE_MOPT_BLOCKSIZE,              1 }, // kused
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
     { "debug",               0, FUSE_MOPT_DEBUG,                  1 }, // kused
@@ -57,21 +57,13 @@ struct mntopt mopts[] = {
     { "defer_auth",          0, FUSE_MOPT_DEFER_AUTH,             1 }, // kused
     { "direct_io",           0, FUSE_MOPT_DIRECT_IO,              1 }, // kused
     { "extended_security",   0, FUSE_MOPT_EXTENDED_SECURITY,      1 }, // kused
-    { "fd=",                 0, FUSE_MOPT_FD,                     1 },
     { "fsid=" ,              0, FUSE_MOPT_FSID,                   1 }, // kused
     { "fsname=",             0, FUSE_MOPT_FSNAME,                 1 }, // kused
     { "fssubtype=",          0, FUSE_MOPT_FSSUBTYPE,              1 }, // kused
-    { "gid=",                0, FUSE_MOPT_GID,                    1 }, // kused
-    { "hard_remove",         0, FUSE_MOPT_HARD_REMOVE,            1 },
     { "init_timeout=",       0, FUSE_MOPT_INIT_TIMEOUT,           1 }, // kused
     { "iosize=",             0, FUSE_MOPT_IOSIZE,                 1 }, // kused
     { "jail_symlinks",       0, FUSE_MOPT_JAIL_SYMLINKS,          1 }, // kused
-    { "kernel_cache",        0, FUSE_MOPT_KERNEL_CACHE,           1 },
     { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused 
-    { "readdir_ino",         0, FUSE_MOPT_READDIR_INO,            1 },
-    { "rootmode=",           0, FUSE_MOPT_ROOTMODE,               1 },
-    { "uid=",                0, FUSE_MOPT_UID,                    1 }, // kused
-    { "umask=",              0, FUSE_MOPT_UMASK,                  1 },
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
 
@@ -770,38 +762,41 @@ showhelp()
 {
     if (!getenv("MOUNT_FUSEFS_CALL_BY_LIB")) {
         showversion(0);
-        fprintf(stderr, "\nThis program is not meant to be called directly.\n");
+        fprintf(stderr, "\nThis program is not meant to be called directly. The MacFUSE library calls it.\n");
     }
     fprintf(stderr, "\nAvailable mount options:\n");
     fprintf(stderr,
       "    -o allow_other         allow access to others besides the user who mounted"
-      "                             mounted the file system\n"
+      "                             the file system\n"
       "    -o allow_recursion     allow a mount point that itself resides on a MacFUSE\n"
       "                           volume (by default, such mounting is disallowed)\n"
-      "    -o allow_root          allow access to root (mutually exclusive with the\n"
-      "                           allow_other option)\n"
+      "    -o allow_root          allow access to root (can't be used with allow_other)\n"
+      "    -o auto_xattr          handle extended attributes entirely through ._ files\n"
       "    -o blocksize=<size>    specify block size in bytes of \"storage\"\n"
       "    -o daemon_timeout=<s>  timeout in seconds for kernel calls to daemon\n"
       "    -o debug               turn on debug information printing\n"
-      "    -o defer_auth          defer permission checks to file operations themselves"
+      "    -o default_permissions let the kernel handle permission checks locally\n"
+      "    -o defer_auth          defer permission checks to file operations themselves\n"
+      "    -o direct_io           use alternative (direct) path for kernel-user I/O\n"
       "    -o extended_security   turn on Mac OS X extended security (ACLs)\n"
-      "    -o fsid                set the second 32-bit component of the fsid\n"
-      "    -o fssubtype=<num>     set the file system's fssubtype identifier\n"
+      "    -o fsid=<fsid>         set the second 32-bit component of the fsid\n"
       "    -o fsname=<name>       set the file system's name\n"
+      "    -o fssubtype=<num>     set the file system's fssubtype identifier\n"
       "    -o iosize=<size>       specify maximum I/O size in bytes\n" 
       "    -o jail_symlinks       contain symbolic links within the mount\n"
       "    -o kill_on_unmount     kernel will send a signal (SIGKILL by default) to the\n                           daemon after unmount finishes\n" 
+      "    -o volname=<name>      set the file system's volume name\n"      
+      "\nAvailable negative mount options:\n"
+      "    -o noalerts            disable all graphical alerts (if any) in MacFUSE Core\n"
       "    -o noappledouble       ignore Apple Double (._) and .DS_Store files entirely\n"
       "    -o noapplexattr        ignore all \"com.apple.*\" extended attributes\n"
-      "    -o nobrowse            set MNT_DONTBROWSE in the kernel\n"
+      "    -o nobrowse            mark the volume as non-browsable by the Finder\n"
       "    -o nolocalcaches       meta option equivalent to noreadahead,noubc,novncache\n"
-      "    -o noping_diskarb      do not ping Disk Arbitration (pings by default)\n"
       "    -o noreadahead         disable I/O read-ahead behavior for this file system\n"
       "    -o nosynconclose       disable sync-on-close behavior (enabled by default)\n"
       "    -o nosyncwrites        disable synchronous-writes behavior (dangerous)\n"
       "    -o noubc               disable the unified buffer cache for this file system\n"
       "    -o novncache           disable the vnode name cache for this file system\n"
-      "    -o volname=<name>      set the file system's volume name\n"      
     );
     exit(EX_USAGE);
 }
