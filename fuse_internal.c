@@ -46,8 +46,8 @@ fuse_internal_access(vnode_t                   vp,
                      struct fuse_access_param *facp)
 {
     int err = 0;
-    uint32_t mask = 0;
     int default_error = 0;
+    uint32_t mask = 0;
     int dataflags;
     int vtype;
     mount_t mp;
@@ -64,7 +64,7 @@ fuse_internal_access(vnode_t                   vp,
     dataflags = data->dataflags;
 
     /* Allow for now; let checks be handled inline later. */
-    if (dataflags & FSESS_DEFER_AUTH) {
+    if (fuse_isdeferpermissions_mp(mp)) {
         return 0;
     }
 
@@ -575,8 +575,9 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     struct fuse_data       *data;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
+    mount_t mp = vnode_mount(vp);
 
-    data = fuse_get_mpdata(vnode_mount(vp));
+    data = fuse_get_mpdata(mp);
 
     biosize = data->blocksize;
 
@@ -605,19 +606,28 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (!fufh) {
+
         if (mode == FREAD) {
             fufh_type = FUFH_RDONLY;
         } else {
             fufh_type = FUFH_RDWR;
         }
-        err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
+
+        err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
+                                               (vfs_context_t)0, fufh_type);
+        fuse_preflight_log(vp, fufh_type, err, "strategy");
+
+        if (!err) {
+            err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
+        }
+
         if (!err) {
             fufh = &(fvdat->fufh[fufh_type]);
             fufh->fufh_flags |= FUFH_STRATEGY;
             debug_printf("STRATEGY: created *new* fufh of type %d\n",
                          fufh_type);
         }
-    } else {
+    } else { /* good fufh */
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_reuse_count);
         debug_printf("STRATEGY: using existing fufh of type %d\n", fufh_type);
     }
@@ -631,15 +641,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
              return EIO;
          }
 
-         /*
-          * Thinking about this more, I don't think we should panic here.
-          * But then, I don't have time to think right now.
-          *
-          * panic()?
-          */
-         IOLog("MacFUSE: failed to get fh from strategy (err=%d)\n", err);
+         IOLog("MacFUSE: strategy failed to get fh "
+               "(vtype=%d, fufh_type=%d, err=%d)\n", vtype, fufh_type, err);
 
-         if (!vfs_issynchronous(vnode_mount(vp))) {
+         if (!vfs_issynchronous(mp)) {
              IOLog("MacFUSE: asynchronous write failed!\n");
          }
 
@@ -1245,4 +1250,30 @@ fuse_internal_print_vnodes(mount_t mp)
 {
     vnode_iterate(mp, VNODE_ITERATE_ALL,
                   fuse_internal_print_vnodes_callback, NULL);
+}
+
+__private_extern__
+void
+fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
+{
+    char *name = NULL;
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+    name = vnode_getname(vp);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
+    if (name) {
+        IOLog("MacFUSE: file handle preflight "
+              "(caller=%s, type=%d, err=%d, name=%s)\n",
+              message, fufh_type, err, name);
+    } else {
+        IOLog("MacFUSE: file handle preflight "
+              "(caller=%s, type=%d, err=%d)\n", message, fufh_type, err);
+    }
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+    if (name) {
+        vnode_putname(name);
+    }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 }

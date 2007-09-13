@@ -932,7 +932,7 @@ fdisp_make(struct fuse_dispatcher *fdip,
            uint64_t                nid,
            vfs_context_t           context)
 {
-    struct fuse_data *data = vfs_fsprivate(mp);
+    struct fuse_data *data = fuse_get_mpdata(mp);
 
     debug_printf("fdip=%p, op=%d, mp=%p, nid=%llx, context=%p\n",
                  fdip, op, mp, nid, context);

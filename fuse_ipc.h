@@ -192,7 +192,7 @@ enum {
 #define FSESS_ALLOW_ROOT          0x00000010
 #define FSESS_AUTO_XATTR          0x00000020
 #define FSESS_DEFAULT_PERMISSIONS 0x00000040
-#define FSESS_DEFER_AUTH          0x00000080
+#define FSESS_DEFER_PERMISSIONS   0x00000080
 #define FSESS_DIRECT_IO           0x00000100
 #define FSESS_EXTENDED_SECURITY   0x00000200
 #define FSESS_JAIL_SYMLINKS       0x00000400
@@ -212,9 +212,10 @@ static __inline__
 struct fuse_data *
 fuse_get_mpdata(mount_t mp)
 {
-    struct fuse_data *data = vfs_fsprivate(mp);
-    kdebug_printf("-> mp=%p\n", mp);
-    return (data->mount_state == FM_MOUNTED ? data : NULL);
+    /*
+     * data->mount_state should be FM_MOUNTED for it to be valid
+     */
+    return (struct fuse_data *)vfs_fsprivate(mp);
 }
 
 static __inline__

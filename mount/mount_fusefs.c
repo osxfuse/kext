@@ -54,7 +54,7 @@ struct mntopt mopts[] = {
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
     { "debug",               0, FUSE_MOPT_DEBUG,                  1 }, // kused
     { "default_permissions", 0, FUSE_MOPT_DEFAULT_PERMISSIONS,    1 }, // kused
-    { "defer_auth",          0, FUSE_MOPT_DEFER_AUTH,             1 }, // kused
+    { "defer_permissions",   0, FUSE_MOPT_DEFER_PERMISSIONS,      1 }, // kused
     { "direct_io",           0, FUSE_MOPT_DIRECT_IO,              1 }, // kused
     { "extended_security",   0, FUSE_MOPT_EXTENDED_SECURITY,      1 }, // kused
     { "fsid=" ,              0, FUSE_MOPT_FSID,                   1 }, // kused
@@ -73,8 +73,6 @@ struct mntopt mopts[] = {
     { "appledouble",         1, FUSE_MOPT_NO_APPLEDOUBLE,         1 }, // kused
     { "applexattr",          1, FUSE_MOPT_NO_APPLEXATTR,          1 }, // kused
     { "attrcache",           1, FUSE_MOPT_NO_ATTRCACHE,           1 }, // kused
-    { "authopaque",          1, FUSE_MOPT_NO_AUTH_OPAQUE,         1 }, // kused
-    { "authopaqueaccess",    1, FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS,  1 }, // kused
     { "browse",              1, FUSE_MOPT_NO_BROWSE,              1 }, // kused
     { "localcaches",         1, FUSE_MOPT_NO_LOCALCACHES,         1 }, // kused
     { "readahead",           1, FUSE_MOPT_NO_READAHEAD,           1 }, // kused
@@ -676,12 +674,9 @@ main(int argc, char **argv)
         errx(1, "'novncache' can't be used with 'extended_security'");
     }
 
-    if ((altflags & FUSE_MOPT_DEFER_AUTH) &&
-        (altflags &
-         (FUSE_MOPT_NO_AUTH_OPAQUE        |
-          FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS |
-          FUSE_MOPT_DEFAULT_PERMISSIONS))) {
-        errx(1, "'defer_auth' can't be used with 'noauthopaque*' or 'default_permissions'");
+    if ((altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) &&
+        (altflags & FUSE_MOPT_DEFER_PERMISSIONS)) {
+        errx(1, "'default_permissions' can't be used with 'defer_permissions'");
     }
 
     if (getenv("MOUNT_FUSEFS_NO_ALERTS")) {
@@ -776,7 +771,7 @@ showhelp()
       "    -o daemon_timeout=<s>  timeout in seconds for kernel calls to daemon\n"
       "    -o debug               turn on debug information printing\n"
       "    -o default_permissions let the kernel handle permission checks locally\n"
-      "    -o defer_auth          defer permission checks to file operations themselves\n"
+      "    -o defer_permissions   defer permission checks to file operations themselves\n"
       "    -o direct_io           use alternative (direct) path for kernel-user I/O\n"
       "    -o extended_security   turn on Mac OS X extended security (ACLs)\n"
       "    -o fsid=<fsid>         set the second 32-bit component of the fsid\n"

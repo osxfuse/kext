@@ -1505,6 +1505,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     fufh_type_t fufh_type = fuse_filehandle_xlate_from_mmap(fflags);
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
+    int retried = 0;
 
     fuse_trace_printf_vnop();
 
@@ -1529,6 +1530,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
 
     /* XXX: For PROT_WRITE, we should only care if file is mapped MAP_SHARED. */
 
+retry:
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (fufh->fufh_flags & FUFH_VALID) {
@@ -1536,11 +1538,30 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
         goto out;
     }
 
-    err = fuse_filehandle_get(vp, ap->a_context, fufh_type, 0 /* mode */);
+    err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
+                                           context, fufh_type);
+    fuse_preflight_log(vp, fufh_type, err, "mmap");
+
+    if (!err) {
+        err = fuse_filehandle_get(vp, context, fufh_type, 0 /* mode */);
+    }
+
     if (err) {
-        IOLog("MacFUSE: filehandle_get failed in mmap (type=%d, err=%d)\n",
-              fufh_type, err);
-        return err;
+        /*
+         * XXX: This is a kludge because xnu doesn't tell us whether this
+         *      is a MAP_SHARED or MAP_PRIVATE mapping. If we want shared
+         *      library mapping to go well, we need to do this.
+         */
+        if (!retried && (fufh_type == FUFH_RDWR) && (err != ENOENT)) {
+            retried = 1;
+            fufh_type = FUFH_RDONLY;
+            IOLog("MacFUSE: filehandle_get retrying (type=%d)\n", fufh_type);
+            goto retry;
+        } else {
+            IOLog("MacFUSE: filehandle_get failed in mmap (type=%d, err=%d)\n",
+                  fufh_type, err);
+        }
+        return EPERM;
     }
 
 out:

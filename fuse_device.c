@@ -22,11 +22,12 @@ static int    fuse_cdev_major          = -1;
 static UInt32 fuse_interface_available = FALSE;
 
 struct fuse_softc {
+    struct fuse_data *data;
+    lck_mtx_t        *mtx;
     int               usecount;
     pid_t             pid;
     dev_t             dev;
     void             *cdev;
-    struct fuse_data *data;
 };
 
 struct fuse_softc fuse_softc_table[FUSE_NDEVICES];
@@ -48,7 +49,7 @@ fuse_devices_kill(int unit, struct proc *p)
         return ENOENT;
     }
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (fdev->data) {
         error = EPERM;
@@ -56,7 +57,7 @@ fuse_devices_kill(int unit, struct proc *p)
             kauth_cred_t request_cred = proc_ucred(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
-                FUSE_DEVICE_UNLOCK();
+                FUSE_DEVICE_GLOBAL_UNLOCK();
                 /* The following can block. */
                 fdata_kick_set(fdev->data);
                 error = 0;
@@ -76,7 +77,7 @@ fuse_devices_kill(int unit, struct proc *p)
             }
         }
     } else {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
     }
 
     return error;
@@ -99,7 +100,7 @@ fuse_devices_print_vnodes(int unit_flags, struct proc *p)
         return ENOENT;
     }
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (fdev->data) {
         error = EPERM;
@@ -113,7 +114,7 @@ fuse_devices_print_vnodes(int unit_flags, struct proc *p)
         }
     }
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     return error;
 }
@@ -128,18 +129,6 @@ fuse_softc_get(dev_t dev)
     }
 
     return FUSE_SOFTC_FROM_UNIT_FAST(unit);
-}
-
-/* Must be called under lock. */
-__inline__
-int
-fuse_softc_get_usecount(fuse_softc_t fdev)
-{
-    if (!fdev) {
-        return -1;
-    }
-
-    return fdev->usecount;
 }
 
 /* Must be called under lock. */
@@ -164,17 +153,6 @@ fuse_softc_set_data(fuse_softc_t fdev, struct fuse_data *data)
     }
 
     fdev->data = data;
-}
-
-/* Must be called under lock. */
-dev_t
-fuse_softc_get_dev(fuse_softc_t fdev)
-{
-    if (fdev) {
-        return 0;
-    }
-
-    return fdev->dev;
 }
 
 /* Must be called under lock. */
@@ -234,32 +212,32 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
 
     unit = minor(dev);
     if (unit >= FUSE_NDEVICES) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         return ENOENT;
     }
 
     fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
     if (!fdev) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         IOLog("MacFUSE: device with no softc!\n");
         return ENXIO;
     }
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (fdev->usecount != 0) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         return EBUSY;
     }
 
     fdev->usecount++;
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     /* Could block. */
     fdata = fdata_alloc(fdev, p);
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (fdev->data) {
         /*
@@ -270,7 +248,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
 
         fdev->usecount--;
 
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
 
         fdata_destroy(fdata);
 
@@ -281,7 +259,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
         fdev->pid = proc_pid(p);
     }       
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     return KERN_SUCCESS;
 }
@@ -313,22 +291,22 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     fdata_kick_set(data);
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     data->dataflags &= ~FSESS_OPENED;
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     fuse_lck_mtx_lock(data->aw_mtx);
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (data->mount_state == FM_MOUNTED) {
         struct fuse_ticket *ftick;
 
         skip_destroy = 1;
 
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
 
         while ((ftick = fuse_aw_pop(data))) {
             fuse_lck_mtx_lock(ftick->tk_aw_mtx);
@@ -340,10 +318,10 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
         fuse_lck_mtx_unlock(data->aw_mtx);
     } else {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
     }
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (!skip_destroy) {
         fdev->data = NULL;
@@ -351,7 +329,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         fdev->usecount--;
     }
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     if (!skip_destroy) {
         fdata_destroy(data);
@@ -652,6 +630,8 @@ fuse_devices_start(void)
         fuse_softc_table[i].dev      = dev;
         fuse_softc_table[i].pid      = -1;
         fuse_softc_table[i].usecount = 0;
+        fuse_softc_table[i].mtx      = lck_mtx_alloc_init(fuse_lock_group,
+                                                          fuse_lock_attr);
     }
 
     fuse_interface_available = TRUE;
@@ -663,6 +643,7 @@ error:
         devfs_remove(fuse_softc_table[i].cdev);
         fuse_softc_table[i].cdev = NULL;
         fuse_softc_table[i].dev  = 0;
+        lck_mtx_free(fuse_softc_table[i].mtx, fuse_lock_group);
     }
 
     (void)cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
@@ -678,10 +659,10 @@ fuse_devices_stop(void)
 
     fuse_interface_available = FALSE;
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     if (fuse_cdev_major == -1) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         return KERN_SUCCESS;
     }
 
@@ -691,7 +672,7 @@ fuse_devices_stop(void)
 
         if (fuse_softc_table[i].usecount != 0) {
             fuse_interface_available = TRUE;
-            FUSE_DEVICE_UNLOCK();
+            FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
             IOLog("MacFUSE: /dev/fuse%d is still active (pid=%d %s)\n",
                   i, fuse_softc_table[i].pid, p_comm);
@@ -700,7 +681,7 @@ fuse_devices_stop(void)
 
         if (fuse_softc_table[i].data != NULL) {
             fuse_interface_available = TRUE;
-            FUSE_DEVICE_UNLOCK();
+            FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
             /* The pid can't possibly be active here. */
             IOLog("MacFUSE: /dev/fuse%d has a lingering mount (pid=%d, %s)\n",
@@ -713,6 +694,8 @@ fuse_devices_stop(void)
 
     for (i = 0; i < FUSE_NDEVICES; i++) {
         devfs_remove(fuse_softc_table[i].cdev);
+        lck_mtx_free(fuse_softc_table[i].mtx, fuse_lock_group);
+        fuse_softc_table[i].mtx  = NULL;
         fuse_softc_table[i].cdev = NULL;
         fuse_softc_table[i].dev  = 0;
         fuse_softc_table[i].pid  = -1;
@@ -725,7 +708,7 @@ fuse_devices_stop(void)
 
     fuse_cdev_major = -1;
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     return KERN_SUCCESS;
 }

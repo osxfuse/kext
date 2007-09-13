@@ -293,35 +293,23 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfs_setflags(mp, MNT_SYNCHRONOUS);
     }
 
+    err = 0;
+
+    vfs_setauthopaque(mp);
+    vfs_setauthopaqueaccess(mp);
+
+    if ((fusefs_args.altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) &&
+        (fusefs_args.altflags & FUSE_MOPT_DEFER_PERMISSIONS)) {
+        return EINVAL;
+    }
+
     if (fusefs_args.altflags & FUSE_MOPT_DEFAULT_PERMISSIONS) {
         mntopts |= FSESS_DEFAULT_PERMISSIONS;
-        fusefs_args.altflags |= (FUSE_MOPT_NO_AUTH_OPAQUE |
-                                 FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS);
+        vfs_clearauthopaque(mp);
     }
 
-    if (!(fusefs_args.altflags & FUSE_MOPT_NO_AUTH_OPAQUE)) {
-        // This sets MNTK_AUTH_OPAQUE in the mount point's mnt_kern_flag.
-        vfs_setauthopaque(mp);
-        err = 0;
-    }
-
-    if (!(fusefs_args.altflags & FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS)) {
-        // This sets MNTK_AUTH_OPAQUE_ACCESS in the mount point's mnt_kern_flag.
-        vfs_setauthopaqueaccess(mp);
-        err = 0;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_DEFER_AUTH) {
-        if (fusefs_args.altflags &
-            (FUSE_MOPT_NO_AUTH_OPAQUE        |
-             FUSE_MOPT_NO_AUTH_OPAQUE_ACCESS |
-             FUSE_MOPT_DEFAULT_PERMISSIONS)) {
-            return EINVAL;
-        }
-        mntopts |= FSESS_DEFER_AUTH;
-        vfs_setauthopaque(mp);
-        vfs_setauthopaqueaccess(mp);
-        err = 0;
+    if (fusefs_args.altflags & FUSE_MOPT_DEFER_PERMISSIONS) {
+        mntopts |= FSESS_DEFER_PERMISSIONS;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_EXTENDED_SECURITY) {
@@ -335,23 +323,23 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         return EINVAL;
     }
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     fdev = fuse_softc_get(fusefs_args.rdev);
     data = fuse_softc_get_data(fdev);
 
     if (!data) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         return ENXIO;
     }
 
     if (data->mount_state != FM_NOTMOUNTED) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         return EALREADY;
     }
 
     if (!(data->dataflags & FSESS_OPENED)) {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         err = ENXIO;
         goto out;
     }
@@ -360,7 +348,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_mount_count++;
     mounted = 1;
 
-    FUSE_DEVICE_UNLOCK();
+    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     if (fdata_kick_get(data)) {
         err = ENOTCONN;
@@ -423,17 +411,17 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 out:
     if (err) {
         vfs_setfsprivate(mp, NULL);
-        FUSE_DEVICE_LOCK();
+        FUSE_DEVICE_GLOBAL_LOCK();
         data->mount_state = FM_NOTMOUNTED;
         if (mounted) {
             fuse_mount_count--;
         }
         if (!(data->dataflags & FSESS_OPENED)) {
             fuse_softc_set_data(fdev, NULL);
-            FUSE_DEVICE_UNLOCK();
+            FUSE_DEVICE_GLOBAL_UNLOCK();
             fdata_destroy(data);
         } else {
-            FUSE_DEVICE_UNLOCK();
+            FUSE_DEVICE_GLOBAL_UNLOCK();
         }
     }
 
@@ -513,17 +501,17 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-    FUSE_DEVICE_LOCK();
+    FUSE_DEVICE_GLOBAL_LOCK();
 
     data->mount_state = FM_NOTMOUNTED;
     fuse_mount_count--;
     fdev = data->fdev;
     if (!(data->dataflags & FSESS_OPENED)) {
         fuse_softc_close_finalize(fdev);
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
         fdata_destroy(data);
     } else {
-        FUSE_DEVICE_UNLOCK();
+        FUSE_DEVICE_GLOBAL_UNLOCK();
     }
 
     vfs_setfsprivate(mp, NULL);
@@ -1063,7 +1051,7 @@ fuse_setextendedsecurity(mount_t mp, int state)
     if (state == 1) {
         /* Turning on extended security. */
         if ((data->dataflags & FSESS_NO_VNCACHE) ||
-            (data->dataflags & FSESS_DEFER_AUTH)) {
+            (data->dataflags & FSESS_DEFER_PERMISSIONS)) {
             return EINVAL;
         }
         data->dataflags |= (FSESS_EXTENDED_SECURITY |

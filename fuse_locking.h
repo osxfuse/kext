@@ -39,20 +39,6 @@ extern lck_mtx_t      *fuse_device_mutex;
 
 #ifdef FUSE_TRACE_LK
 
-#define FUSE_DEVICE_LOCK()                                                 \
-    {                                                                      \
-        IOLog("0: FUSE_DEVICE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
-        lck_mtx_lock(fuse_device_mutex);                                   \
-        IOLog("1: FUSE_DEVICE_LOCK(): %s@%d\n", __FUNCTION__, __LINE__);   \
-    }
-
-#define FUSE_DEVICE_UNLOCK()                                               \
-    {                                                                      \
-        IOLog("1: FUSE_DEVICE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
-        lck_mtx_unlock(fuse_device_mutex);                                 \
-        IOLog("0: FUSE_DEVICE_UNLOCK(): %s@%d\n", __FUNCTION__, __LINE__); \
-    }
-
 #define fuse_lck_mtx_lock(m)                                                  \
     {                                                                         \
         IOLog("0: lck_mtx_lock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__);   \
@@ -68,8 +54,6 @@ extern lck_mtx_t      *fuse_device_mutex;
     }
 
 #else
-#define FUSE_DEVICE_LOCK()     lck_mtx_lock(fuse_device_mutex)
-#define FUSE_DEVICE_UNLOCK()   lck_mtx_unlock(fuse_device_mutex)
 #define fuse_lck_mtx_lock(m)   lck_mtx_lock((m))
 #define fuse_lck_mtx_unlock(m) lck_mtx_unlock((m))
 #endif
@@ -79,9 +63,15 @@ extern lck_mtx_t      *fuse_device_mutex;
 #define fuse_lck_rw_unlock_shared(l)    lck_rw_unlock_shared((l))
 #define fuse_lck_rw_unlock_exclusive(l) lck_rw_unlock_exclusive((l))
 
-#define FUSE_DATA_LOCK_SHARED(d)      fuse_lck_rw_lock_shared((d)->rwlock)
-#define FUSE_DATA_LOCK_EXCLUSIVE(d)   fuse_lck_rw_lock_exclusive((d)->rwlock)
-#define FUSE_DATA_UNLOCK_SHARED(d)    fuse_lck_rw_unlock_shared((d)->rwlock)
-#define FUSE_DATA_UNLOCK_EXCLUSIVE(d) fuse_lck_rw_unlock_exclusive((d)->rwlock)
+#define FUSE_DATA_LOCK_SHARED(d)       fuse_lck_rw_lock_shared((d)->rwlock)
+#define FUSE_DATA_LOCK_EXCLUSIVE(d)    fuse_lck_rw_lock_exclusive((d)->rwlock)
+#define FUSE_DATA_UNLOCK_SHARED(d)     fuse_lck_rw_unlock_shared((d)->rwlock)
+#define FUSE_DATA_UNLOCK_EXCLUSIVE(d)  fuse_lck_rw_unlock_exclusive((d)->rwlock)
+
+#define FUSE_DEVICE_GLOBAL_LOCK()      fuse_lck_mtx_lock(fuse_device_mutex)
+#define FUSE_DEVICE_GLOBAL_UNLOCK()    fuse_lck_mtx_unlock(fuse_device_mutex)
+#define FUSE_DEVICE_LOCAL_LOCK(d)      fuse_lck_mtx_lock((d)->mtx)
+#define FUSE_DEVICE_LOCAL_UNLOCK(d)    fuse_lck_mtx_unlock((d)->mtx)
+
 
 #endif /* _FUSE_LOCKING_H_ */

@@ -252,6 +252,36 @@ fuse_isextendedsecurity_mp(mount_t mp)
 }
 
 static __inline__
+int
+fuse_isdefaultpermissions(vnode_t vp)
+{
+    return (fuse_get_mpdata(vnode_mount(vp))->dataflags & \
+            FSESS_DEFAULT_PERMISSIONS);
+}
+
+static __inline__
+int
+fuse_isdefaultpermissions_mp(mount_t mp)
+{
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_DEFAULT_PERMISSIONS);
+}
+
+static __inline__
+int
+fuse_isdeferpermissions(vnode_t vp)
+{
+    return (fuse_get_mpdata(vnode_mount(vp))->dataflags & \
+            FSESS_DEFER_PERMISSIONS);
+}
+
+static __inline__
+int
+fuse_isdeferpermissions_mp(mount_t mp)
+{
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_DEFER_PERMISSIONS);
+}
+
+static __inline__
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
@@ -717,6 +747,10 @@ fuse_set_noimplflags(struct fuse_data *data, uint64_t flags)
     return 0;
 }
 
-void fuse_internal_print_vnodes(mount_t mp);
+void
+fuse_internal_print_vnodes(mount_t mp);
+
+void
+fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message);
 
 #endif /* _FUSE_INTERNAL_H_ */

@@ -52,7 +52,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
     uint32_t rdev       = (flags & FN_IS_ROOT) ? 0    : feo->attr.rdev;
     uint64_t generation = feo->generation;
 
-    mntdata = vfs_fsprivate(mp);
+    mntdata = fuse_get_mpdata(mp);
     dummy_device = (dev_t)mntdata->fdev;
 
     err = HNodeLookupCreatingIfNecessary(dummy_device, feo->nodeid,

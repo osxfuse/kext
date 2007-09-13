@@ -60,8 +60,6 @@ fuse_filehandle_get(vnode_t       vp,
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
-        IOLog("MacFUSE: OUCH! daemon did not give fh (type=%d, err=%d)\n",
-              fufh_type, err);
         if (err == ENOENT) {
             /*
              * See comment in fuse_vnop_reclaim().
