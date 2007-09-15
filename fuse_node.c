@@ -216,8 +216,6 @@ fuse_vget_i(vnode_t               *vpp,
 {
     int err = 0;
 
-    debug_printf("dvp=%p\n", dvp);
-
     if (!feo) {
         return EINVAL;
     }

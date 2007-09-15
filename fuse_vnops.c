@@ -178,9 +178,6 @@ fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
         *poffPtr = 0;
     }
 
-    debug_printf("offset=%lld, size=%ld, bpn=%lld, run=%ld, filesize=%lld\n",
-                 foffset, size, *bpnPtr, *runPtr, fvdat->filesize);
-
     return 0;
 }
 
@@ -335,11 +332,11 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     if (!fuse_implemented(data, FSESS_NOIMPLBIT(CREATE)) ||
         (vap->va_type != VREG)) {
-        debug_printf("eh, daemon doesn't implement create?\n");
+
+        /* User-space file system does not implement CREATE */
+
         goto good_old;
     }
-
-    debug_printf("parent nodeid = %llu, mode = %x\n", parent_nodeid, mode);
 
     fdisp_init(fdip, sizeof(*foi) + cnp->cn_namelen + 1);
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
@@ -357,12 +354,10 @@ fuse_vnop_create(struct vnop_create_args *ap)
     err = fdisp_wait_answ(fdip);
 
     if (err == ENOSYS) {
-        debug_printf("create: got ENOSYS from daemon\n");
         fuse_clear_implemented(data, FSESS_NOIMPLBIT(CREATE));
         fdip->tick = NULL;
         goto good_old;
     } else if (err) {
-        debug_printf("create: darn, got err=%d from daemon\n", err);
         goto undo;
     }
 
@@ -424,23 +419,6 @@ bringup:
 
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
     }
-
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    if (fuse_isnovncache_mp(mp) ||
-        /*
-         * This is to work around the Finder giving up with error -43 when
-         * you try to copy a folder into a MacFUSE volume that has extended
-         * security (ACLs) enabled. The Finder doesn't do this in the case
-         * of non-directories. The following "fix" fixes the problem. Well,
-         * what can I say?
-         */
-        FUSE_KL_create_with_acl_in_finder(mp, cnp)) {
-        /* no name cache */
-
-    } else {
-        fuse_vncache_enter(dvp, *vpp, cnp);
-    }
-#endif
 
     cache_purge_negatives(dvp);
 
@@ -1280,13 +1258,14 @@ calldaemon:
             goto out;
         }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-        /* Could do negative caching here. */
+        /*
+         * We could do negative caching here.
+         *
+         * if ((cnp->cn_flags & MAKEENTRY) & (nameiop != CREATE)) {
+         *     fuse_vncache_enter(dvp, ...);
+         * }
+         */
 
-        if ((cnp->cn_flags & MAKEENTRY) && nameiop != CREATE) {
-            cxche_enter(dvp, *vpp, cnp);
-        }
-#endif
         err = ENOENT;
         goto out;
 
@@ -1387,12 +1366,13 @@ calldaemon:
             cache_attrs(*vpp, (struct fuse_entry_out *)fdi.answ);
         }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-        /* Insert name into cache if appropriate. */
-        if (cnp->cn_flags & MAKEENTRY) {
-            cxche_enter(dvp, *vpp, cnp);
-        }
-#endif
+        /*
+         * We do this elsewhere...
+         *
+         * if (cnp->cn_flags & MAKEENTRY) {
+         *     fuse_vncache_enter(dvp, *vpp, cnp);
+         * }
+         */
     }
 
 out:
@@ -1637,13 +1617,16 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
         return ENODEV;
     }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
     /*
-     * sync() is not going to help here. What behavior do we want?
+     * XXX
+     *
+     * What behavior do we want here?
+     *
+     * I once noted that sync() is not going to help here, but I think
+     * I've forgotten the context. Need to think about this again.
+     *
+     * ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), UBC_PUSHDIRTY);
      */
-
-    ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), UBC_PUSHDIRTY);
-#endif
 
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
@@ -1728,7 +1711,6 @@ fuse_vnop_open(struct vnop_open_args *ap)
     if (isdir) {
         fufh_type = FUFH_RDONLY;
     } else {
-        debug_printf("fuse_open(VREG)\n");
         fufh_type = fuse_filehandle_xlate_from_fflags(mode);
     }
 
@@ -1758,8 +1740,11 @@ fuse_vnop_open(struct vnop_open_args *ap)
                 fufh->open_flags = fufh_rw->open_flags;
                 fufh->type = fufh_type;
                 fufh->fh_id = fufh_rw->fh_id;
-                debug_printf("creator picked up stashed handle, moved to %d\n",
-                             fufh_type);
+
+                /*
+                 * Creator has picked up stashed handle and moved it to the
+                 * fufh_type slot.
+                 */
                 
                 fvdat->flag &= ~FN_CREATING;
 
@@ -1767,14 +1752,17 @@ fuse_vnop_open(struct vnop_open_args *ap)
                 fuse_wakeup((caddr_t)fvdat->creator); // wake up all
                 goto ok; /* return 0 */
             } else {
-                debug_printf("contender going to sleep\n");
+
+                /* Contender is going to sleep now. */
+
                 error = fuse_msleep(fvdat->creator, fvdat->createlock,
                                     PDROP | PINOD | PCATCH, "fuse_open", NULL);
                 /*
                  * msleep will drop the mutex. since we have PDROP specified,
                  * it will NOT regrab the mutex when it returns.
                  */
-                debug_printf("contender awake (error = %d)\n", error);
+
+                /* Contender is awake now. */
 
                 if (error) {
                     /*
@@ -2112,15 +2100,15 @@ fuse_vnop_read(struct vnop_read_args *ap)
             if (!(fufh->fufh_flags & FUFH_VALID)) {
                 fufh = NULL;
             } else {
-                debug_printf("read falling back to FUFH_RDWR ... OK\n");
+                /* Read falling back to FUFH_RDWR. */
             }
         }
 
         if (!fufh) {
-            debug_printf("READ: no fufh: failing direct I/O\n");
+            /* Failing direct I/O because of no fufh. */
             return EIO;
         } else {
-           debug_printf("READ: using existing fufh of type %d\n", fufh_type);
+            /* Using existing fufh of type fufh_type. */
         }
 
         rounded_iolength = (off_t)round_page_64(uio_offset(uio) +
@@ -2846,8 +2834,8 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     vtyp = IFTOVT(((struct fuse_attr_out *)fdi.answ)->attr.mode);
 
     if (vnode_vtype(vp) != vtyp) {
-        if (vnode_vtype(vp) == VNON && vtyp != VNON) {
-            debug_printf("MacFUSE: vnode_vtype is VNON and vtype isn't!\n");
+        if ((vnode_vtype(vp) == VNON) && (vtyp != VNON)) {
+            /* What just happened here? */
         } else {
 
             /*
@@ -3159,8 +3147,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
         return EISDIR;
 
     default:
-        // Wanna panic here?
-        return EPERM; // or EINVAL?
+        return EPERM; /* or EINVAL? panic? */
     }
 
     original_resid = uio_resid(uio);
@@ -3179,8 +3166,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
         fufh_type_t             fufh_type = FUFH_WRONLY;
         struct fuse_dispatcher  fdi;
         struct fuse_filehandle *fufh = NULL;
-        struct fuse_write_in   *fwi = NULL;
-        struct fuse_write_out  *fwo = NULL;
+        struct fuse_write_in   *fwi  = NULL;
+        struct fuse_write_out  *fwo  = NULL;
         struct fuse_data       *data = fuse_get_mpdata(vnode_mount(vp));
 
         int chunksize;
@@ -3193,15 +3180,15 @@ fuse_vnop_write(struct vnop_write_args *ap)
             if (!(fufh->fufh_flags & FUFH_VALID)) {
                 fufh = NULL;
             } else {
-                debug_printf("write falling back to FUFH_RDWR ... OK\n");
+                /* Write falling back to FUFH_RDWR. */
             }
         }
 
         if (!fufh) {
-            debug_printf("WRITE: no fufh: failing direct I/O\n");
+            /* Failing direct I/O because of no fufh. */
             return EIO;
         } else {
-           debug_printf("WRITE: using existing fufh of type %d\n", fufh_type);
+            /* Using existing fufh of type fufh_type. */
         }
 
         fdisp_init(&fdi, 0);
@@ -3255,7 +3242,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
     original_size = fvdat->filesize;
 
     if (ioflag & IO_APPEND) {
-        debug_printf("WRITE: arranging for append\n");
+        /* Arrange for append */
         uio_setoffset(uio, fvdat->filesize);
         offset = fvdat->filesize;
     }
@@ -3276,11 +3263,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
 
     if (offset + original_resid > original_size) {
         /* Need to extend the file. */
-        debug_printf("WRITE: need to extend the file\n");
         filesize = offset + original_resid;
         fvdat->filesize = filesize;
     } else {
-        debug_printf("WRITE: original size OK\n");
+        /* Original size OK. */
         filesize = original_size;
     }
         
@@ -3289,7 +3275,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
     if (offset > original_size) {
         zero_off = original_size;
         lflag |= IO_HEADZEROFILL;
-        debug_printf("WRITE: zero filling enabled\n");
+        /* Zero-filling enabled. */
     } else {
         zero_off = 0;
     }
@@ -3298,7 +3284,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
                           (off_t)zero_off, (off_t)0, lflag);
         
     if (uio_offset(uio) > original_size) {
-        debug_printf("WRITE: updating to new size\n");
+        /* Updating to new size. */
         fuse_invalidate_attr(vp);
         fvdat->filesize = uio_offset(uio);
         ubc_setsize(vp, (off_t)fvdat->filesize);
@@ -3321,7 +3307,6 @@ fuse_vnop_write(struct vnop_write_args *ap)
 /* errexit: */
 
     if (error) {
-        debug_printf("WRITE: we had a failed write (%d)\n", error);
         if (ioflag & IO_UNIT) {
             /*
              * e.g.: detrunc(dep, original_size, ioflag & IO_SYNC, context);

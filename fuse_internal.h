@@ -422,8 +422,6 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
     mount_t mp = vnode_mount(vp);
     struct fuse_data *data = fuse_get_mpdata(mp);
 
-    debug_printf("mp=%p, fat=%p, vap=%p\n", mp, fat, vap);
-
     VATTR_INIT(vap);
 
     VATTR_RETURN(vap, va_fsid, vfs_statfs(mp)->f_fsid.val[0]);
@@ -651,21 +649,16 @@ static __inline__
 int
 fuse_internal_checkentry(struct fuse_entry_out *feo, enum vtype vtype)
 {
-    debug_printf("feo=%p, vtype=%d\n", feo, vtype);
-
     if (vtype != IFTOVT(feo->attr.mode)) {
-        debug_printf("EINVAL -- %x != %x\n", vtype, IFTOVT(feo->attr.mode));
-        return (EINVAL);
+        return EINVAL;
     }
 
     if (feo->nodeid == FUSE_NULL_ID) {
-        debug_printf("EINVAL -- feo->nodeid is NULL\n");
-        return (EINVAL);
+        return EINVAL;
     }
 
     if (feo->nodeid == FUSE_ROOT_ID) {
-        debug_printf("EINVAL -- feo->nodeid is FUSE_ROOT_ID\n");
-        return (EINVAL);
+        return EINVAL;
     }
 
     return (0);

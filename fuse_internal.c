@@ -445,13 +445,13 @@ fuse_internal_remove(vnode_t               dvp,
 {
     struct fuse_dispatcher fdi;
     struct vnode_attr *vap = VTOVA(vp);
+
+    int err = 0;
+
 #if M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
     int need_invalidate = 0;
     uint64_t target_nlink = 0;
 #endif
-    int err = 0;
-
-    debug_printf("dvp=%p, cnp=%p, op=%d, context=%p\n", vp, cnp, op, context);
 
     fdisp_init(&fdi, cnp->cn_namelen + 1);
     fdisp_make_vp(&fdi, op, dvp, context);
@@ -551,13 +551,14 @@ int
 fuse_internal_strategy(vnode_t vp, buf_t bp)
 {
     int biosize;
-    int err = 0;
     int chunksize;
     int mapped = FALSE;
     int mode;
     int op;
     int respsize;
     int vtype = vnode_vtype(vp);
+
+    int err = 0;
 
     caddr_t bufdat;
     off_t   left;
@@ -576,8 +577,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     biosize = data->blocksize;
 
     if (!(vtype == VREG || vtype == VDIR)) {
-        debug_printf("STRATEGY: unsupported vnode type\n");
-        return (ENOTSUP);
+        return ENOTSUP;
     }
  
     if (bflags & B_READ) {
@@ -595,7 +595,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         if (!(fufh->fufh_flags & FUFH_VALID)) {
             fufh = NULL;
         } else {
-            debug_printf("strategy falling back to FUFH_RDWR ... OK\n");
+            /* We've successfully fallen back to FUFH_RDWR. */
         }
     }
 
@@ -621,12 +621,15 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         if (!err) {
             fufh = &(fvdat->fufh[fufh_type]);
             fufh->fufh_flags |= FUFH_STRATEGY;
-            debug_printf("STRATEGY: created *new* fufh of type %d\n",
-                         fufh_type);
+
+            /* We've created a NEW fufh of type fufh_type. */
         }
+
     } else { /* good fufh */
+
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_reuse_count);
-        debug_printf("STRATEGY: using existing fufh of type %d\n", fufh_type);
+
+        /* We're using an existing fufh of type fufh_type. */
     }
 
     if (err) {
@@ -656,15 +659,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 #define B_ERROR 0x00080000 /* I/O error occurred. */
 
     if (bflags & B_INVAL) {
-        debug_printf("*** WHOA: B_INVAL\n");
+        IOLog("MacFUSE: buffer does not contain valid information\n");
     } 
 
     if (bflags & B_ERROR) {
-        debug_printf("*** WHOA: B_ERROR\n");
+        IOLog("MacFUSE: an I/O error has occured\n");
     }
 
     if (buf_count(bp) == 0) {
-        debug_printf("STRATEGY: zero buf count?\n");
         return (0);
     }
 
@@ -775,8 +777,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
          * Investigate later.
          */
 
-        debug_printf("WRITE: preparing for write\n");
-
         if (buf_map(bp, &bufdat)) {
             IOLog("MacFUSE: failed to map buffer in strategy\n");
             return EFAULT;
@@ -784,7 +784,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             mapped = TRUE;
         }
 
-        // Write begin
+        /* Write begin */
 
         buf_setresid(bp, buf_count(bp));
         offset = (off_t)((off_t)buf_blkno(bp) * biosize);
@@ -810,8 +810,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fdi.tick->tk_ms_bufdata = bufdat;
             fdi.tick->tk_ms_bufsize = chunksize;
 
-            debug_printf("WRITE: about to write at offset %lld chunksize %d\n",
-                         offset, chunksize);
+            /* About to write <chunksize> at <offset> */
 
             if ((err = fdisp_wait_answ(&fdi))) {
                 merr = 1;
@@ -836,15 +835,15 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         }
     }
 
-    if (fdi.tick)
+    if (fdi.tick) {
         fuse_ticket_drop(fdi.tick);
-    else
-        debug_printf("no ticket on leave\n");
+    } else {
+        /* No ticket upon leaving */
+    }
 
 out:
 
     if (err) {
-        debug_printf("STRATEGY: there was an error %d\n", err);
         buf_seterror(bp, err);
     }
 
@@ -948,8 +947,6 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context)
 {
-    debug_printf("fdip=%p, context=%p\n", fdip, context);
-
     fdisp_init(fdip, bufsize + cnp->cn_namelen + 1);
 
     fdisp_make(fdip, op, mp, dnid, context);
@@ -970,10 +967,6 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     int err = 0;
     struct fuse_entry_out *feo;
     mount_t mp = vnode_mount(dvp);
-
-    debug_printf("fdip=%p, context=%p\n", fdip, context);
-
-    // Double-check that we aren't MNT_RDONLY?
 
     if ((err = fdisp_wait_answ(fdip))) {
         return (err);
@@ -1014,8 +1007,6 @@ fuse_internal_newentry(vnode_t               dvp,
     struct fuse_dispatcher fdi;
     mount_t mp = vnode_mount(dvp);
     
-    debug_printf("context=%p\n", context);
-
     if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
         return EACCES;
     }
@@ -1037,8 +1028,6 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 {
     struct fuse_dispatcher fdi;
 
-    debug_printf("ftick=%p, uio=%p\n", ftick, uio);
-
     fdi.tick = ftick;
 
     fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0, 
@@ -1056,9 +1045,6 @@ fuse_internal_forget_send(mount_t                 mp,
                           struct fuse_dispatcher *fdip)
 {
     struct fuse_forget_in *ffi;
-
-    debug_printf("mp=%p, context=%p, nodeid=%llx, nlookup=%lld, fdip=%p\n",
-                 mp, context, nodeid, nlookup, fdip);
 
     /*
      * KASSERT(nlookup > 0, ("zero-times forget for vp #%llu",
@@ -1131,7 +1117,7 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
 
     if ((fiio->major < MACFUSE_MIN_USER_VERSION_MAJOR) ||
         (fiio->minor < MACFUSE_MIN_USER_VERSION_MINOR)){
-        debug_printf("userpace version too low\n");
+        IOLog("MacFUSE: user-space library has too low a version\n");
         err = EPROTONOSUPPORT;
         goto out;
     }

@@ -124,7 +124,6 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = copyin(udata, &fusefs_args, sizeof(fusefs_args));
     if (err) {
-        debug_printf("copyin failed\n");
         return EINVAL;
     }
 
@@ -193,13 +192,12 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
                                     &is_member) == 0) && is_member) {
             mntopts |= FSESS_ALLOW_ROOT;
         } else {
-            debug_printf("only a member of group %d can use \"allow_root\"\n",
-                         fuse_admin_group);
+            IOLog("MacFUSE: caller not a member of MacFUSE admin group (%d)\n",
+                  fuse_admin_group);
             return EPERM;
         }
     } else if (fusefs_args.altflags & FUSE_MOPT_ALLOW_OTHER) {
         if (!fuse_allow_other && !fuse_vfs_context_issuser(context)) {
-            debug_printf("only root can use \"allow_other\"\n");
             return EPERM;
         }
         mntopts |= FSESS_ALLOW_OTHER;
@@ -370,7 +368,6 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     if (fuse_vfs_context_issuser(context) &&
         vfs_context_ucred(context)->cr_uid != data->daemoncred->cr_uid) {
         fuse_device_unlock(fdev);
-        debug_printf("not allowed to do the first mount\n");
         err = EPERM;
         goto out;
     }
@@ -504,7 +501,6 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     err = vflush(mp, rootvp, flags);
     if (err) {
-        debug_printf("vflush failed");
         return (err);
     }
 

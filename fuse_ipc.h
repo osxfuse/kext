@@ -93,7 +93,6 @@ static __inline__
 struct fuse_iov *
 fticket_resp(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     return (&ftick->tk_aw_fiov);
 }
 
@@ -101,7 +100,6 @@ static __inline__
 int
 fticket_answered(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     return (ftick->tk_flag & FT_ANSW);
 }
 
@@ -109,7 +107,6 @@ static __inline__
 void
 fticket_set_answered(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     ftick->tk_flag |= FT_ANSW;
 }
 
@@ -117,7 +114,6 @@ static __inline__
 enum fuse_opcode
 fticket_opcode(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     return (((struct fuse_in_header *)(ftick->tk_ms_fiov.base))->opcode);
 }
 
@@ -125,7 +121,6 @@ static __inline__
 void
 fticket_invalidate(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     ftick->tk_flag |= FT_INVAL;
 }
 
@@ -230,7 +225,6 @@ static __inline__
 void
 fuse_ms_push(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     STAILQ_INSERT_TAIL(&ftick->tk_data->ms_head, ftick, tk_ms_link);
 }
 
@@ -238,7 +232,6 @@ static __inline__
 void
 fuse_ms_push_head(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     STAILQ_INSERT_HEAD(&ftick->tk_data->ms_head, ftick, tk_ms_link);
 }
 
@@ -247,8 +240,6 @@ struct fuse_ticket *
 fuse_ms_pop(struct fuse_data *data)
 {
     struct fuse_ticket *ftick = NULL;
-
-    kdebug_printf("-> data=%p\n", data);
 
     if ((ftick = STAILQ_FIRST(&data->ms_head))) {
         STAILQ_REMOVE_HEAD(&data->ms_head, tk_ms_link);
@@ -261,7 +252,6 @@ static __inline__
 void
 fuse_aw_push(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     TAILQ_INSERT_TAIL(&ftick->tk_data->aw_head, ftick, tk_aw_link);
 }
 
@@ -269,7 +259,6 @@ static __inline__
 void
 fuse_aw_remove(struct fuse_ticket *ftick)
 {
-    kdebug_printf("-> ftick=%p\n", ftick);
     TAILQ_REMOVE(&ftick->tk_data->aw_head, ftick, tk_aw_link);
 }
 
@@ -278,8 +267,6 @@ struct fuse_ticket *
 fuse_aw_pop(struct fuse_data *data)
 {
     struct fuse_ticket *ftick = NULL;
-
-    kdebug_printf("-> data=%p\n", data);
 
     if ((ftick = TAILQ_FIRST(&data->aw_head))) {
         fuse_aw_remove(ftick);
@@ -325,7 +312,6 @@ static __inline__
 void
 fdisp_init(struct fuse_dispatcher *fdisp, size_t iosize)
 {
-    kdebug_printf("-> fdisp=%p, iosize=%lx\n", fdisp, iosize);
     fdisp->iosize = iosize;
     fdisp->tick = NULL;
 }
@@ -343,7 +329,6 @@ int
 fdisp_simple_putget_vp(struct fuse_dispatcher *fdip, enum fuse_opcode op,
                        vnode_t vp, vfs_context_t context)
 {
-    kdebug_printf("-> fdip=%p, opcode=%d, vp=%p, context=%p\n", fdip, op, vp, context);
     fdisp_init(fdip, 0);
     fdisp_make_vp(fdip, op, vp, context);
     return (fdisp_wait_answ(fdip));
