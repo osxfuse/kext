@@ -357,7 +357,8 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     OSAddAtomic(1, (SInt32 *)&fuse_mount_count);
     mounted = 1;
 
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
+        fuse_device_unlock(fdev);
         err = ENOTCONN;
         goto out;
     }
@@ -368,6 +369,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     if (fuse_vfs_context_issuser(context) &&
         vfs_context_ucred(context)->cr_uid != data->daemoncred->cr_uid) {
+        fuse_device_unlock(fdev);
         debug_printf("not allowed to do the first mount\n");
         err = EPERM;
         goto out;
@@ -477,7 +479,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     fdev = data->fdev;
 
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
         /*
          * If the file system daemon is dead, it's pointless to try to do
          * any unmount-time operations that go out to user space. Therefore,
@@ -495,7 +497,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
         IOLog("MacFUSE: forcing unmount on not-yet-alive file system\n");
-        fdata_kick_set(data);
+        fdata_dead_set(data);
     }
 
     rootvp = data->rootvp;
@@ -510,7 +512,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
         return EBUSY;
     }
 
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
         goto alreadydead;
     }
 
@@ -526,7 +528,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
      * Note that dounmount() signals a VQ_UNMOUNT VFS event.
      */
 
-    fdata_kick_set(data);
+    fdata_dead_set(data);
 
 alreadydead:
 

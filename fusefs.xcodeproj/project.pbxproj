@@ -353,7 +353,7 @@
 			);
 			buildRules = (
 			);
-			comments = "FUSE for Mac OS X (Kernel Extension)";
+			comments = "MacFUSE: An implementation of the FUSE API for Mac OS X (Kernel Extension)";
 			dependencies = (
 			);
 			name = fusefs;
@@ -371,6 +371,7 @@
 			);
 			buildRules = (
 			);
+			comments = "Command-line utility that mounts MacFUSE file systems";
 			dependencies = (
 			);
 			name = mount_fusefs;
@@ -387,6 +388,7 @@
 			);
 			buildRules = (
 			);
+			comments = "Command-line utility that loads the MacFUSE kernel extension";
 			dependencies = (
 			);
 			name = load_fusefs;
@@ -587,6 +589,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				MODULE_NAME = com.google.filesystems.fusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
@@ -639,6 +642,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				MODULE_NAME = com.google.filesystems.fusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
@@ -720,6 +724,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = mount_fusefs;
 				ZERO_LINK = YES;
@@ -759,6 +764,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				LINK_WITH_STANDARD_LIBRARIES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = mount_fusefs;
 				ZERO_LINK = NO;
@@ -847,6 +853,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = load_fusefs;
 				ZERO_LINK = YES;
@@ -889,6 +896,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = load_fusefs;
 				ZERO_LINK = NO;

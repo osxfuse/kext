@@ -92,7 +92,7 @@ static __inline__
 int
 fuse_isdeadfs_mp(mount_t mp)
 {
-    return (fuse_get_mpdata(mp)->dataflags & FSESS_KICK);
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_DEAD);
 }
 
 static __inline__

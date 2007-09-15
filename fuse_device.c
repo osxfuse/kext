@@ -223,7 +223,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         panic("MacFUSE: no device private data in device_close");
     }
 
-    fdata_kick_set(data);
+    fdata_dead_set(data);
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
@@ -301,7 +301,7 @@ fuse_device_read(dev_t dev, uio_t uio, __unused int ioflag)
     /* The read loop (outgoing messages to the user daemon). */
 
 again:
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
         return ENODEV;
     }
@@ -310,7 +310,7 @@ again:
         err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL);
         if (err != 0) {
             fuse_lck_mtx_unlock(data->ms_mtx);
-            return (fdata_kick_get(data) ? ENODEV : err);
+            return (fdata_dead_get(data) ? ENODEV : err);
         }
         ftick = fuse_ms_pop(data);
     }
@@ -321,7 +321,7 @@ again:
 
     fuse_lck_mtx_unlock(data->ms_mtx);
 
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
          if (ftick) {
              fuse_ticket_drop_invalid(ftick);
          }
@@ -348,7 +348,7 @@ again:
 
     for (i = 0; buf[i]; i++) {
         if (uio_resid(uio) < buflen[i]) {
-            data->dataflags |= FSESS_KICK;
+            data->dataflags |= FSESS_DEAD;
             err = ENODEV;
             break;
         }
@@ -601,7 +601,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         break;
 
     case FUSEDEVIOCSETDAEMONDEAD:
-        fdata_kick_set(data);
+        fdata_dead_set(data);
         fuse_lck_mtx_lock(data->timeout_mtx);
         data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
         fuse_lck_mtx_unlock(data->timeout_mtx);
@@ -691,7 +691,7 @@ fuse_device_kill(int unit, struct proc *p)
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
 
                 /* The following can block. */
-                fdata_kick_set(fdev->data);
+                fdata_dead_set(fdev->data);
 
                 error = 0;
 

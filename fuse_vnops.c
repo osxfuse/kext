@@ -583,7 +583,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     if (!(dataflags & FSESS_INITED)) {
         if (!vnode_isvroot(vp)) {
-            fdata_kick_set(data);
+            fdata_dead_set(data);
             err = ENOTCONN;
             return (err);
         } else {

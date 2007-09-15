@@ -42,16 +42,22 @@ extern lck_mtx_t      *fuse_device_mutex;
 
 #define fuse_lck_mtx_lock(m)                                                  \
     {                                                                         \
-        IOLog("0: lck_mtx_lock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__);   \
+        proc_t __FUNCTION__ ## p = current_proc();                            \
+        IOLog("0: lck_mtx_lock(%p): %s@%d by %d\n", (m), __FUNCTION__,        \
+           __LINE__, (__FUNCTION__ ## p) ? proc_pid(__FUNCTION__ ## p) : 0);  \
         lck_mtx_lock((m));                                                    \
-        IOLog("1: lck_mtx_lock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__);   \
+        IOLog("1: lck_mtx_lock(%p): %s@%d by %d\n", (m), __FUNCTION__,        \
+           __LINE__, (__FUNCTION__ ## p) ? proc_pid(__FUNCTION__ ## p) : 0);  \
     }
 
 #define fuse_lck_mtx_unlock(m)                                                \
     {                                                                         \
-        IOLog("1: lck_mtx_unlock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__); \
+        proc_t __FUNCTION__ ## p = current_proc();                            \
+        IOLog("1: lck_mtx_unlock(%p): %s@%d by %d\n", (m), __FUNCTION__,      \
+           __LINE__, (__FUNCTION__ ## p) ? proc_pid(__FUNCTION__ ## p) : 0);  \
         lck_mtx_unlock((m));                                                  \
-        IOLog("0: lck_mtx_unlock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__); \
+        IOLog("0: lck_mtx_unlock(%p): %s@%d by %d\n", (m), __FUNCTION__,      \
+           __LINE__, (__FUNCTION__ ## p) ? proc_pid(__FUNCTION__ ## p) : 0);  \
     }
 
 #define fuse_lck_rw_lock_shared(l)      lck_rw_lock_shared((l))

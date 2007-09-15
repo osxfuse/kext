@@ -192,7 +192,7 @@ enum {
 
 #define FSESS_NOIMPLBIT(MSG)      (1LL << FUSE_##MSG)
 
-#define FSESS_KICK                0x00000001 // session is to be closed
+#define FSESS_DEAD                0x00000001 // session is to be closed
 #define FSESS_OPENED              0x00000002 // session device has been opened
 #define FSESS_INITED              0x00000004 // session has been inited
 
@@ -306,8 +306,8 @@ fuse_libabi_geq(struct fuse_data *data, uint32_t abi_maj, uint32_t abi_min)
 
 struct fuse_data *fdata_alloc(struct proc *p);
 void fdata_destroy(struct fuse_data *data);
-int  fdata_kick_get(struct fuse_data *data);
-void fdata_kick_set(struct fuse_data *data);
+int  fdata_dead_get(struct fuse_data *data);
+void fdata_dead_set(struct fuse_data *data);
 
 struct fuse_dispatcher {
 

@@ -1155,7 +1155,7 @@ out:
     fuse_ticket_drop(ftick);
 
     if (err) {
-        fdata_kick_set(data);
+        fdata_dead_set(data);
     }
 
     fuse_lck_mtx_lock(data->ticket_mtx);

@@ -189,7 +189,7 @@ fticket_wait_answer(struct fuse_ticket *ftick)
 
     data = ftick->tk_data;
 
-    if (fdata_kick_get(data)) {
+    if (fdata_dead_get(data)) {
         err = ENOTCONN;
         fticket_set_answered(ftick);
         goto out;
@@ -291,8 +291,8 @@ again:
         }
 
 alreadydead:
-        if (!fdata_kick_get(data)) {
-            fdata_kick_set(data);
+        if (!fdata_dead_get(data)) {
+            fdata_dead_set(data);
         }
         err = ENOTCONN;
         fticket_set_answered(ftick);
@@ -454,25 +454,25 @@ fdata_destroy(struct fuse_data *data)
 }
 
 int
-fdata_kick_get(struct fuse_data *data)
+fdata_dead_get(struct fuse_data *data)
 {
     debug_printf("data=%p\n", data);
 
-    return (data->dataflags & FSESS_KICK);
+    return (data->dataflags & FSESS_DEAD);
 }
 
 void
-fdata_kick_set(struct fuse_data *data)
+fdata_dead_set(struct fuse_data *data)
 {
     debug_printf("data=%p\n", data);
 
     fuse_lck_mtx_lock(data->ms_mtx);
-    if (fdata_kick_get(data)) { 
+    if (fdata_dead_get(data)) { 
         fuse_lck_mtx_unlock(data->ms_mtx);
         return;
     }
 
-    data->dataflags |= FSESS_KICK;
+    data->dataflags |= FSESS_DEAD;
     fuse_wakeup_one((caddr_t)data);
     fuse_lck_mtx_unlock(data->ms_mtx);
 
@@ -582,7 +582,7 @@ fuse_ticket_fetch(struct fuse_data *data)
     }
 
     if (err) {
-        fdata_kick_set(data);
+        fdata_dead_set(data);
     }
 
     return (ftick);
@@ -633,7 +633,7 @@ fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler)
 {
     debug_printf("ftick=%p, handler=%p\n", ftick, handler);
 
-    if (fdata_kick_get(ftick->tk_data)) {
+    if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
 
@@ -655,7 +655,7 @@ fuse_insert_message(struct fuse_ticket *ftick)
 
     ftick->tk_flag |= FT_DIRTY;
 
-    if (fdata_kick_get(ftick->tk_data)) {
+    if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
 
@@ -674,7 +674,7 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
 
     ftick->tk_flag |= FT_DIRTY;
 
-    if (fdata_kick_get(ftick->tk_data)) {
+    if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
 
@@ -692,7 +692,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
 
     debug_printf("ftick=%p, blen = %lx\n", ftick, blen);
 
-    if (fdata_kick_get(ftick->tk_data)) {
+    if (fdata_dead_get(ftick->tk_data)) {
         return ENOTCONN;
     }
 
