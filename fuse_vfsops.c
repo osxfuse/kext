@@ -477,6 +477,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
     fdev = data->fdev;
 
     if (fdata_dead_get(data)) {
+
         /*
          * If the file system daemon is dead, it's pointless to try to do
          * any unmount-time operations that go out to user space. Therefore,
@@ -485,12 +486,17 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
          * that the kernel does before calling our VFS_UNMOUNT will fail
          * if the original unmount wasn't forcible already. That earlier
          * vflush is called with SKIPROOT though, so it wouldn't bail out
-         * on the root vnode being in use. That's the only case where this
-         * the following FORCECLOSE will come in. Maybe I should just not do
-         * it as this might cause confusion. Let us see. I'll revisit this.
+         * on the root vnode being in use.
+         *
+         * If we want, we could set FORCECLOSE here so that a non-forced
+         * unmount will be "upgraded" to a forced unmount if the root vnode
+         * is busy (you are cd'd to the mount point, for example). It's not
+         * quite pure to do that though.
+         *
+         *    flags |= FORCECLOSE;
+         *    IOLog("MacFUSE: forcing unmount on a dead file system\n");
          */
-        flags |= FORCECLOSE;
-        IOLog("MacFUSE: forcing unmount on dead file system\n");
+
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
         IOLog("MacFUSE: forcing unmount on not-yet-alive file system\n");
