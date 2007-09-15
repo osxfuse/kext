@@ -494,7 +494,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
         IOLog("MacFUSE: forcing unmount on not-yet-alive file system\n");
-        fdata_dead_set(data);
+        fdata_set_dead(data);
     }
 
     rootvp = data->rootvp;
@@ -524,7 +524,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
      * Note that dounmount() signals a VQ_UNMOUNT VFS event.
      */
 
-    fdata_dead_set(data);
+    fdata_set_dead(data);
 
 alreadydead:
 

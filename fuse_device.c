@@ -223,7 +223,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         panic("MacFUSE: no device private data in device_close");
     }
 
-    fdata_dead_set(data);
+    fdata_set_dead(data);
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
@@ -601,7 +601,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         break;
 
     case FUSEDEVIOCSETDAEMONDEAD:
-        fdata_dead_set(data);
+        fdata_set_dead(data);
         fuse_lck_mtx_lock(data->timeout_mtx);
         data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
         fuse_lck_mtx_unlock(data->timeout_mtx);
@@ -691,7 +691,7 @@ fuse_device_kill(int unit, struct proc *p)
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
 
                 /* The following can block. */
-                fdata_dead_set(fdev->data);
+                fdata_set_dead(fdev->data);
 
                 error = 0;
 

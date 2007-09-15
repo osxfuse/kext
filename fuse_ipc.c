@@ -275,7 +275,7 @@ again:
 
 alreadydead:
         if (!fdata_dead_get(data)) {
-            fdata_dead_set(data);
+            fdata_set_dead(data);
         }
         err = ENOTCONN;
         fticket_set_answered(ftick);
@@ -445,7 +445,7 @@ fdata_dead_get(struct fuse_data *data)
 }
 
 void
-fdata_dead_set(struct fuse_data *data)
+fdata_set_dead(struct fuse_data *data)
 {
     fuse_lck_mtx_lock(data->ms_mtx);
     if (fdata_dead_get(data)) { 
@@ -551,7 +551,7 @@ fuse_ticket_fetch(struct fuse_data *data)
     }
 
     if (err) {
-        fdata_dead_set(data);
+        fdata_set_dead(data);
     }
 
     return (ftick);
