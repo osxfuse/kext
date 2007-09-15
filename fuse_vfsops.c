@@ -103,14 +103,16 @@ static errno_t
 fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
                __unused vfs_context_t context)
 {
+    int err     = 0;
+    int mntopts = 0;
+    int mounted = 0;
+
+    uint32_t drandom  = 0;
+    uint32_t max_read = ~0;
+
     size_t len;
 
-    int err               = 0;
-    int mntopts           = 0;
-    unsigned int max_read = ~0;
-    int mounted           = 0;
-
-    struct fuse_softc *fdev = NULL;
+    fuse_device_t      fdev = FUSE_DEVICE_NULL;
     struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
 
@@ -127,23 +129,23 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     /*
-    * Interesting flags that we can receive from mount or may want to
-    * otherwise forcibly set include:
-    *
-    *     MNT_ASYNC
-    *     MNT_AUTOMOUNTED              
-    *     MNT_DEFWRITE
-    *     MNT_DONTBROWSE
-    *     MNT_IGNORE_OWNERSHIP
-    *     MNT_JOURNALED
-    *     MNT_NODEV
-    *     MNT_NOEXEC
-    *     MNT_NOSUID
-    *     MNT_NOUSERXATTR
-    *     MNT_RDONLY
-    *     MNT_SYNCHRONOUS
-    *     MNT_UNION
-    */
+     * Interesting flags that we can receive from mount or may want to
+     * otherwise forcibly set include:
+     *
+     *     MNT_ASYNC
+     *     MNT_AUTOMOUNTED              
+     *     MNT_DEFWRITE
+     *     MNT_DONTBROWSE
+     *     MNT_IGNORE_OWNERSHIP
+     *     MNT_JOURNALED
+     *     MNT_NODEV
+     *     MNT_NOEXEC
+     *     MNT_NOSUID
+     *     MNT_NOUSERXATTR
+     *     MNT_RDONLY
+     *     MNT_SYNCHRONOUS
+     *     MNT_UNION
+     */
 
     err = ENOTSUP;
 
@@ -319,36 +321,41 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     vfs_setfsprivate(mp, NULL);
 
-    if ((fusefs_args.index < 0) || (fusefs_args.index >= FUSE_NDEVICES)) {
+    fdev = fuse_device_get(fusefs_args.rdev);
+    if (!fdev) {
         return EINVAL;
     }
 
-    FUSE_DEVICE_GLOBAL_LOCK();
+    fuse_device_lock(fdev);
 
-    fdev = fuse_softc_get(fusefs_args.rdev);
-    data = fuse_softc_get_data(fdev);
+    drandom = fuse_device_get_random(fdev);
+    if (fusefs_args.random != drandom) {
+        fuse_device_unlock(fdev);
+        IOLog("MacFUSE: failing mount because of mismatched random\n");
+        return EINVAL; 
+    }
+
+    data = fuse_device_get_mpdata(fdev);
 
     if (!data) {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
+        fuse_device_unlock(fdev);
         return ENXIO;
     }
 
     if (data->mount_state != FM_NOTMOUNTED) {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
+        fuse_device_unlock(fdev);
         return EALREADY;
     }
 
     if (!(data->dataflags & FSESS_OPENED)) {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
+        fuse_device_unlock(fdev);
         err = ENXIO;
         goto out;
     }
 
     data->mount_state = FM_MOUNTED;
-    fuse_mount_count++;
+    OSAddAtomic(1, (SInt32 *)&fuse_mount_count);
     mounted = 1;
-
-    FUSE_DEVICE_GLOBAL_UNLOCK();
 
     if (fdata_kick_get(data)) {
         err = ENOTCONN;
@@ -405,23 +412,38 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     vfs_setfsprivate(mp, data);
 
-    /* Handshake with the daemon. */
+    fuse_device_unlock(fdev);
+
+    /* Handshake with the daemon. Blocking. */
     err = fuse_internal_send_init(data, context);
 
 out:
     if (err) {
         vfs_setfsprivate(mp, NULL);
-        FUSE_DEVICE_GLOBAL_LOCK();
-        data->mount_state = FM_NOTMOUNTED;
+
+        fuse_device_lock(fdev);
+        data = fuse_device_get_mpdata(fdev); /* again */
         if (mounted) {
-            fuse_mount_count--;
+            OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
         }
-        if (!(data->dataflags & FSESS_OPENED)) {
-            fuse_softc_set_data(fdev, NULL);
-            FUSE_DEVICE_GLOBAL_UNLOCK();
-            fdata_destroy(data);
-        } else {
-            FUSE_DEVICE_GLOBAL_UNLOCK();
+        if (data) {
+            data->mount_state = FM_NOTMOUNTED;
+            if (!(data->dataflags & FSESS_OPENED)) {
+                fuse_device_close_final(fdev);
+                /* data is gone now */
+            }
+        }
+        fuse_device_unlock(fdev);
+    } else {
+        vnode_t rootvp = NULLVP;
+        err = fuse_vfs_root(mp, &rootvp, context);
+        if (err) {
+            goto out; /* go back and follow error path */
+        }
+        err = vnode_ref(rootvp);
+        (void)vnode_put(rootvp);
+        if (err) {
+            goto out; /* go back and follow error path */
         }
     }
 
@@ -436,9 +458,11 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
     int   needsignal = 0;
     pid_t daemonpid  = 0;
 
+    fuse_device_t          fdev;
     struct fuse_data      *data;
-    struct fuse_softc     *fdev;
     struct fuse_dispatcher fdi;
+
+    vnode_t rootvp = NULLVP;
 
     fuse_trace_printf_vfsop();
 
@@ -448,8 +472,10 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("MacFUSE: no private data for mount point?");
+        panic("MacFUSE: no mount private data in vfs_unmount");
     }
+
+    fdev = data->fdev;
 
     if (fdata_kick_get(data)) {
         /*
@@ -472,10 +498,16 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
         fdata_kick_set(data);
     }
 
-    err = vflush(mp, NULLVP, flags);
+    rootvp = data->rootvp;
+
+    err = vflush(mp, rootvp, flags);
     if (err) {
         debug_printf("vflush failed");
         return (err);
+    }
+
+    if (vnode_isinuse(rootvp, 1) && !(flags & FORCECLOSE)) {
+        return EBUSY;
     }
 
     if (fdata_kick_get(data)) {
@@ -501,20 +533,28 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-    FUSE_DEVICE_GLOBAL_LOCK();
+    vnode_rele(rootvp); /* We got this reference in fuse_vfs_mount(). */
 
-    data->mount_state = FM_NOTMOUNTED;
-    fuse_mount_count--;
-    fdev = data->fdev;
-    if (!(data->dataflags & FSESS_OPENED)) {
-        fuse_softc_close_finalize(fdev);
-        FUSE_DEVICE_GLOBAL_UNLOCK();
-        fdata_destroy(data);
-    } else {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
-    }
+    data->rootvp = NULLVP;
+
+    (void)vflush(mp, NULLVP, FORCECLOSE);
+
+    fuse_device_lock(fdev);
 
     vfs_setfsprivate(mp, NULL);
+    data->mount_state = FM_NOTMOUNTED;
+    OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
+
+    if (!(data->dataflags & FSESS_OPENED)) {
+
+        /* fdev->data was left for us to clean up */
+
+        fuse_device_close_final(fdev);
+
+        /* fdev->data is gone now */
+    }
+
+    fuse_device_unlock(fdev);
 
     if (daemonpid && needsignal) {
         proc_signal(daemonpid, FUSE_POSTUNMOUNT_SIGNAL);
@@ -529,8 +569,14 @@ fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
     int err = 0;
     vnode_t vp = NULLVP;
     struct fuse_entry_out feo_root;
+    struct fuse_data *data = fuse_get_mpdata(mp);
 
     fuse_trace_printf_vfsop();
+
+    if (data->rootvp != NULLVP) {
+        *vpp = data->rootvp;
+        return (vnode_get(*vpp));
+    }
 
     bzero(&feo_root, sizeof(feo_root));
     feo_root.nodeid      = FUSE_ROOT_ID;
@@ -543,6 +589,10 @@ fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
                                          NULLVP /* dvp */, context,
                                          NULL /* oflags */);
     *vpp = vp;
+
+    if (!err) {
+        data->rootvp = *vpp;
+    }
 
     return (err);
 }
@@ -915,7 +965,7 @@ fuse_sync_callback(vnode_t vp, void *cargs)
 
     data = fuse_get_mpdata(mp);
 
-    if (!fuse_implemented(data, (vnode_vtype(vp) == VDIR) ?
+    if (!fuse_implemented(data, (vnode_isdir(vp)) ?
         FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC))) {
         return VNODE_RETURNED;
     }

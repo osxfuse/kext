@@ -52,9 +52,10 @@
 static int
 fuse_vnop_access(struct vnop_access_args *ap)
 {
-    vnode_t vp = ap->a_vp;
-    int action = ap->a_action;
+    vnode_t       vp      = ap->a_vp;
+    int           action  = ap->a_action;
     vfs_context_t context = ap->a_context;
+
     struct fuse_access_param facp;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
@@ -104,18 +105,15 @@ fuse_vnop_access(struct vnop_access_args *ap)
 static int 
 fuse_vnop_blktooff(struct vnop_blktooff_args *ap)
 {       
-    vnode_t    vp;
-    daddr64_t  lblkno;
-    off_t     *offsetPtr;
+    vnode_t    vp        = ap->a_vp;
+    daddr64_t  lblkno    = ap->a_lblkno;
+    off_t     *offsetPtr = ap->a_offset;
+
     struct fuse_data *data; 
-        
+
     fuse_trace_printf_vnop();
 
-    vp        = ap->a_vp;
-    lblkno    = ap->a_lblkno;
-    offsetPtr = ap->a_offset;
-
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EIO;
     }
 
@@ -142,30 +140,23 @@ fuse_vnop_blktooff(struct vnop_blktooff_args *ap)
 static int
 fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
 {
-    vnode_t       vp;
-    off_t         foffset;
-    size_t        size;
-    daddr64_t    *bpnPtr;
-    size_t       *runPtr;
-    int          *poffPtr;
-    int           flags;
-    vfs_context_t context;
-    off_t         contiguousPhysicalBytes;
-    struct fuse_vnode_data *fvdat;
-    struct fuse_data *data;
+    vnode_t       vp      = ap->a_vp;
+    off_t         foffset = ap->a_foffset;
+    size_t        size    = ap->a_size;
+    daddr64_t    *bpnPtr  = ap->a_bpn;
+    size_t       *runPtr  = ap->a_run;
+    int          *poffPtr = (int *)ap->a_poff;
 
-    vp      = ap->a_vp;
-    foffset = ap->a_foffset;
-    size    = ap->a_size;
-    bpnPtr  = ap->a_bpn;
-    runPtr  = ap->a_run;
-    poffPtr = (int *)ap->a_poff;
-    flags   = ap->a_flags;
-    context = ap->a_context;
+    /* Ignoring flags and context */
+
+    struct fuse_vnode_data *fvdat;
+    struct fuse_data       *data;
+
+    off_t contiguousPhysicalBytes;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EIO;
     }
 
@@ -204,29 +195,34 @@ fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
 static int
 fuse_vnop_close(struct vnop_close_args *ap)
 {
-    vnode_t vp = ap->a_vp;
-    int err = 0, isdir = (vnode_vtype(vp) == VDIR) ? 1 : 0;
+    vnode_t       vp      = ap->a_vp;
+    int           fflag   = ap->a_fflag;
+    vfs_context_t context = ap->a_context;
 
-    fufh_type_t             fufh_type;
-    struct fuse_data       *data;
+    int err   = 0;
+    int isdir = (vnode_isdir(vp)) ? 1 : 0;
+
+    fufh_type_t fufh_type;
+    struct fuse_data *data;
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
-    struct fuse_filehandle *fufh = NULL;
+    struct fuse_filehandle *fufh  = NULL;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return 0;
     }
 
     /* vclean() calls VNOP_CLOSE with fflag set to IO_NDELAY. */
-    if (ap->a_fflag == IO_NDELAY) {
+    if (fflag == IO_NDELAY) {
         return 0;
     }
 
     if (isdir) {
         fufh_type = FUFH_RDONLY;
     } else {
-        fufh_type = fuse_filehandle_xlate_from_fflags(ap->a_fflag);
+        fufh_type = fuse_filehandle_xlate_from_fflags(fflag);
     }
 
     fufh = &(fvdat->fufh[fufh_type]);
@@ -236,7 +232,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
             return 0;
         }
         panic("MacFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
-              fufh_type, fufh->open_count, vnode_vtype(vp), ap->a_fflag);
+              fufh_type, fufh->open_count, vnode_vtype(vp), fflag);
     }
 
     fufh->open_count--;
@@ -257,7 +253,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
         struct fuse_flush_in   *ffi;
 
         fdisp_init(&fdi, sizeof(*ffi));
-        fdisp_make_vp(&fdi, FUSE_FLUSH, vp, ap->a_context);
+        fdisp_make_vp(&fdi, FUSE_FLUSH, vp, context);
 
         ffi = fdi.indata;
         ffi->fh = fufh->fh_id;
@@ -281,7 +277,7 @@ skipdir:
 
     if ((fufh->open_count == 0) &&
         !(fufh->fufh_flags & FUFH_MAPPED)) {
-        (void)fuse_filehandle_put(vp, ap->a_context, fufh_type, 0);
+        (void)fuse_filehandle_put(vp, context, fufh_type, 0);
     }
 
     return err;
@@ -300,21 +296,21 @@ skipdir:
 static int
 fuse_vnop_create(struct vnop_create_args *ap)
 {
-    vnode_t  dvp = ap->a_dvp;
-    vnode_t *vpp = ap->a_vpp;
-    vfs_context_t context = ap->a_context;
+    vnode_t               dvp     = ap->a_dvp;
+    vnode_t              *vpp     = ap->a_vpp;
+    struct componentname *cnp     = ap->a_cnp;
+    struct vnode_attr    *vap     = ap->a_vap;
+    vfs_context_t         context = ap->a_context;
 
-    struct componentname *cnp = ap->a_cnp;
-    struct vnode_attr    *vap = ap->a_vap;
-
+    struct fuse_open_in    *foi;
+    struct fuse_mknod_in    fmni;
+    struct fuse_entry_out  *feo;
     struct fuse_dispatcher  fdi;
     struct fuse_dispatcher *fdip = &fdi;
-    struct fuse_entry_out  *feo;
-    struct fuse_mknod_in    fmni;
-    struct fuse_open_in    *foi;
 
     int err;
     int gone_good_old = 0;
+
     struct fuse_data *data = NULL;
 
     mount_t mp = vnode_mount(dvp);
@@ -323,7 +319,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     fuse_trace_printf_vnop_novp();
 
-    if (fuse_isdeadfs_nop(dvp)) {
+    if (fuse_isdeadfs_fs(dvp)) {
         panic("MacFUSE: fuse_vnop_create(): called on a dead file system");
     }
 
@@ -481,30 +477,35 @@ undo:
 static int
 fuse_vnop_fsync(struct vnop_fsync_args *ap)
 {
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp      = ap->a_vp;
+    int           waitfor = ap->a_waitfor;
     vfs_context_t context = ap->a_context;
-    struct fuse_dispatcher fdi;
+
+    struct fuse_dispatcher  fdi;
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
     int type;
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    int err = 0;
-    int waitfor = ap->a_waitfor;
-    struct timeval tv;
-    int wait = (waitfor == MNT_WAIT);
-#endif
+    (void)waitfor;
+
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return 0;
     }
 
     cluster_push(vp, 0);
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
-    buf_flushdirtyblks(vp, wait, 0, (char *)"fuse_fsync");
-    microtime(&tv);
-#endif
+    /*
+     * struct timeval tv;
+     * int wait = (waitfor == MNT_WAIT)
+     *
+     * In another world, we could be doing something like:
+     *
+     * buf_flushdirtyblks(vp, wait, 0, (char *)"fuse_fsync");
+     * microtime(&tv);
+     * ...
+     */
 
     /*
      * - UBC and vnode are in lock-step.
@@ -513,7 +514,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
      */
 
     if (!fuse_implemented(fuse_get_mpdata(vnode_mount(vp)),
-            ((vnode_vtype(vp) == VDIR) ?
+            ((vnode_isdir(vp)) ?
                 FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
         goto out;
     }
@@ -541,23 +542,32 @@ out:
 static int
 fuse_vnop_getattr(struct vnop_getattr_args *ap)
 {
+    vnode_t            vp      = ap->a_vp;
+    struct vnode_attr *vap     = ap->a_vap;
+    vfs_context_t      context = ap->a_context;
+
     int err = 0;
     int dataflags;
     struct timespec uptsp;
     struct fuse_dispatcher fdi;
     struct fuse_data *data;
 
-    vnode_t vp = ap->a_vp;
-    struct vnode_attr *vap = ap->a_vap;
-    vfs_context_t context = ap->a_context;
+    data = fuse_get_mpdata(vnode_mount(vp));
 
     fuse_trace_printf_vnop();
+
+    if (fuse_isdeadfs(vp)) {
+        if (vnode_isvroot(vp)) {
+            goto fake;
+        } else {
+            return EBADF;
+        }
+    }
 
     if (!vnode_isvroot(vp) || !fuse_vfs_context_issuser(context)) {
         CHECK_BLANKET_DENIAL(vp, context, ENOENT);
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
     dataflags = data->dataflags;
 
     /* Note that we are not bailing out on a dead file system just yet. */
@@ -587,7 +597,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
             goto fake;
         }
         if (err == ENOENT) {
-            fuse_internal_vnode_disappear(vp, context, 1);
+            fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
         }
         return (err);
     }
@@ -629,7 +639,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
     fuse_ticket_drop(fdi.tick);
 
     if (vnode_vtype(vp) != vap->va_type) {
-        if (vnode_vtype(vp) == VNON && vap->va_type != VNON) {
+        if ((vnode_vtype(vp) == VNON) && (vap->va_type != VNON)) {
             /*
              * We should be doing the following:
              *
@@ -645,7 +655,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
              * revocation.
              */
 
-            fuse_internal_vnode_disappear(vp, context, 1);
+            fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
             return EIO;
         }
     }
@@ -677,8 +687,9 @@ fake:
 static int
 fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 {
-    vnode_t vp = ap->a_vp;
-    uio_t uio = ap->a_uio;
+    vnode_t       vp      = ap->a_vp;
+    const char   *name    = ap->a_name;
+    uio_t         uio     = ap->a_uio;
     vfs_context_t context = ap->a_context;
 
     struct fuse_dispatcher    fdi;
@@ -692,20 +703,20 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    if (ap->a_name == NULL || ap->a_name[0] == '\0') {
+    if (name == NULL || name[0] == '\0') {
         return EINVAL;
     }
 
     mp = vnode_mount(vp);
     data = fuse_get_mpdata(mp);
 
-    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+    if (fuse_skip_apple_xattr_mp(mp, name)) {
         return EPERM;
     }
 
@@ -717,10 +728,10 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         return ENOTSUP;
     }
 
-    namelen = strlen(ap->a_name);
+    namelen = strlen(name);
 
     fdisp_init(&fdi, sizeof(*fgxi) + namelen + 1);
-    fdisp_make_vp(&fdi, FUSE_GETXATTR, vp, ap->a_context);
+    fdisp_make_vp(&fdi, FUSE_GETXATTR, vp, context);
     fgxi = fdi.indata;
     
     if (uio) {
@@ -729,7 +740,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         fgxi->size = 0;
     }
     
-    memcpy((char *)fdi.indata + sizeof(*fgxi), ap->a_name, namelen);
+    memcpy((char *)fdi.indata + sizeof(*fgxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fgxi) + namelen] = '\0';
 
     err = fdisp_wait_answ(&fdi);
@@ -769,12 +780,19 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 static int
 fuse_vnop_inactive(struct vnop_inactive_args *ap)
 {
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp      = ap->a_vp;
+    vfs_context_t context = ap->a_context;
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
+
     int fufh_type;
 
     fuse_trace_printf_vnop();
+
+    /*
+     * Cannot do early bail out on a dead file system in this case.
+     */
 
     for (fufh_type = 0; fufh_type < FUFH_MAXTYPE; fufh_type++) {
 
@@ -783,7 +801,7 @@ fuse_vnop_inactive(struct vnop_inactive_args *ap)
         if (fufh->fufh_flags & FUFH_VALID) {
             fufh->fufh_flags &= ~FUFH_MAPPED;
             fufh->open_count = 0;
-            (void)fuse_filehandle_put(vp, ap->a_context, fufh_type, 0);
+            (void)fuse_filehandle_put(vp, context, fufh_type, 0);
         }
     }
 
@@ -805,15 +823,15 @@ extern int fuse_setextendedsecurity(mount_t mp, int state);
 static int
 fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 {
-    int ret = EINVAL;
-
-    vnode_t vp = ap->a_vp;
-    u_long cmd = ap->a_command;
+    vnode_t       vp      = ap->a_vp;
+    u_long        cmd     = ap->a_command;
     vfs_context_t context = ap->a_context;
+
+    int ret = EINVAL;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
@@ -884,10 +902,14 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 static int
 fuse_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap)
 {
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp = ap->a_vp;
     struct knote *kn = ap->a_kn;
 
     fuse_trace_printf_vnop();
+
+    if (fuse_isdeadfs(vp)) {
+        return EBADF;
+    }
 
     switch (kn->kn_filter) {
     case EVFILT_READ:
@@ -956,19 +978,20 @@ fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
 static int
 fuse_vnop_link(struct vnop_link_args *ap)
 {
-    vnode_t vp = ap->a_vp;
-    vnode_t tdvp = ap->a_tdvp;
-    struct componentname *cnp = ap->a_cnp;
-    vfs_context_t context = ap->a_context;
+    vnode_t               vp      = ap->a_vp;
+    vnode_t               tdvp    = ap->a_tdvp;
+    struct componentname *cnp     = ap->a_cnp;
+    vfs_context_t         context = ap->a_context;
 
-    int err;
     struct fuse_dispatcher fdi;
     struct fuse_entry_out *feo;
     struct fuse_link_in    fli;
 
+    int err;
+
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs_fs(vp)) {
         panic("MacFUSE: fuse_vnop_link(): called on a dead file system");
     }
 
@@ -1027,9 +1050,8 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     };
 */
 {
-    int err = 0;
-    vnode_t vp = ap->a_vp;
-    uio_t uio = ap->a_uio;
+    vnode_t       vp      = ap->a_vp;
+    uio_t         uio     = ap->a_uio;
     vfs_context_t context = ap->a_context;
 
     struct fuse_dispatcher    fdi;
@@ -1037,9 +1059,11 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     struct fuse_getxattr_out *fgxo;
     struct fuse_data         *data;
 
+    int err = 0;
+
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
@@ -1056,7 +1080,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     }
 
     fdisp_init(&fdi, sizeof(*fgxi));
-    fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, ap->a_context);
+    fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, context);
     fgxi = fdi.indata;
     if (uio) {
         fgxi->size = uio_resid(uio);
@@ -1103,33 +1127,38 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
 static int
 fuse_vnop_lookup(struct vnop_lookup_args *ap)
 {
+    vnode_t dvp               = ap->a_dvp;
+    vnode_t *vpp              = ap->a_vpp;
     struct componentname *cnp = ap->a_cnp;
+    vfs_context_t context     = ap->a_context;
+
     int nameiop               = cnp->cn_nameiop;
     int flags                 = cnp->cn_flags;
     int wantparent            = flags & (LOCKPARENT|WANTPARENT);
     int islastcn              = flags & ISLASTCN;
     int isdot                 = FALSE;
     int isdotdot              = FALSE;
-    vnode_t dvp               = ap->a_dvp;
-    vnode_t *vpp              = ap->a_vpp;
-    vfs_context_t context     = ap->a_context;
     mount_t mp                = vnode_mount(dvp);
-
-    fuse_trace_printf_vnop_novp();
 
     int err                   = 0;
     int lookup_err            = 0;
     vnode_t vp                = NULL;
     vnode_t pdp               = (vnode_t)NULL;
     uint64_t size             = FUSE_ZERO_SIZE;
+
     struct fuse_dispatcher fdi;
-    enum fuse_opcode op;
-    uint64_t nodeid, parent_nodeid;
+    enum   fuse_opcode     op;
+
+    uint64_t nodeid;
+    uint64_t parent_nodeid;
 
     *vpp = NULLVP;
 
+    fuse_trace_printf_vnop_novp();
+
     if (fuse_isdeadfs(dvp)) {
-        return ENXIO;
+        *ap->a_vpp = NULLVP;
+        return ENOTDIR;
     }
 
     if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
@@ -1415,22 +1444,23 @@ out:
 static int
 fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 {
+    vnode_t               dvp     = ap->a_dvp;
+    vnode_t              *vpp     = ap->a_vpp;
+    struct componentname *cnp     = ap->a_cnp;
+    struct vnode_attr    *vap     = ap->a_vap;
+    vfs_context_t         context = ap->a_context;
+
     int err = 0;
-    vnode_t dvp = ap->a_dvp;
-    vnode_t *vpp = ap->a_vpp;
-    struct componentname *cnp = ap->a_cnp;
-    struct vnode_attr *vap = ap->a_vap;
-    vfs_context_t context = ap->a_context;
 
     struct fuse_mkdir_in fmdi;
 
     fuse_trace_printf_vnop_novp();
 
-    CHECK_BLANKET_DENIAL(dvp, context, EPERM);
-
-    if (fuse_isdeadfs_nop(dvp)) {
+    if (fuse_isdeadfs_fs(dvp)) {
         panic("MacFUSE: fuse_vnop_mkdir(): called on a dead file system");
     }
+
+    CHECK_BLANKET_DENIAL(dvp, context, EPERM);
 
     fmdi.mode = MAKEIMODE(vap->va_type, vap->va_mode);
 
@@ -1457,22 +1487,23 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 static int
 fuse_vnop_mknod(struct vnop_mknod_args *ap)
 {
-    int err;
-    vnode_t dvp = ap->a_dvp;
-    vnode_t *vpp = ap->a_vpp;
-    struct componentname *cnp = ap->a_cnp;
-    struct vnode_attr *vap = ap->a_vap;
-    vfs_context_t context = ap->a_context;
+    vnode_t               dvp     = ap->a_dvp;
+    vnode_t              *vpp     = ap->a_vpp;
+    struct componentname *cnp     = ap->a_cnp;
+    struct vnode_attr    *vap     = ap->a_vap;
+    vfs_context_t         context = ap->a_context;
 
     struct fuse_mknod_in fmni;
 
+    int err;
+
     fuse_trace_printf_vnop_novp();
 
-    CHECK_BLANKET_DENIAL(dvp, context, EPERM);
-
-    if (fuse_isdeadfs_nop(dvp)) {
+    if (fuse_isdeadfs_fs(dvp)) {
         panic("MacFUSE: fuse_vnop_mknod(): called on a dead file system");
     }
+
+    CHECK_BLANKET_DENIAL(dvp, context, EPERM);
 
     fmni.mode = MAKEIMODE(vap->va_type, vap->va_mode);
     fmni.rdev = vap->va_rdev;
@@ -1498,18 +1529,20 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 static int
 fuse_vnop_mmap(struct vnop_mmap_args *ap)
 {
-    int err;
-    vnode_t vp = ap->a_vp;
-    int fflags = ap->a_fflags;
+    vnode_t       vp      = ap->a_vp;
+    int           fflags  = ap->a_fflags;
     vfs_context_t context = ap->a_context;
-    fufh_type_t fufh_type = fuse_filehandle_xlate_from_mmap(fflags);
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
+    fufh_type_t fufh_type = fuse_filehandle_xlate_from_mmap(fflags);
+
+    int err;
     int retried = 0;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs_fs(vp)) {
         panic("MacFUSE: fuse_vnop_mmap(): called on a dead file system");
     }
 
@@ -1524,7 +1557,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    if (fufh_type == FUFH_INVALID) { // nothing to do
+    if (fufh_type == FUFH_INVALID) { /* nothing to do */
         return 0;
     }
 
@@ -1540,7 +1573,10 @@ retry:
 
     err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
                                            context, fufh_type);
+
+#if FUSE_DEBUG
     fuse_preflight_log(vp, fufh_type, err, "mmap");
+#endif
 
     if (!err) {
         err = fuse_filehandle_get(vp, context, fufh_type, 0 /* mode */);
@@ -1580,14 +1616,17 @@ out:
 static int
 fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
 {
-    int type;
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp      = ap->a_vp;
+    vfs_context_t context = ap->a_context;
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
 
+    int type;
+
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return 0;
     }
 
@@ -1612,7 +1651,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
             (fufh->fufh_flags & FUFH_MAPPED)) {
             fufh->fufh_flags &= ~FUFH_MAPPED;
             if (fufh->open_count == 0) {
-                (void)fuse_filehandle_put(vp, ap->a_context, type, 0);
+                (void)fuse_filehandle_put(vp, context, type, 0);
             }
         }
     }
@@ -1631,18 +1670,15 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
 static int
 fuse_vnop_offtoblk(struct vnop_offtoblk_args *ap)
 {
-    vnode_t    vp;
-    off_t      offset;
-    daddr64_t *lblknoPtr;
+    vnode_t    vp        = ap->a_vp;
+    off_t      offset    = ap->a_offset;
+    daddr64_t *lblknoPtr = ap->a_lblkno;
+
     struct fuse_data *data;
 
     fuse_trace_printf_vnop();
 
-    vp        = ap->a_vp;
-    offset    = ap->a_offset;
-    lblknoPtr = ap->a_lblkno;
-
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EIO;
     }
 
@@ -1664,16 +1700,16 @@ fuse_vnop_offtoblk(struct vnop_offtoblk_args *ap)
 static int
 fuse_vnop_open(struct vnop_open_args *ap)
 {
-    vnode_t                 vp;
-    vfs_context_t           context;
+    vnode_t       vp      = ap->a_vp;
+    int           mode    = ap->a_mode;
+    vfs_context_t context = ap->a_context;
+
     fufh_type_t             fufh_type;
     struct fuse_vnode_data *fvdat;
     struct fuse_filehandle *fufh = NULL;
     struct fuse_filehandle *fufh_rw = NULL;
 
-    int error, isdir = 0, mode;
-
-    vp = ap->a_vp;
+    int error, isdir = 0;
 
     fuse_trace_printf_vnop();
 
@@ -1681,13 +1717,11 @@ fuse_vnop_open(struct vnop_open_args *ap)
         return ENXIO;
     }
 
-    mode    = ap->a_mode;
-    context = ap->a_context;
-
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    fvdat   = VTOFUD(vp);
-    if (vnode_vtype(vp) == VDIR) {
+    fvdat = VTOFUD(vp);
+
+    if (vnode_isdir(vp)) {
         isdir = 1;
     }
 
@@ -1735,7 +1769,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
             } else {
                 debug_printf("contender going to sleep\n");
                 error = fuse_msleep(fvdat->creator, fvdat->createlock,
-                                    PDROP | PINOD | PCATCH, "fuse_open", 0);
+                                    PDROP | PINOD | PCATCH, "fuse_open", NULL);
                 /*
                  * msleep will drop the mutex. since we have PDROP specified,
                  * it will NOT regrab the mutex when it returns.
@@ -1823,27 +1857,19 @@ out:
 static int
 fuse_vnop_pagein(struct vnop_pagein_args *ap)
 {
-    int            err;
-    vnode_t        vp;
-    upl_t          pl;
-    vm_offset_t    pl_offset;
-    off_t          f_offset;
-    size_t         size;
-    int            flags;
-    vfs_context_t  context;
+    vnode_t       vp        = ap->a_vp;
+    upl_t         pl        = ap->a_pl;
+    vm_offset_t   pl_offset = ap->a_pl_offset;
+    off_t         f_offset  = ap->a_f_offset;
+    size_t        size      = ap->a_size;
+    int           flags     = ap->a_flags;
+
     struct fuse_vnode_data *fvdat;
+    int err;
 
     fuse_trace_printf_vnop();
 
-    vp        = ap->a_vp;
-    pl        = ap->a_pl;
-    pl_offset = ap->a_pl_offset;
-    f_offset  = ap->a_f_offset;
-    size      = ap->a_size;
-    flags     = ap->a_flags;
-    context   = ap->a_context;
-
-    if (fuse_isdeadfs_nop(vp) || fuse_isdirectio(vp)) {
+    if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
         if (!(flags & UPL_NOCOMMIT)) {
             ubc_upl_abort_range(pl, pl_offset, size,
                                 UPL_ABORT_FREE_ON_EMPTY | UPL_ABORT_ERROR);
@@ -1880,15 +1906,21 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
 static int
 fuse_vnop_pageout(struct vnop_pageout_args *ap)
 {
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp        = ap->a_vp;
+    upl_t         pl        = ap->a_pl;
+    vm_offset_t   pl_offset = ap->a_pl_offset;
+    off_t         f_offset  = ap->a_f_offset;
+    size_t        size      = ap->a_size;
+    int           flags     = ap->a_flags;
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int error;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp) || fuse_isdirectio(vp)) {
-        if (!(ap->a_flags & UPL_NOCOMMIT)) {
-            ubc_upl_abort_range(ap->a_pl, ap->a_pl_offset, ap->a_size,
+    if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
+        if (!(flags & UPL_NOCOMMIT)) {
+            ubc_upl_abort_range(pl, pl_offset, size,
                                 UPL_ABORT_FREE_ON_EMPTY | UPL_ABORT_ERROR);
         }
         /*
@@ -1897,8 +1929,8 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         return ENOTSUP;
     }
 
-    error = cluster_pageout(vp, ap->a_pl, ap->a_pl_offset, ap->a_f_offset,
-                            ap->a_size, (off_t)fvdat->filesize, ap->a_flags);
+    error = cluster_pageout(vp, pl, pl_offset, f_offset, size,
+                            (off_t)fvdat->filesize, flags);
 
     return error;
 }
@@ -1915,20 +1947,16 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
 static int
 fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
 {
-    int            err;
-    vnode_t        vp;
-    int            name;
-    register_t    *retvalPtr;
-    vfs_context_t  context;
+    vnode_t        vp        = ap->a_vp;
+    int            name      = ap->a_name;
+    register_t    *retvalPtr = ap->a_retval;
+    vfs_context_t  context   = ap->a_context;
+
+    int err;
 
     fuse_trace_printf_vnop();
 
-    vp        = ap->a_vp;
-    name      = ap->a_name;
-    retvalPtr = ap->a_retval;
-    context   = ap->a_context;
-
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
@@ -1994,16 +2022,18 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
 static int
 fuse_vnop_read(struct vnop_read_args *ap)
 {
-    vnode_t         vp;
-    uio_t           uio;
-    int             ioflag;
-    vfs_context_t   context;
-    off_t           orig_resid;
-    off_t           orig_offset;
-    int             err = EIO;
+    vnode_t       vp      = ap->a_vp;
+    uio_t         uio     = ap->a_uio;
+    __unused int  ioflag  = ap->a_ioflag;
+    vfs_context_t context = ap->a_context;
 
     struct fuse_vnode_data *fvdat;
     struct fuse_data       *data;
+
+    off_t orig_resid;
+    off_t orig_offset;
+
+    int err = EIO;
 
     /*
      * XXX: Locking
@@ -2018,13 +2048,8 @@ fuse_vnop_read(struct vnop_read_args *ap)
 
     fuse_trace_printf_vnop();
 
-    vp           = ap->a_vp;
-    uio          = ap->a_uio;
-    ioflag       = ap->a_ioflag;
-    context      = ap->a_context;
-
-    if (fuse_isdeadfs_nop(vp)) {
-        if (vnode_vtype(vp) != VCHR) {
+    if (fuse_isdeadfs(vp)) {
+        if (!vnode_ischr(vp)) {
             return EIO;
         } else {
             return 0;
@@ -2145,29 +2170,23 @@ fuse_vnop_read(struct vnop_read_args *ap)
 static int
 fuse_vnop_readdir(struct vnop_readdir_args *ap)
 {
-    int           freefufh = 0;
-    errno_t       err = 0;
-    vnode_t       vp;
-    struct uio   *uio;
-    int           flags;
-    int          *eofflagPtr;
-    int          *numdirentPtr;
-    vfs_context_t context;
+    vnode_t        vp           = ap->a_vp;
+    uio_t          uio          = ap->a_uio;
+    int            flags        = ap->a_flags;
+    __unused int  *eofflagPtr   = ap->a_eofflag;
+    __unused int  *numdirentPtr = ap->a_numdirent;
+    vfs_context_t  context      = ap->a_context;
 
-    struct fuse_iov cookediov;
     struct fuse_filehandle *fufh = NULL;
     struct fuse_vnode_data *fvdat;
+    struct fuse_iov         cookediov;
+
+    int err = 0;
+    int freefufh = 0;
 
     fuse_trace_printf_vnop();
 
-    vp           = ap->a_vp;
-    uio          = ap->a_uio;
-    flags        = ap->a_flags;
-    eofflagPtr   = ap->a_eofflag;
-    numdirentPtr = ap->a_numdirent;
-    context      = ap->a_context;
-
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
@@ -2180,7 +2199,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
 
 #define DE_SIZE (int)(sizeof(struct fuse_dirent))
 
-    if ((uio_iovcnt(uio) > 1)                            ||
+    if ((uio_iovcnt(uio) > 1) ||
         (uio_resid(uio) < (user_ssize_t)DE_SIZE)) {
         return EINVAL;
     }
@@ -2232,25 +2251,22 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
 static int
 fuse_vnop_readlink(struct vnop_readlink_args *ap)
 {
-    int err;
-    vnode_t vp;
-    uio_t uio;
-    vfs_context_t context;
+    vnode_t       vp      = ap->a_vp;
+    uio_t         uio     = ap->a_uio;
+    vfs_context_t context = ap->a_context;
+
     struct fuse_dispatcher fdi;
+    int err;
 
     fuse_trace_printf_vnop();
 
-    vp = ap->a_vp;
-    uio = ap->a_uio;
-    context = ap->a_context;
-
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    if (vnode_vtype(vp) != VLNK) {
+    if (!vnode_islnk(vp)) {
         return EINVAL;
     }
 
@@ -2284,17 +2300,24 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
 static int
 fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 {
-    int type;
-    vnode_t vp = ap->a_vp;
-    HNodeRef hn;
+    vnode_t       vp      = ap->a_vp;
+    vfs_context_t context = ap->a_context;
+
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh = NULL;
+
+    int type;
+    HNodeRef hn;
 
     fuse_trace_printf_vnop();
 
     if (!fvdat) {
         panic("MacFUSE: no vnode data during recycling");
     }
+
+    /*
+     * Cannot do early bail out on a dead file system in this case.
+     */
 
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
@@ -2304,13 +2327,13 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
             fufh->open_count = 0;
             if ((fufh->fufh_flags & FUFH_STRATEGY) ||
                 vfs_isforce(vnode_mount(vp))) {
-                (void)fuse_filehandle_put(vp, ap->a_context, type, 0);
+                (void)fuse_filehandle_put(vp, context, type, 0);
             } else {
                 /*
                  * This is not a forced unmount. So why is the vnode being
                  * reclaimed if a fufh is valid? Well, unless we are dead.
                  */
-                if (!fuse_isdeadfs(vp) && !(fvdat->flag & FN_REVOKING)) {
+                if (!fuse_isdeadfs(vp)) {
                     /*
                      * This needs to be figured out. Looks like we can get
                      * here if there's a race between open and vflush (latter
@@ -2339,7 +2362,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
     if ((!fuse_isdeadfs(vp)) && (fvdat->nlookup)) {
         struct fuse_dispatcher fdi;
         fdi.tick = NULL;
-        fuse_internal_forget_send(vnode_mount(vp), ap->a_context, VTOI(vp),
+        fuse_internal_forget_send(vnode_mount(vp), context, VTOI(vp),
                                   fvdat->nlookup, &fdi);
     }
 
@@ -2368,17 +2391,17 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 static int
 fuse_vnop_remove(struct vnop_remove_args *ap)
 {
-    int err;
-
     vnode_t               dvp     = ap->a_dvp;
     vnode_t               vp      = ap->a_vp;
     struct componentname *cnp     = ap->a_cnp;
     int                   flags   = ap->a_flags;
     vfs_context_t         context = ap->a_context;
 
+    int err;
+
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs_fs(vp)) {
         panic("MacFUSE: fuse_vnop_remove(): called on a dead file system");
     }
 
@@ -2425,31 +2448,33 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
 static int
 fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
 {
-    int err = 0;
-    int namelen;
+    vnode_t        vp      = ap->a_vp;
+    const char    *name    = ap->a_name;
+    vfs_context_t  context = ap->a_context;
+
     struct fuse_dispatcher fdi;
     struct fuse_data      *data;
-    mount_t mp;
 
-    vnode_t vp = ap->a_vp;
-    vfs_context_t context = ap->a_context;
+    mount_t mp;
+    int namelen;
+    int err = 0;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    if (ap->a_name == NULL || ap->a_name[0] == '\0') {
+    if (name == NULL || name[0] == '\0') {
         return (EINVAL);  /* invalid name */
     }
 
     mp = vnode_mount(vp);
     data = fuse_get_mpdata(mp);
 
-    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+    if (fuse_skip_apple_xattr_mp(mp, name)) {
         return EPERM;
     }
 
@@ -2461,12 +2486,12 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         return ENOTSUP;
     }
 
-    namelen = strlen(ap->a_name);
+    namelen = strlen(name);
 
     fdisp_init(&fdi, namelen + 1);
-    fdisp_make_vp(&fdi, FUSE_REMOVEXATTR, vp, ap->a_context);
+    fdisp_make_vp(&fdi, FUSE_REMOVEXATTR, vp, context);
 
-    memcpy((char *)fdi.indata, ap->a_name, namelen);
+    memcpy((char *)fdi.indata, name, namelen);
     ((char *)fdi.indata)[namelen] = '\0';
 
     err = fdisp_wait_answ(&fdi);
@@ -2498,8 +2523,6 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
 static int
 fuse_vnop_rename(struct vnop_rename_args *ap)
 {
-    int err = 0;
-
     vnode_t fdvp               = ap->a_fdvp;
     vnode_t fvp                = ap->a_fvp;
     struct componentname *fcnp = ap->a_fcnp;
@@ -2508,9 +2531,11 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
     struct componentname *tcnp = ap->a_tcnp;
     vfs_context_t context      = ap->a_context;
 
+    int err = 0;
+
     fuse_trace_printf_vnop_novp();
 
-    if (fuse_isdeadfs_nop(fdvp)) {
+    if (fuse_isdeadfs_fs(fdvp)) {
         panic("MacFUSE: fuse_vnop_rename(): called on a dead file system");
     }
 
@@ -2574,14 +2599,14 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
 static int
 fuse_vnop_revoke(struct vnop_revoke_args *ap)
 {
-    vnode_t vp = ap->a_vp;
+    vnode_t       vp      = ap->a_vp;
     vfs_context_t context = ap->a_context;
 
     fuse_trace_printf_vnop();
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context);
+    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context, 1);
 }
 
 /*
@@ -2596,14 +2621,16 @@ fuse_vnop_revoke(struct vnop_revoke_args *ap)
 static int
 fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
 {
+    vnode_t               dvp     = ap->a_dvp;
+    vnode_t               vp      = ap->a_vp;
+    struct componentname *cnp     = ap->a_cnp;
+    vfs_context_t         context = ap->a_context;
+
     int err;
-    vnode_t dvp = ap->a_dvp;
-    vnode_t vp = ap->a_vp;
-    vfs_context_t context = ap->a_context;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs_fs(vp)) {
         panic("MacFUSE: fuse_vnop_rmdir(): called on a dead file system");
     }
 
@@ -2615,7 +2642,7 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
 
     fuse_vncache_purge(vp);
 
-    err = fuse_internal_remove(dvp, vp, ap->a_cnp, FUSE_RMDIR, ap->a_context);
+    err = fuse_internal_remove(dvp, vp, cnp, FUSE_RMDIR, context);
 
     if (err == 0) {
         FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_LINK);
@@ -2639,7 +2666,8 @@ static int
 fuse_vnop_select(__unused struct vnop_select_args *ap)
 {
     fuse_trace_printf_vnop_novp();
-    return (1);
+
+    return 1;
 }
 
 /*
@@ -2687,7 +2715,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
      * ...
      */
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
@@ -2830,7 +2858,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
              * revocation and tell the caller to try again, if interested.
              */
 
-            fuse_internal_vnode_disappear(vp, context, 1);
+            fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
 
             err = EAGAIN;
         }
@@ -2872,37 +2900,41 @@ out:
 static int
 fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 {
+    vnode_t       vp      = ap->a_vp;
+    const char   *name    = ap->a_name;
+    uio_t         uio     = ap->a_uio;
+    vfs_context_t context = ap->a_context;
+
+    struct fuse_dispatcher   fdi;
+    struct fuse_setxattr_in *fsxi;
+    struct fuse_data        *data;
+
+    user_addr_t a_baseaddr[FUSE_UIO_BACKUP_MAX];
+    user_size_t a_length[FUSE_UIO_BACKUP_MAX];
+
+    mount_t mp;
+
     int err = 0;
     int iov_err = 0;
     int i, iov_cnt, namelen;
     size_t attrsize;
-    user_addr_t a_baseaddr[FUSE_UIO_BACKUP_MAX];
-    user_size_t a_length[FUSE_UIO_BACKUP_MAX];
-    struct fuse_dispatcher   fdi;
-    struct fuse_setxattr_in *fsxi;
-    struct fuse_data        *data;
-    mount_t mp;
-
-    vnode_t vp = ap->a_vp;
-    uio_t uio = ap->a_uio;
-    vfs_context_t context = ap->a_context;
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EBADF;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    if (ap->a_name == NULL || ap->a_name[0] == '\0') {
+    if (name == NULL || name[0] == '\0') {
         return EINVAL;
     }
 
     mp = vnode_mount(vp);
     data = fuse_get_mpdata(mp);
 
-    if (fuse_skip_apple_xattr_mp(mp, ap->a_name)) {
+    if (fuse_skip_apple_xattr_mp(mp, name)) {
         return EPERM;
     }
 
@@ -2934,7 +2966,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         return E2BIG;
     }
 
-    namelen = strlen(ap->a_name);
+    namelen = strlen(name);
 
     fdisp_init(&fdi, sizeof(*fsxi) + namelen + 1 + attrsize);
     fdisp_make_vp(&fdi, FUSE_SETXATTR, vp, ap->a_context);
@@ -2943,7 +2975,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     fsxi->size = attrsize;
     fsxi->flags = ap->a_options;
 
-    memcpy((char *)fdi.indata + sizeof(*fsxi), ap->a_name, namelen);
+    memcpy((char *)fdi.indata + sizeof(*fsxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fsxi) + namelen] = '\0';
 
     err = uiomove((char *)fdi.indata + sizeof(*fsxi) + namelen + 1, attrsize,
@@ -2991,17 +3023,12 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 static int
 fuse_vnop_strategy(struct vnop_strategy_args *ap)
 {
-    buf_t   bp;
-    vnode_t vp;
-    struct fuse_vnode_data *fvdat;
+    buf_t   bp = ap->a_bp;
+    vnode_t vp = buf_vnode(bp);
 
     fuse_trace_printf_vnop();
 
-    bp = ap->a_bp;
-    vp = buf_vnode(bp);
-    fvdat = VTOFUD(vp);
-
-    if (!vp || (fuse_isdeadfs(vp))) {
+    if (!vp || fuse_isdeadfs(vp)) {
         buf_seterror(bp, EIO);
         buf_biodone(bp);
         return EIO;
@@ -3024,19 +3051,20 @@ fuse_vnop_strategy(struct vnop_strategy_args *ap)
 static int  
 fuse_vnop_symlink(struct vnop_symlink_args *ap)
 {           
-    vnode_t dvp = ap->a_dvp; 
-    vnode_t *vpp = ap->a_vpp;
-    struct componentname *cnp = ap->a_cnp;
-    char *target = ap->a_target;
-    vfs_context_t context = ap->a_context;
+    vnode_t               dvp     = ap->a_dvp; 
+    vnode_t              *vpp     = ap->a_vpp;
+    struct componentname *cnp     = ap->a_cnp;
+    char                 *target  = ap->a_target;
+    vfs_context_t         context = ap->a_context;
             
+    struct fuse_dispatcher fdi;
+
     int err;
     size_t len;
-    struct fuse_dispatcher fdi;
         
     fuse_trace_printf_vnop_novp();
 
-    if (fuse_isdeadfs_nop(dvp)) {
+    if (fuse_isdeadfs_fs(dvp)) {
         panic("MacFUSE: fuse_vnop_symlink(): called on a dead file system");
     }
             
@@ -3049,6 +3077,8 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
     memcpy(fdi.indata, cnp->cn_nameptr, cnp->cn_namelen);
     ((char *)fdi.indata)[cnp->cn_namelen] = '\0';
     memcpy((char *)fdi.indata + cnp->cn_namelen + 1, target, len);
+
+    /* XXX: Need to take vap into account. */
 
     err = fuse_internal_newentry_core(dvp, vpp, cnp, VLNK, &fdi, context);
     fuse_invalidate_attr(dvp);
@@ -3115,7 +3145,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs_nop(vp)) {
+    if (fuse_isdeadfs(vp)) {
         return EIO;
     }
 

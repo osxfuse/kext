@@ -24,6 +24,8 @@
 #include <libkern/locks.h>
 
 #include "fuse.h"
+#include "fuse_device.h"
+#include "fuse_locking.h"
 
 struct fuse_iov {
     void   *base;
@@ -31,6 +33,11 @@ struct fuse_iov {
     size_t  allocated_size;
     int     credit;
 };
+
+#define FUSE_DATA_LOCK_SHARED(d)      fuse_lck_rw_lock_shared((d)->rwlock)
+#define FUSE_DATA_LOCK_EXCLUSIVE(d)   fuse_lck_rw_lock_exclusive((d)->rwlock)
+#define FUSE_DATA_UNLOCK_SHARED(d)    fuse_lck_rw_unlock_shared((d)->rwlock)
+#define FUSE_DATA_UNLOCK_EXCLUSIVE(d) fuse_lck_rw_unlock_exclusive((d)->rwlock)
 
 void fiov_init(struct fuse_iov *fiov, size_t size);
 void fiov_teardown(struct fuse_iov *fiov);
@@ -130,9 +137,10 @@ enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
  * The data representing a FUSE session.
  */
 struct fuse_data {
-    enum mount_state           mount_state;
-    struct fuse_softc         *fdev;
+    fuse_device_t              fdev;
     mount_t                    mp;
+    vnode_t                    rootvp;
+    enum mount_state           mount_state;
     kauth_cred_t               daemoncred;
     pid_t                      daemonpid;
     uint32_t                   dataflags;     /* effective fuse_data flags */
@@ -296,7 +304,7 @@ fuse_libabi_geq(struct fuse_data *data, uint32_t abi_maj, uint32_t abi_min)
              data->fuse_libabi_minor >= abi_min));
 }
 
-struct fuse_data *fdata_alloc(struct fuse_softc *fdev, struct proc *p);
+struct fuse_data *fdata_alloc(struct proc *p);
 void fdata_destroy(struct fuse_data *data);
 int  fdata_kick_get(struct fuse_data *data);
 void fdata_kick_set(struct fuse_data *data);

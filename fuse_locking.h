@@ -7,6 +7,7 @@
 #define _FUSE_LOCKING_H_
 
 #include "fuse_node.h"
+#include <IOKit/IOLocks.h>
 
 enum fusefslocktype {
     FUSEFS_SHARED_LOCK    = 1,
@@ -53,25 +54,23 @@ extern lck_mtx_t      *fuse_device_mutex;
         IOLog("0: lck_mtx_unlock(%p): %s@%d\n", (m), __FUNCTION__, __LINE__); \
     }
 
-#else
-#define fuse_lck_mtx_lock(m)   lck_mtx_lock((m))
-#define fuse_lck_mtx_unlock(m) lck_mtx_unlock((m))
-#endif
+#define fuse_lck_rw_lock_shared(l)      lck_rw_lock_shared((l))
+#define fuse_lck_rw_lock_exclusive(l)   lck_rw_lock_exclusive((l))
+#define fuse_lck_rw_unlock_shared(l)    lck_rw_unlock_shared((l))
+#define fuse_lck_rw_unlock_exclusive(l) lck_rw_unlock_exclusive((l))
+
+#else /* !FUSE_TRACE_LK */
+
+#define fuse_lck_mtx_lock(m)            lck_mtx_lock((m))
+#define fuse_lck_mtx_unlock(m)          lck_mtx_unlock((m))
 
 #define fuse_lck_rw_lock_shared(l)      lck_rw_lock_shared((l))
 #define fuse_lck_rw_lock_exclusive(l)   lck_rw_lock_exclusive((l))
 #define fuse_lck_rw_unlock_shared(l)    lck_rw_unlock_shared((l))
 #define fuse_lck_rw_unlock_exclusive(l) lck_rw_unlock_exclusive((l))
 
-#define FUSE_DATA_LOCK_SHARED(d)       fuse_lck_rw_lock_shared((d)->rwlock)
-#define FUSE_DATA_LOCK_EXCLUSIVE(d)    fuse_lck_rw_lock_exclusive((d)->rwlock)
-#define FUSE_DATA_UNLOCK_SHARED(d)     fuse_lck_rw_unlock_shared((d)->rwlock)
-#define FUSE_DATA_UNLOCK_EXCLUSIVE(d)  fuse_lck_rw_unlock_exclusive((d)->rwlock)
+#define fuse_lck_mtx_try_lock(l)        IOLockTryLock((IOLock *)l)
 
-#define FUSE_DEVICE_GLOBAL_LOCK()      fuse_lck_mtx_lock(fuse_device_mutex)
-#define FUSE_DEVICE_GLOBAL_UNLOCK()    fuse_lck_mtx_unlock(fuse_device_mutex)
-#define FUSE_DEVICE_LOCAL_LOCK(d)      fuse_lck_mtx_lock((d)->mtx)
-#define FUSE_DEVICE_LOCAL_UNLOCK(d)    fuse_lck_mtx_unlock((d)->mtx)
-
+#endif /* FUSE_TRACE_LK */
 
 #endif /* _FUSE_LOCKING_H_ */

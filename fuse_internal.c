@@ -49,7 +49,6 @@ fuse_internal_access(vnode_t                   vp,
     int default_error = 0;
     uint32_t mask = 0;
     int dataflags;
-    int vtype;
     mount_t mp;
     struct fuse_dispatcher fdi;
     struct fuse_access_in *fai;
@@ -58,7 +57,6 @@ fuse_internal_access(vnode_t                   vp,
     fuse_trace_printf_func();
 
     mp = vnode_mount(vp);
-    vtype = vnode_vtype(vp);
 
     data = fuse_get_mpdata(mp);
     dataflags = data->dataflags;
@@ -97,7 +95,7 @@ fuse_internal_access(vnode_t                   vp,
         return default_error;
     }
 
-    if (vtype == VDIR) {
+    if (vnode_isdir(vp)) {
         if (action & (KAUTH_VNODE_LIST_DIRECTORY   |
                       KAUTH_VNODE_READ_EXTATTRIBUTES)) {
             mask |= R_OK;
@@ -152,17 +150,15 @@ fuse_internal_access(vnode_t                   vp,
 
     if (err == ENOENT) {
 
-        int dorevoke = 1;
-
         IOLog("MacFUSE: disappearing vnode %p (root=%d, type=%d, action=%x)\n",
               vp, vnode_isvroot(vp), vnode_vtype(vp), action);
 
         /*
-         * On 10.4, because of the Finder's /.Trashes/<uid> issue, we set
-         * dorevoke to 0 to avoid deadlock.
+         * On 10.4, I think I can get Finder to lock because of /.Trashes/<uid>
+         * unless I use REVOKE_NONE here.
          */
          
-        fuse_internal_vnode_disappear(vp, context, dorevoke);
+        fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
     }
 
     return err;
@@ -206,7 +202,7 @@ fuse_internal_fsync(vnode_t                 vp,
 
     fdip->iosize = sizeof(*ffsi);
     fdip->tick = NULL;
-    if (vnode_vtype(vp) == VDIR) {
+    if (vnode_isdir(vp)) {
         op = FUSE_FSYNCDIR;
     }
     
@@ -431,7 +427,7 @@ fuse_unlink_callback(vnode_t vp, void *cargs)
 
     target_nlink = *(uint64_t *)cargs;
 
-    if ((vap->va_nlink == target_nlink) && (vnode_vtype(vp) == VREG)) {
+    if ((vap->va_nlink == target_nlink) && (vnode_isreg(vp))) {
         fuse_invalidate_attr(vp);
     }
 
@@ -534,18 +530,16 @@ fuse_internal_rename(vnode_t               fdvp,
 
 __private_extern__
 int
-fuse_internal_revoke(vnode_t vp, int flags, vfs_context_t context)
+fuse_internal_revoke(vnode_t vp, int flags, vfs_context_t context, int how)
 {
-    int ret;
+    int ret = 0;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
-    fvdat->flag |= FN_REVOKING;
-
-    IOLog("MacFUSE: revoking vnode %p\n", vp);
-    ret = vn_revoke(vp, flags, context);
-
-    fvdat->flag &= ~FN_REVOKING;
     fvdat->flag |= FN_REVOKED;
+
+    if (how == REVOKE_HARD) {
+        ret = vn_revoke(vp, flags, context);
+    }
 
     return ret;
 }
@@ -615,7 +609,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
                                                (vfs_context_t)0, fufh_type);
+
+#if FUSE_DEBUG
         fuse_preflight_log(vp, fufh_type, err, "strategy");
+#endif
 
         if (!err) {
             err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
@@ -1097,14 +1094,14 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
 
 __private_extern__
 void
-fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int dorevoke)
+fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 {   
     int err = 0;
 
     fuse_vncache_purge(vp);
 
-    if (dorevoke) {
-        err = fuse_internal_revoke(vp, REVOKEALL, context);
+    if (how != REVOKE_NONE) {
+        err = fuse_internal_revoke(vp, REVOKEALL, context, how);
         if (err) {
             IOLog("MacFUSE: disappearing act: revoke failed (%d)\n", err);
         }
@@ -1123,8 +1120,8 @@ int
 fuse_internal_init_synchronous(struct fuse_ticket *ftick)
 {
     int err = 0;
-    struct fuse_data *data = ftick->tk_data;
     struct fuse_init_out *fiio;
+    struct fuse_data *data = ftick->tk_data;
 
     if ((err = ftick->tk_aw_ohead.error)) {
         goto out;
@@ -1252,6 +1249,8 @@ fuse_internal_print_vnodes(mount_t mp)
                   fuse_internal_print_vnodes_callback, NULL);
 }
 
+#if FUSE_DEBUG
+
 __private_extern__
 void
 fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
@@ -1260,6 +1259,9 @@ fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
     name = vnode_getname(vp);
+#else
+    (void)name;
+    (void)vp;
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
     if (name) {
@@ -1277,3 +1279,5 @@ fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
     }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 }
+
+#endif /* FUSE_DEBUG */

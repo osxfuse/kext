@@ -9,23 +9,34 @@
 #include <sys/conf.h>
 #include <miscfs/devfs/devfs.h>
 
-struct fuse_softc;
-typedef struct fuse_softc * fuse_softc_t;
-
 struct fuse_data;
+
+/* softc */
+
+struct fuse_device;
+typedef struct fuse_device * fuse_device_t;
+
+#define FUSE_DEVICE_NULL (fuse_device_t)0
+
+/* Global */
 
 int fuse_devices_start(void);
 int fuse_devices_stop(void);
 
-int fuse_devices_kill(int unit, struct proc *p);
-int fuse_devices_print_vnodes(int unit_flags, struct proc *p);
+/* Per Device */
 
-fuse_softc_t      fuse_softc_get(dev_t dev);
+fuse_device_t     fuse_device_get(dev_t dev);
+struct fuse_data *fuse_device_get_mpdata(fuse_device_t fdev);
+uint32_t          fuse_device_get_random(fuse_device_t fdev);
 
-struct fuse_data *fuse_softc_get_data(fuse_softc_t fdev);
-void              fuse_softc_set_data(fuse_softc_t fdev,
-                                      struct fuse_data *data);
+void              fuse_device_lock(fuse_device_t fdev);
+void              fuse_device_unlock(fuse_device_t fdev);
 
-void              fuse_softc_close_finalize(fuse_softc_t fdev);
+void              fuse_device_close_final(fuse_device_t fdev);
+
+/* Control/Debug Utilities */
+
+int fuse_device_kill(int unit, struct proc *p);
+int fuse_device_print_vnodes(int unit_flags, struct proc *p);
 
 #endif /* _FUSE_DEVICE_H_ */

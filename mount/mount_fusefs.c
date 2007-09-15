@@ -222,9 +222,10 @@ static uint32_t  blocksize      = FUSE_DEFAULT_BLOCKSIZE;
 static uint32_t  daemon_timeout = FUSE_DEFAULT_DAEMON_TIMEOUT;
 static uint32_t  fsid           = 0;
 static char     *fsname         = NULL;
+static uint32_t  fssubtype      = 0;
 static uint32_t  init_timeout   = FUSE_DEFAULT_INIT_TIMEOUT;
 static uint32_t  iosize         = FUSE_DEFAULT_IOSIZE;
-static uint32_t  fssubtype      = 0;
+static uint32_t  drandom        = 0;
 static char     *volname        = NULL;
 
 struct mntval mvals[] = {
@@ -700,14 +701,19 @@ main(int argc, char **argv)
         init_timeout = FUSE_MAX_INIT_TIMEOUT;
     }
 
+    result = ioctl(fd, FUSEDEVIOCGETRANDOM, &drandom);
+    if (result) {
+        errx(1, "failed to negotiate with /dev/fuse%d", dindex);
+    }
+
     args.altflags       = altflags;
     args.blocksize      = blocksize;
     args.daemon_timeout = daemon_timeout;
     args.fsid           = fsid;
-    args.index          = dindex;
+    args.fssubtype      = fssubtype;
     args.init_timeout   = init_timeout;
     args.iosize         = iosize;
-    args.fssubtype      = fssubtype;
+    args.random         = drandom;
 
     char *daemon_name = NULL;
     char *daemon_path = getenv("MOUNT_FUSEFS_DAEMON_PATH");
@@ -736,7 +742,9 @@ main(int argc, char **argv)
         snprintf(args.volname, MAXPATHLEN, "%s", volname);
     }
 
+    /* Finally! */
     result = mount(MACFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
+
     if (result < 0) {
         err(EX_OSERR, "failed to mount %s@/dev/fuse%d", mntpath, dindex);
     } else {

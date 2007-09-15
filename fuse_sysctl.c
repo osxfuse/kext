@@ -75,7 +75,7 @@ sysctl_macfuse_control_kill_handler SYSCTL_HANDLER_ARGS
     } else {
         error = SYSCTL_IN(req, arg1, sizeof(int));
         if (error == 0) {
-            error = fuse_devices_kill(*(int *)arg1, req->p);
+            error = fuse_device_kill(*(int *)arg1, req->p);
         }
         fuse_kill = -1; /* set it back */
     }
@@ -104,7 +104,7 @@ sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS
     } else {
         error = SYSCTL_IN(req, arg1, sizeof(int));
         if (error == 0) {
-            error = fuse_devices_print_vnodes(*(int *)arg1, req->p);
+            error = fuse_device_print_vnodes(*(int *)arg1, req->p);
         }
         fuse_print_vnodes = -1; /* set it back */
     }

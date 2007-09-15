@@ -12,6 +12,12 @@
 #include "fuse_sysctl.h"
 
 #include <fuse_ioctl.h>
+#include <libkern/libkern.h>
+
+#define FUSE_DEVICE_GLOBAL_LOCK()   fuse_lck_mtx_lock(fuse_device_mutex)
+#define FUSE_DEVICE_GLOBAL_UNLOCK() fuse_lck_mtx_unlock(fuse_device_mutex)
+#define FUSE_DEVICE_LOCAL_LOCK(d)   fuse_lck_mtx_lock((d)->mtx)
+#define FUSE_DEVICE_LOCAL_UNLOCK(d) fuse_lck_mtx_unlock((d)->mtx)
 
 #define TAILQ_FOREACH_SAFE(var, head, field, tvar)           \
         for ((var) = TAILQ_FIRST((head));                    \
@@ -21,157 +27,79 @@
 static int    fuse_cdev_major          = -1;
 static UInt32 fuse_interface_available = FALSE;
 
-struct fuse_softc {
-    struct fuse_data *data;
+struct fuse_device {
     lck_mtx_t        *mtx;
     int               usecount;
     pid_t             pid;
+    uint32_t          random;
     dev_t             dev;
     void             *cdev;
+    struct fuse_data *data;
 };
 
-struct fuse_softc fuse_softc_table[FUSE_NDEVICES];
+static struct fuse_device fuse_device_table[FUSE_NDEVICES];
 
-#define FUSE_SOFTC_FROM_UNIT_FAST(u) (fuse_softc_t)&(fuse_softc_table[(u)])
+#define FUSE_DEVICE_FROM_UNIT_FAST(u) (fuse_device_t)&(fuse_device_table[(u)])
 
-int
-fuse_devices_kill(int unit, struct proc *p)
-{
-    int error = ENOENT;
-    struct fuse_softc *fdev;
+/* Interface for VFS */
 
-    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
-        return EINVAL;
-    }
-
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
-    if (!fdev) {
-        return ENOENT;
-    }
-
-    FUSE_DEVICE_GLOBAL_LOCK();
-
-    if (fdev->data) {
-        error = EPERM;
-        if (p) {
-            kauth_cred_t request_cred = proc_ucred(p);
-            if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
-                FUSE_DEVICE_GLOBAL_UNLOCK();
-                /* The following can block. */
-                fdata_kick_set(fdev->data);
-                error = 0;
-
-                fuse_lck_mtx_lock(fdev->data->aw_mtx);
-                {
-                    struct fuse_ticket *ftick;
-                    while ((ftick = fuse_aw_pop(fdev->data))) {
-                        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-                        fticket_set_answered(ftick);
-                        ftick->tk_aw_errno = ENOTCONN;
-                        fuse_wakeup(ftick);
-                        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-                    }
-                }
-                fuse_lck_mtx_unlock(fdev->data->aw_mtx);
-            }
-        }
-    } else {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
-    }
-
-    return error;
-}
-
-int
-fuse_devices_print_vnodes(int unit_flags, struct proc *p)
-{
-    int error = ENOENT;
-    struct fuse_softc *fdev;
-
-    int unit = unit_flags;
-
-    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
-        return EINVAL;
-    }
-
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
-    if (!fdev) {
-        return ENOENT;
-    }
-
-    FUSE_DEVICE_GLOBAL_LOCK();
-
-    if (fdev->data) {
-        error = EPERM;
-        if (p) {
-            kauth_cred_t request_cred = proc_ucred(p);
-            if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
-                fuse_internal_print_vnodes(fdev->data->mp);
-                error = 0;
-            }
-        }
-    }
-
-    FUSE_DEVICE_GLOBAL_UNLOCK();
-
-    return error;
-}
-
-fuse_softc_t
-fuse_softc_get(dev_t dev)
+/* Doesn't need lock. */
+fuse_device_t
+fuse_device_get(dev_t dev)
 {
     int unit = minor(dev);
 
     if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
-        return (fuse_softc_t)0;
+        return (fuse_device_t)0;
     }
 
-    return FUSE_SOFTC_FROM_UNIT_FAST(unit);
+    return FUSE_DEVICE_FROM_UNIT_FAST(unit);
+}
+
+__inline__
+void
+fuse_device_lock(fuse_device_t fdev)
+{
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
+}
+
+__inline__
+void
+fuse_device_unlock(fuse_device_t fdev)
+{
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
 }
 
 /* Must be called under lock. */
 __inline__
 struct fuse_data *
-fuse_softc_get_data(fuse_softc_t fdev)
+fuse_device_get_mpdata(fuse_device_t fdev)
 {
-    if (fdev) {
-       return fdev->data;
-    }
+    return fdev->data;
+}
 
-    return NULL;
+/* Must be called under lock. */
+__inline__
+uint32_t
+fuse_device_get_random(fuse_device_t fdev)
+{
+    return fdev->random;
 }
 
 /* Must be called under lock. */
 __inline__
 void
-fuse_softc_set_data(fuse_softc_t fdev, struct fuse_data *data)
-{
-    if (!fdev) {
-       return;
-    }
-
-    fdev->data = data;
-}
-
-/* Must be called under lock. */
-__inline__
-void
-fuse_softc_close_finalize(fuse_softc_t fdev)
+fuse_device_close_final(fuse_device_t fdev)
 {
     if (fdev) {
-        fdev->data = NULL;
-        fdev->pid = -1;
-        fdev->usecount--;
+        fdata_destroy(fdev->data);
+        fdev->data   = NULL;
+        fdev->pid    = -1;
+        fdev->random = 0;
     }
 }
 
-static int
-fuse_device_enodev(void)
-{
-    return ENODEV;
-}
+/* /dev/fuseN implementation */
 
 d_open_t  fuse_device_open;
 d_close_t fuse_device_close;
@@ -185,14 +113,14 @@ static struct cdevsw fuse_device_cdevsw = {
     /* read     */ fuse_device_read,
     /* write    */ fuse_device_write,
     /* ioctl    */ fuse_device_ioctl,
-    /* stop     */ (d_stop_t *)&fuse_device_enodev,
-    /* reset    */ (d_reset_t *)&fuse_device_enodev,
+    /* stop     */ (d_stop_t *)enodev,
+    /* reset    */ (d_reset_t *)enodev,
     /* ttys     */ 0,
-    /* select   */ (d_select_t *)&fuse_device_enodev,
-    /* mmap     */ (d_mmap_t *)&fuse_device_enodev,
-    /* strategy */ (d_strategy_t *)&fuse_device_enodev,
-    /* getc     */ (d_getc_t *)&fuse_device_enodev,
-    /* putc     */ (d_putc_t *)&fuse_device_enodev,
+    /* select   */ (d_select_t *)enodev,
+    /* mmap     */ (d_mmap_t *)enodev,
+    /* strategy */ (d_strategy_t *)enodev_strat,
+    /* getc     */ (d_getc_t *)enodev,
+    /* putc     */ (d_putc_t *)enodev,
     /* flags    */ D_TTY,
 };
 
@@ -201,7 +129,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
                  struct proc *p)
 {
     int unit;
-    struct fuse_softc *fdev;
+    struct fuse_device *fdev;
     struct fuse_data  *fdata;
 
     fuse_trace_printf_func();
@@ -211,15 +139,15 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
     }
 
     unit = minor(dev);
-    if (unit >= FUSE_NDEVICES) {
+    if ((unit >= FUSE_NDEVICES) || (unit < 0)) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
         return ENOENT;
     }
 
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
     if (!fdev) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
-        IOLog("MacFUSE: device with no softc!\n");
+        IOLog("MacFUSE: device found with no softc\n");
         return ENXIO;
     }
 
@@ -232,12 +160,12 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
 
     fdev->usecount++;
 
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
+
     FUSE_DEVICE_GLOBAL_UNLOCK();
 
     /* Could block. */
-    fdata = fdata_alloc(fdev, p);
-
-    FUSE_DEVICE_GLOBAL_LOCK();
+    fdata = fdata_alloc(p);
 
     if (fdev->data) {
         /*
@@ -246,7 +174,11 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
          * user daemon is dead.
          */
 
+        FUSE_DEVICE_GLOBAL_LOCK();
+
         fdev->usecount--;
+
+        FUSE_DEVICE_LOCAL_UNLOCK(fdev);
 
         FUSE_DEVICE_GLOBAL_UNLOCK();
 
@@ -255,11 +187,13 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
         return EBUSY;
     } else {
         fdata->dataflags |= FSESS_OPENED;
-        fdev->data = fdata;
-        fdev->pid = proc_pid(p);
+        fdata->fdev  = fdev;
+        fdev->data   = fdata;
+        fdev->pid    = proc_pid(p);
+        fdev->random = random();
     }       
 
-    FUSE_DEVICE_GLOBAL_UNLOCK();
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
 
     return KERN_SUCCESS;
 }
@@ -268,8 +202,8 @@ int
 fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
                   __unused struct proc *p)
 {
-    int unit, skip_destroy = 0;
-    struct fuse_softc *fdev;
+    int unit;
+    struct fuse_device *fdev;
     struct fuse_data  *data;
 
     fuse_trace_printf_func();
@@ -279,34 +213,29 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         return ENOENT;
     }
 
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
     if (!fdev) {
         return ENXIO;
     }
 
     data = fdev->data;
     if (!data) {
-        panic("MacFUSE: no softc data upon device close");
+        panic("MacFUSE: no device private data in device_close");
     }
 
     fdata_kick_set(data);
 
-    FUSE_DEVICE_GLOBAL_LOCK();
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
 
     data->dataflags &= ~FSESS_OPENED;
 
-    FUSE_DEVICE_GLOBAL_UNLOCK();
-
     fuse_lck_mtx_lock(data->aw_mtx);
 
-    FUSE_DEVICE_GLOBAL_LOCK();
-
     if (data->mount_state == FM_MOUNTED) {
+
+        /* Uh-oh, the device is closing but we're still mounted. */
+
         struct fuse_ticket *ftick;
-
-        skip_destroy = 1;
-
-        FUSE_DEVICE_GLOBAL_UNLOCK();
 
         while ((ftick = fuse_aw_pop(data))) {
             fuse_lck_mtx_lock(ftick->tk_aw_mtx);
@@ -317,23 +246,32 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         }
 
         fuse_lck_mtx_unlock(data->aw_mtx);
+
+        /* Left mpdata for unmount to destroy. */
+
     } else {
-        FUSE_DEVICE_GLOBAL_UNLOCK();
+
+        /* We're not mounted. Can destroy mpdata. */
+
+        fdev->data   = NULL;
+        fdev->pid    = -1;
+        fdev->random = 0;
+        fdata_destroy(data);
     }
+
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
 
     FUSE_DEVICE_GLOBAL_LOCK();
 
-    if (!skip_destroy) {
-        fdev->data = NULL;
-        fdev->pid = -1;
-        fdev->usecount--;
-    }
+    /*
+     * Even if usecount goes 0 here, at open time, we check if fdev->data
+     * is non-NULL (that is, a lingering mount). If so, we return EBUSY.
+     * We could make the usecount depend on both device-use and mount-state,
+     * but I think this is truer to reality, if a bit more complex to maintain.
+     */
+    fdev->usecount--;
 
     FUSE_DEVICE_GLOBAL_UNLOCK();
-
-    if (!skip_destroy) {
-        fdata_destroy(data);
-    }
 
     return KERN_SUCCESS;
 }
@@ -342,16 +280,16 @@ int
 fuse_device_read(dev_t dev, uio_t uio, __unused int ioflag)
 {
     int i, err = 0;
-    void *buf[] = { NULL, NULL, NULL };
     int buflen[3];
+    void *buf[] = { NULL, NULL, NULL };
 
-    struct fuse_softc  *fdev;
+    struct fuse_device  *fdev;
     struct fuse_data   *data;
     struct fuse_ticket *ftick;
 
     fuse_trace_printf_func();
 
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(minor(dev));
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
     if (!fdev) {
         return ENXIO;
     }
@@ -369,7 +307,7 @@ again:
     }
 
     if (!(ftick = fuse_ms_pop(data))) {
-        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", 0);
+        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL);
         if (err != 0) {
             fuse_lck_mtx_unlock(data->ms_mtx);
             return (fdata_kick_get(data) ? ENODEV : err);
@@ -393,15 +331,15 @@ again:
     switch (ftick->tk_ms_type) {
 
     case FT_M_FIOV:
-        buf[0] = ftick->tk_ms_fiov.base;
-        buflen[0] =  ftick->tk_ms_fiov.len;
+        buf[0]    = ftick->tk_ms_fiov.base;
+        buflen[0] = ftick->tk_ms_fiov.len;
         break;
 
     case FT_M_BUF:
-        buf[0] = ftick->tk_ms_fiov.base;
-        buflen[0] =  ftick->tk_ms_fiov.len;
-        buf[1] = ftick->tk_ms_bufdata;
-        buflen[1] =  ftick->tk_ms_bufsize;
+        buf[0]    = ftick->tk_ms_fiov.base;
+        buflen[0] = ftick->tk_ms_fiov.len;
+        buf[1]    = ftick->tk_ms_bufdata;
+        buflen[1] = ftick->tk_ms_bufsize;
         break;
 
     default:
@@ -414,7 +352,9 @@ again:
             err = ENODEV;
             break;
         }
+
         err = uiomove(buf[i], buflen[i], uio);
+
         if (err) {
             break;
         }
@@ -431,130 +371,20 @@ again:
     return (err);
 }
 
-/*
- * XXX: This function needs locking in many places!
- */
-int
-fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
-                  __unused int flags, __unused proc_t proc)
-{
-    int ret = EINVAL;
-    struct fuse_softc *fdev;
-    struct fuse_data  *data;
-
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(minor(dev));
-    if (!fdev) {
-        return ENXIO;
-    }
-
-    data = fdev->data;
-    if (!data) {
-        return ENXIO;
-    }
-
-    switch (cmd) {
-    case FUSEDEVIOCSETIMPLEMENTEDBITS:
-        ret = fuse_set_noimplflags(data, *(uint64_t *)udata);
-        break;
-
-    case FUSEDEVIOCGETHANDSHAKECOMPLETE:
-        if (data->mount_state == FM_NOTMOUNTED) {
-            return ENXIO;
-        }
-        *(u_int32_t *)udata = (data->dataflags & FSESS_INITED);
-        ret = 0;
-        break;
-
-    case FUSEDEVIOCSETDAEMONDEAD:
-        fdata_kick_set(data);
-        fuse_lck_mtx_lock(data->timeout_mtx);
-        data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
-        fuse_lck_mtx_unlock(data->timeout_mtx);
-        ret = 0;
-        break;
-
-    /*
-     * In the user-space library, you can get the inode number from a path
-     * by using something like:
-     *
-     * fuse_ino_t
-     * find_fuse_inode_for_path(const char *path)
-     * {
-     *     struct fuse_context *context = fuse_get_context();
-     *     struct fuse *the_fuse = context->fuse;
-     *     struct node *node find_node(the_fuse, FUSE_ROOT_ID, path);
-     *     if (!node) {
-     *         return 0;
-     *     }
-     *     return (node->nodeid);
-     * }
-     */
-    case FUSEDEVIOCALTERVNODEFORINODE:
-        {
-            HNodeRef hn;
-            vnode_t  vn;
-            dev_t    dummy_device = (dev_t)data->fdev;
-
-            struct fuse_avfi_ioctl *avfi = (struct fuse_avfi_ioctl *)udata;
-
-            ret = (int)HNodeLookupRealQuickIfExists(dummy_device,
-                                                    (ino_t)avfi->inode,
-                                                    0, /* fork index */
-                                                    &hn,
-                                                    &vn);
-            if (ret) {
-                return ret;
-            }
-
-            assert(vn != NULL);
-
-            ret = fuse_internal_ioctl_avfi(vn, (vfs_context_t)0, avfi);
-
-            if (vn) {
-                vnode_put(vn);
-            }
-        }
-        break;
-
-    default:
-        break;
-        
-    }
-
-    return ret;
-}
-
-static __inline__
-int
-fuse_ohead_audit(struct fuse_out_header *ohead, uio_t uio)
-{
-    if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead->len) {
-        IOLog("MacFUSE: message body size does not match that in the header\n");
-        return (EINVAL); 
-    }   
-    
-    if (uio_resid(uio) && ohead->error) {
-        IOLog("MacFUSE: non-zero error for a message with a body\n");
-        return (EINVAL);
-    }
-
-    ohead->error = -(ohead->error);
-
-    return (0);
-}   
-
 int
 fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 {
     int err = 0, found = 0;
+
+    struct fuse_device    *fdev;
+    struct fuse_data      *data;
+    struct fuse_ticket    *ftick;
+    struct fuse_ticket    *x_ftick;
     struct fuse_out_header ohead;
-    struct fuse_softc  *fdev;
-    struct fuse_data   *data;
-    struct fuse_ticket *ftick, *x_ftick;
 
     fuse_trace_printf_func();
 
-    fdev = FUSE_SOFTC_FROM_UNIT_FAST(minor(dev));
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
     if (!fdev) {
         return ENXIO;
     }
@@ -568,9 +398,21 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return (err);
     }
 
-    if ((err = fuse_ohead_audit(&ohead, uio))) {
-        return (err);
+    /* begin audit */
+
+    if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead.len) {
+        IOLog("MacFUSE: message body size does not match that in the header\n");
+        return (EINVAL); 
+    }   
+
+    if (uio_resid(uio) && ohead.error) {
+        IOLog("MacFUSE: non-zero error for a message with a body\n");
+        return (EINVAL);
     }
+
+    ohead.error = -(ohead.error);
+
+    /* end audit */
 
     data = fdev->data;
 
@@ -606,7 +448,9 @@ fuse_devices_start(void)
 {
     int i = 0;
 
-    bzero((void *)fuse_softc_table, sizeof(fuse_softc_table));
+    fuse_trace_printf_func();
+
+    bzero((void *)fuse_device_table, sizeof(fuse_device_table));
 
     if ((fuse_cdev_major = cdevsw_add(-1, &fuse_device_cdevsw)) == -1) {
         goto error;
@@ -615,23 +459,24 @@ fuse_devices_start(void)
     for (i = 0; i < FUSE_NDEVICES; i++) {
 
         dev_t dev = makedev(fuse_cdev_major, i);
-        fuse_softc_table[i].cdev = devfs_make_node(dev,
+        fuse_device_table[i].cdev = devfs_make_node(dev,
                                                    DEVFS_CHAR,
                                                    UID_ROOT,
                                                    GID_OPERATOR,
                                                    0666,
                                                    "fuse%d",
                                                    i);
-        if (fuse_softc_table[i].cdev == NULL) {
+        if (fuse_device_table[i].cdev == NULL) {
             goto error;
         }
 
-        fuse_softc_table[i].data     = NULL;
-        fuse_softc_table[i].dev      = dev;
-        fuse_softc_table[i].pid      = -1;
-        fuse_softc_table[i].usecount = 0;
-        fuse_softc_table[i].mtx      = lck_mtx_alloc_init(fuse_lock_group,
-                                                          fuse_lock_attr);
+        fuse_device_table[i].data     = NULL;
+        fuse_device_table[i].dev      = dev;
+        fuse_device_table[i].pid      = -1;
+        fuse_device_table[i].random   = 0;
+        fuse_device_table[i].usecount = 0;
+        fuse_device_table[i].mtx      = lck_mtx_alloc_init(fuse_lock_group,
+                                                           fuse_lock_attr);
     }
 
     fuse_interface_available = TRUE;
@@ -640,10 +485,10 @@ fuse_devices_start(void)
 
 error:
     for (--i; i >= 0; i--) {
-        devfs_remove(fuse_softc_table[i].cdev);
-        fuse_softc_table[i].cdev = NULL;
-        fuse_softc_table[i].dev  = 0;
-        lck_mtx_free(fuse_softc_table[i].mtx, fuse_lock_group);
+        devfs_remove(fuse_device_table[i].cdev);
+        fuse_device_table[i].cdev = NULL;
+        fuse_device_table[i].dev  = 0;
+        lck_mtx_free(fuse_device_table[i].mtx, fuse_lock_group);
     }
 
     (void)cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
@@ -656,6 +501,8 @@ int
 fuse_devices_stop(void)
 {
     int i, ret;
+
+    fuse_trace_printf_func();
 
     fuse_interface_available = FALSE;
 
@@ -670,22 +517,22 @@ fuse_devices_stop(void)
 
         char p_comm[MAXCOMLEN + 1] = { '?', '\0' };
 
-        if (fuse_softc_table[i].usecount != 0) {
+        if (fuse_device_table[i].usecount != 0) {
             fuse_interface_available = TRUE;
             FUSE_DEVICE_GLOBAL_UNLOCK();
-            proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
+            proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
             IOLog("MacFUSE: /dev/fuse%d is still active (pid=%d %s)\n",
-                  i, fuse_softc_table[i].pid, p_comm);
+                  i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
 
-        if (fuse_softc_table[i].data != NULL) {
+        if (fuse_device_table[i].data != NULL) {
             fuse_interface_available = TRUE;
             FUSE_DEVICE_GLOBAL_UNLOCK();
-            proc_name(fuse_softc_table[i].pid, p_comm, MAXCOMLEN + 1);
+            proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
             /* The pid can't possibly be active here. */
             IOLog("MacFUSE: /dev/fuse%d has a lingering mount (pid=%d, %s)\n",
-                  i, fuse_softc_table[i].pid, p_comm);
+                  i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
     }
@@ -693,12 +540,13 @@ fuse_devices_stop(void)
     /* No device is in use. */
 
     for (i = 0; i < FUSE_NDEVICES; i++) {
-        devfs_remove(fuse_softc_table[i].cdev);
-        lck_mtx_free(fuse_softc_table[i].mtx, fuse_lock_group);
-        fuse_softc_table[i].mtx  = NULL;
-        fuse_softc_table[i].cdev = NULL;
-        fuse_softc_table[i].dev  = 0;
-        fuse_softc_table[i].pid  = -1;
+        devfs_remove(fuse_device_table[i].cdev);
+        lck_mtx_free(fuse_device_table[i].mtx, fuse_lock_group);
+        fuse_device_table[i].cdev   = NULL;
+        fuse_device_table[i].dev    = 0;
+        fuse_device_table[i].pid    = -1;
+        fuse_device_table[i].random = 0;
+        fuse_device_table[i].mtx    = NULL;
     }
 
     ret = cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
@@ -711,4 +559,205 @@ fuse_devices_stop(void)
     FUSE_DEVICE_GLOBAL_UNLOCK();
 
     return KERN_SUCCESS;
+}
+
+/* Control/Debug Utilities */
+
+int
+fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
+                  __unused int flags, __unused proc_t proc)
+{
+    int ret = EINVAL;
+    struct fuse_device *fdev;
+    struct fuse_data   *data;
+
+    fuse_trace_printf_func();
+
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
+    if (!fdev) {
+        return ENXIO;
+    }
+
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
+
+    data = fdev->data;
+    if (!data) {
+        FUSE_DEVICE_LOCAL_UNLOCK(fdev);
+        return ENXIO;
+    }
+
+    switch (cmd) {
+    case FUSEDEVIOCSETIMPLEMENTEDBITS:
+        ret = fuse_set_implemented_custom(data, *(uint64_t *)udata);
+        break;
+
+    case FUSEDEVIOCGETHANDSHAKECOMPLETE:
+        if (data->mount_state == FM_NOTMOUNTED) {
+            ret = ENXIO;
+        } else {
+            *(u_int32_t *)udata = (data->dataflags & FSESS_INITED);
+            ret = 0;
+        }
+        break;
+
+    case FUSEDEVIOCSETDAEMONDEAD:
+        fdata_kick_set(data);
+        fuse_lck_mtx_lock(data->timeout_mtx);
+        data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
+        fuse_lck_mtx_unlock(data->timeout_mtx);
+        ret = 0;
+        break;
+
+    case FUSEDEVIOCGETRANDOM:
+        *(u_int32_t *)udata = fdev->random;
+        ret = 0;
+        break;
+
+    /*
+     * In the user-space library, you can get the inode number from a path
+     * by using something like:
+     *
+     * fuse_ino_t
+     * find_fuse_inode_for_path(const char *path)
+     * {
+     *     struct fuse_context *context = fuse_get_context();
+     *     struct fuse *the_fuse = context->fuse;
+     *     struct node *node find_node(the_fuse, FUSE_ROOT_ID, path);
+     *     if (!node) {
+     *         return 0;
+     *     }
+     *     return (node->nodeid);
+     * }
+     */
+    case FUSEDEVIOCALTERVNODEFORINODE:
+        {
+            HNodeRef hn;
+            vnode_t  vn;
+            dev_t    dummy_device = (dev_t)data->fdev;
+
+            struct fuse_avfi_ioctl *avfi = (struct fuse_avfi_ioctl *)udata;
+
+            ret = (int)HNodeLookupRealQuickIfExists(dummy_device,
+                                                    (ino_t)avfi->inode,
+                                                    0, /* fork index */
+                                                    &hn,
+                                                    &vn);
+            if (ret) {
+                break;
+            }
+
+            assert(vn != NULL);
+
+            ret = fuse_internal_ioctl_avfi(vn, (vfs_context_t)0, avfi);
+
+            if (vn) {
+                vnode_put(vn);
+            }
+        }
+        break;
+
+    default:
+        break;
+        
+    }
+
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
+
+    return ret;
+}
+
+int
+fuse_device_kill(int unit, struct proc *p)
+{
+    int error = ENOENT;
+    struct fuse_device *fdev;
+
+    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+        return EINVAL;
+    }
+
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    if (!fdev) {
+        return ENOENT;
+    }
+
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
+
+    if (fdev->data) {
+        error = EPERM;
+        if (p) {
+            kauth_cred_t request_cred = proc_ucred(p);
+            if ((kauth_cred_getuid(request_cred) == 0) ||
+                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+
+                /* The following can block. */
+                fdata_kick_set(fdev->data);
+
+                error = 0;
+
+                fuse_lck_mtx_lock(fdev->data->aw_mtx);
+                {
+                    struct fuse_ticket *ftick;
+                    while ((ftick = fuse_aw_pop(fdev->data))) {
+                        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+                        fticket_set_answered(ftick);
+                        ftick->tk_aw_errno = ENOTCONN;
+                        fuse_wakeup(ftick);
+                        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+                    }
+                }
+                fuse_lck_mtx_unlock(fdev->data->aw_mtx);
+            }
+        }
+    }
+
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
+
+    return error;
+}
+
+int
+fuse_device_print_vnodes(int unit_flags, struct proc *p)
+{
+    int error = ENOENT;
+    struct fuse_device *fdev;
+
+    int unit = unit_flags;
+
+    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+        return EINVAL;
+    }
+
+    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    if (!fdev) {
+        return ENOENT;
+    }
+
+    FUSE_DEVICE_LOCAL_LOCK(fdev);
+
+    if (fdev->data) {
+
+        mount_t mp = fdev->data->mp;
+
+        if (vfs_busy(mp, LK_NOWAIT)) {
+            FUSE_DEVICE_LOCAL_UNLOCK(fdev);
+            return EBUSY;
+        }
+        
+        error = EPERM;
+        if (p) {
+            kauth_cred_t request_cred = proc_ucred(p);
+            if ((kauth_cred_getuid(request_cred) == 0) ||
+                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                fuse_internal_print_vnodes(fdev->data->mp);
+                error = 0;
+            }
+        }
+
+        vfs_unbusy(mp);
+    }
+
+    FUSE_DEVICE_LOCAL_UNLOCK(fdev);
+
+    return error;
 }

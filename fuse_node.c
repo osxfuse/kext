@@ -174,15 +174,16 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     if (err == 0) {
         if (vnode_vtype(vn) != vtyp) {
-            IOLog("MacFUSE: vnode changed type behind us\n");
-            fuse_internal_vnode_disappear(vn, context, 1);
+            IOLog("MacFUSE: vnode changed type behind us (old=%d, new=%d)\n",
+                  vnode_vtype(vn), vtyp);
+            fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
             vnode_put(vn);
             err = EIO;
         }
 
         if (VTOFUD(vn)->generation != generation) {
             IOLog("MacFUSE: vnode changed generation\n");
-            fuse_internal_vnode_disappear(vn, context, 1);
+            fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
             vnode_put(vn);
             err = ESTALE;
         }
@@ -190,7 +191,8 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     if (err == 0) {
         *vnPtr = vn;
-        vnode_settag(vn, VT_KERNFS);
+        /* Need VT_MACFUSE from xnu */
+        vnode_settag(vn, VT_OTHER);
     }
 
     if (dirVN != NULL) {

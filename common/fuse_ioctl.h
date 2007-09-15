@@ -22,6 +22,9 @@
 /* Tell the kernel which operations the daemon implements. */
 #define FUSEDEVIOCSETIMPLEMENTEDBITS   _IOW('F', 4,  u_int64_t)
 
+/* Get device's random "secret". */
+#define FUSEDEVIOCGETRANDOM            _IOR('F', 5, u_int32_t)
+
 /*
  * The 'AVFI' (alter-vnode-for-inode) ioctls all require an inode number
  * as an argument. In the user-space library, you can get the inode number
@@ -47,7 +50,7 @@ struct fuse_avfi_ioctl {
 };
 
 /* Alter the vnode (if any) specified by the given inode. */
-#define FUSEDEVIOCALTERVNODEFORINODE  _IOW('F', 5,  struct fuse_avfi_ioctl)
+#define FUSEDEVIOCALTERVNODEFORINODE  _IOW('F', 6,  struct fuse_avfi_ioctl)
 #define FSCTLALTERVNODEFORINODE       IOCBASECMD(FUSEDEVIOCALTERVNODEFORINODE)
 
 /*

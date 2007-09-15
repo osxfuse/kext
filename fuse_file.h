@@ -6,13 +6,12 @@
 #ifndef _FUSE_FILE_H_
 #define _FUSE_FILE_H_
 
-#include <sys/types.h>
-#include <sys/kernel_types.h>
 #include <sys/fcntl.h>
 #include <sys/kauth.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/vnode.h>
 
 typedef enum fufh_type {
@@ -152,6 +151,7 @@ out:
 
 int fuse_filehandle_get(vnode_t vp, vfs_context_t context,
                         fufh_type_t fufh_type, int mode);
+
 int fuse_filehandle_put(vnode_t vp, vfs_context_t context,
                         fufh_type_t fufh_type, int foregrounded);
 

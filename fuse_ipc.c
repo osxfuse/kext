@@ -380,11 +380,9 @@ fticket_pull(struct fuse_ticket *ftick, uio_t uio)
 }
 
 struct fuse_data *
-fdata_alloc(struct fuse_softc *fdev, struct proc *p)
+fdata_alloc(struct proc *p)
 {
     struct fuse_data *data;
-
-    debug_printf("fdev=%p, p=%p\n", fdev, p);
 
     data = (struct fuse_data *)FUSE_OSMalloc(sizeof(struct fuse_data),
                                              fuse_malloc_tag);
@@ -395,7 +393,7 @@ fdata_alloc(struct fuse_softc *fdev, struct proc *p)
     bzero(data, sizeof(struct fuse_data));
 
     data->mount_state = FM_NOTMOUNTED;
-    data->fdev = fdev;
+    data->rootvp = NULLVP;
     data->dataflags = 0;
     data->rwlock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
     data->ms_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);

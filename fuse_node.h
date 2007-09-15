@@ -27,13 +27,12 @@ enum {
     kHNodeMagic     = 'HNOD',
 };
 
-#define FN_IS_ROOT     0x00000001
+#define FN_ACCESS_NOOP 0x00000001
 #define FN_CREATING    0x00000002
-#define FN_REVOKING    0x00000004
-#define FN_DIRECT_IO   0x00000008
-#define FN_HAS_ACL     0x00000010
+#define FN_DIRECT_IO   0x00000004
+#define FN_HAS_ACL     0x00000008
+#define FN_IS_ROOT     0x00000010
 #define FN_REVOKED     0x00000020
-#define FN_ACCESS_NOOP 0x00000040
 
 struct fuse_vnode_data {
 
