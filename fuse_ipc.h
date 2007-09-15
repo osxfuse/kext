@@ -27,6 +27,7 @@
 #include "fuse_device.h"
 #include "fuse_locking.h"
 
+/* 16 bytes */
 struct fuse_iov {
     void   *base;
     size_t  len;
@@ -58,6 +59,7 @@ struct fuse_data;
 
 typedef int fuse_handler_t(struct fuse_ticket *ftick, uio_t uio);
 
+/* 128 bytes */
 struct fuse_ticket {
     uint64_t                     tk_unique;
     struct fuse_data            *tk_data;
@@ -128,9 +130,7 @@ int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
 enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
 
-/*
- * The data representing a FUSE session.
- */
+/* 1184 bytes */
 struct fuse_data {
     fuse_device_t              fdev;
     mount_t                    mp;

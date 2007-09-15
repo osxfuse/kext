@@ -34,6 +34,7 @@ enum {
 #define FN_IS_ROOT     0x00000010
 #define FN_REVOKED     0x00000020
 
+/* 408 bytes */
 struct fuse_vnode_data {
 
     /** check **/
