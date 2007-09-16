@@ -807,7 +807,7 @@ showhelp()
 void
 showversion(int doexit)
 {
-    fprintf(stderr, "MacFUSE version %s\n", MACFUSE_VERSION);
+    fprintf(stderr, "MacFUSE mount version %s\n", MACFUSE_VERSION);
     if (doexit) {
         exit(EX_USAGE);
     }
