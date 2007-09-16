@@ -21,10 +21,30 @@
   #define M_MACFUSE_ENABLE_LOCKLOCAL       1
 #endif
 
+/* User Control */
+
+#define MACFUSE_POSTUNMOUNT_SIGNAL         SIGKILL
+
+#define MACOSX_ADMIN_GROUP_NAME            "admin"
+
+#define SYSCTL_MACFUSE_TUNABLES_ADMIN      "macfuse.tunables.admin_group"
+#define SYSCTL_MACFUSE_VERSION_NUMBER      "macfuse.version.number"
+
+/* Paths */
+
 #define MACFUSE_BUNDLE_PATH "/Library/Filesystems/fusefs.fs"
+#define MACFUSE_KEXT        MACFUSE_BUNDLE_PATH "/Support/fusefs.kext"
+#define MACFUSE_LOAD_PROG   MACFUSE_BUNDLE_PATH "/Support/load_fusefs"
+#define MACFUSE_MOUNT_PROG  MACFUSE_BUNDLE_PATH "/Support/mount_fusefs"
+#define SYSTEM_KEXTLOAD     "/sbin/kextload"
+#define SYSTEM_KEXTUNLOAD   "/sbin/kextunload"
+
+/* Compatible API version */
 
 #define MACFUSE_MIN_USER_VERSION_MAJOR     7
 #define MACFUSE_MIN_USER_VERSION_MINOR     5
+
+/* Device Interface */
 
 /*
  * This is the prefix ("fuse" by default) of the name of a FUSE device node
@@ -32,13 +52,13 @@
  * device by default. If you change the prefix from the default to something
  * else, the user-space FUSE library will need to know about it too.
  */
-#define FUSE_DEVICE_BASENAME               "fuse"
+#define MACFUSE_DEVICE_BASENAME            "fuse"
 
 /*
  * This is the number of /dev/fuse<n> nodes we will create. <n> goes from
  * 0 to (FUSE_NDEVICES - 1).
  */
-#define FUSE_NDEVICES                      16
+#define MACFUSE_NDEVICES                   16
 
 /*
  * This is the default block size of the virtual storage devices that are
@@ -105,12 +125,5 @@
 
 #define FUSE_LINK_MAX                      LINK_MAX
 #define FUSE_UIO_BACKUP_MAX                8
-
-#define FUSE_POSTUNMOUNT_SIGNAL            SIGKILL
-
-#define MACOSX_ADMIN_GROUP_NAME            "admin"
-
-#define SYSCTL_MACFUSE_TUNABLES_ADMIN      "macfuse.tunables.admin_group"
-#define SYSCTL_MACFUSE_VERSION_NUMBER      "macfuse.version.number"
 
 #endif /* _FUSE_PARAM_H_ */

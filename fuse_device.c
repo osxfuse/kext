@@ -37,7 +37,7 @@ struct fuse_device {
     struct fuse_data *data;
 };
 
-static struct fuse_device fuse_device_table[FUSE_NDEVICES];
+static struct fuse_device fuse_device_table[MACFUSE_NDEVICES];
 
 #define FUSE_DEVICE_FROM_UNIT_FAST(u) (fuse_device_t)&(fuse_device_table[(u)])
 
@@ -49,7 +49,7 @@ fuse_device_get(dev_t dev)
 {
     int unit = minor(dev);
 
-    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
         return (fuse_device_t)0;
     }
 
@@ -139,7 +139,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
     }
 
     unit = minor(dev);
-    if ((unit >= FUSE_NDEVICES) || (unit < 0)) {
+    if ((unit >= MACFUSE_NDEVICES) || (unit < 0)) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
         return ENOENT;
     }
@@ -209,7 +209,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
     fuse_trace_printf_func();
 
     unit = minor(dev);
-    if (unit >= FUSE_NDEVICES) {
+    if (unit >= MACFUSE_NDEVICES) {
         return ENOENT;
     }
 
@@ -456,16 +456,17 @@ fuse_devices_start(void)
         goto error;
     }
 
-    for (i = 0; i < FUSE_NDEVICES; i++) {
+    for (i = 0; i < MACFUSE_NDEVICES; i++) {
 
         dev_t dev = makedev(fuse_cdev_major, i);
-        fuse_device_table[i].cdev = devfs_make_node(dev,
-                                                   DEVFS_CHAR,
-                                                   UID_ROOT,
-                                                   GID_OPERATOR,
-                                                   0666,
-                                                   "fuse%d",
-                                                   i);
+        fuse_device_table[i].cdev = devfs_make_node(
+                                        dev,
+                                        DEVFS_CHAR,
+                                        UID_ROOT,
+                                        GID_OPERATOR,
+                                        0666,
+                                        MACFUSE_DEVICE_BASENAME "%d",
+                                        i);
         if (fuse_device_table[i].cdev == NULL) {
             goto error;
         }
@@ -513,7 +514,7 @@ fuse_devices_stop(void)
         return KERN_SUCCESS;
     }
 
-    for (i = 0; i < FUSE_NDEVICES; i++) {
+    for (i = 0; i < MACFUSE_NDEVICES; i++) {
 
         char p_comm[MAXCOMLEN + 1] = { '?', '\0' };
 
@@ -539,7 +540,7 @@ fuse_devices_stop(void)
 
     /* No device is in use. */
 
-    for (i = 0; i < FUSE_NDEVICES; i++) {
+    for (i = 0; i < MACFUSE_NDEVICES; i++) {
         devfs_remove(fuse_device_table[i].cdev);
         lck_mtx_free(fuse_device_table[i].mtx, fuse_lock_group);
         fuse_device_table[i].cdev   = NULL;
@@ -672,7 +673,7 @@ fuse_device_kill(int unit, struct proc *p)
     int error = ENOENT;
     struct fuse_device *fdev;
 
-    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
         return EINVAL;
     }
 
@@ -724,7 +725,7 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
 
     int unit = unit_flags;
 
-    if ((unit < 0) || (unit >= FUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
         return EINVAL;
     }
 

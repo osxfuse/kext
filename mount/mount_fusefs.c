@@ -573,7 +573,7 @@ main(int argc, char **argv)
         struct stat sb;
 
         if (fstat(fd, &sb) == -1) {
-            err(1, "fstat failed for FUSE device file descriptor");
+            err(1, "fstat failed for MacFUSE device file descriptor");
         }
         args.rdev = sb.st_rdev;
         strcpy(ndev, _PATH_DEV);
@@ -581,16 +581,16 @@ main(int argc, char **argv)
         devname_r(sb.st_rdev, S_IFCHR, ndevbas,
                   sizeof(ndev) - strlen(_PATH_DEV));
 
-        if (strncmp(ndevbas, FUSE_DEVICE_BASENAME,
-                    strlen(FUSE_DEVICE_BASENAME))) {
+        if (strncmp(ndevbas, MACFUSE_DEVICE_BASENAME,
+                    strlen(MACFUSE_DEVICE_BASENAME))) {
             errx(1, "mounting inappropriate device");
         }
 
         errno = 0;
-        dindex = strtol(ndevbas + strlen(FUSE_DEVICE_BASENAME), NULL, 10);
+        dindex = strtol(ndevbas + strlen(MACFUSE_DEVICE_BASENAME), NULL, 10);
         if ((errno == EINVAL) || (errno == ERANGE) ||
-            (dindex < 0) || (dindex > FUSE_NDEVICES)) {
-            errx(1, "invalid FUSE device unit (#%d)\n", dindex);
+            (dindex < 0) || (dindex > MACFUSE_NDEVICES)) {
+            errx(1, "invalid MacFUSE device unit (#%d)\n", dindex);
         }
     }
 

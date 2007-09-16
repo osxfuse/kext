@@ -36,11 +36,6 @@
 #include <fuse_param.h>
 #include <fuse_version.h>
 
-/* Local Definitions */
-#define LOAD_COMMAND        "/sbin/kextload"
-#define UNLOAD_COMMAND      "/sbin/kextunload"
-#define MACFUSE_MODULE_PATH MACFUSE_BUNDLE_PATH "/Support/fusefs.kext"
-
 int
 main(__unused int argc, __unused const char *argv[])
 {
@@ -86,7 +81,7 @@ main(__unused int argc, __unused const char *argv[])
 need_unloading:
     pid = fork();
     if (pid == 0) {
-        result = execl(UNLOAD_COMMAND, UNLOAD_COMMAND, "-b",
+        result = execl(SYSTEM_KEXTUNLOAD, SYSTEM_KEXTUNLOAD, "-b",
                        MACFUSE_BUNDLE_IDENTIFIER, NULL);
         /* We can only get here if the exec failed */
         goto out;
@@ -115,7 +110,7 @@ need_unloading:
 need_loading:
     pid = fork();
     if (pid == 0) {
-        result = execl(LOAD_COMMAND, LOAD_COMMAND, MACFUSE_MODULE_PATH, NULL);
+        result = execl(SYSTEM_KEXTLOAD, SYSTEM_KEXTLOAD, MACFUSE_KEXT, NULL);
         /* We can only get here if the exec failed */
         goto out;
     }

@@ -561,7 +561,7 @@ alreadydead:
     fuse_device_unlock(fdev);
 
     if (daemonpid && needsignal) {
-        proc_signal(daemonpid, FUSE_POSTUNMOUNT_SIGNAL);
+        proc_signal(daemonpid, MACFUSE_POSTUNMOUNT_SIGNAL);
     }
 
     return (0);
