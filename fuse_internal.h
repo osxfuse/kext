@@ -497,7 +497,13 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
     VATTR_RETURN(out_vap, va_linkid, in_vap->va_linkid);
     VATTR_RETURN(out_vap, va_gen,
         (typeof(out_vap->va_gen))fvdat->generation); /* XXX: truncation */
-    VATTR_RETURN(out_vap, va_parentid, fvdat->parent_nodeid);
+    if (in_vap->va_fileid != FUSE_ROOT_ID) {
+        /*
+         * If we do return va_parentid for our root vnode, things get
+         * a bit too interesting for the Finder.
+         */
+        VATTR_RETURN(out_vap, va_parentid, fvdat->parent_nodeid);
+    }
 
     /*
      * If we have asynchronous writes enabled, our local in-kernel size
