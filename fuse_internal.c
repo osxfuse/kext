@@ -612,7 +612,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
 #if FUSE_DEBUG
         fuse_preflight_log(vp, fufh_type, err, "strategy");
-#endif
+#endif /* FUSE_DEBUG */
 
         if (!err) {
             err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
@@ -1235,8 +1235,6 @@ fuse_internal_print_vnodes(mount_t mp)
                   fuse_internal_print_vnodes_callback, NULL);
 }
 
-#if FUSE_DEBUG
-
 __private_extern__
 void
 fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
@@ -1265,5 +1263,3 @@ fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
     }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 }
-
-#endif /* FUSE_DEBUG */

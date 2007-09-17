@@ -1517,7 +1517,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     struct fuse_filehandle *fufh = NULL;
     fufh_type_t fufh_type = fuse_filehandle_xlate_from_mmap(fflags);
 
-    int err;
+    int err = 0;
     int retried = 0;
 
     fuse_trace_printf_vnop();
@@ -1556,7 +1556,7 @@ retry:
 
 #if FUSE_DEBUG
     fuse_preflight_log(vp, fufh_type, err, "mmap");
-#endif
+#endif /* FUSE_DEBUG */
 
     if (!err) {
         err = fuse_filehandle_get(vp, context, fufh_type, 0 /* mode */);
@@ -1568,7 +1568,7 @@ retry:
          *      is a MAP_SHARED or MAP_PRIVATE mapping. If we want shared
          *      library mapping to go well, we need to do this.
          */
-        if (!retried && (fufh_type == FUFH_RDWR) && (err != ENOENT)) {
+        if (!retried && (fufh_type == FUFH_RDWR)) {
             retried = 1;
             fufh_type = FUFH_RDONLY;
             IOLog("MacFUSE: filehandle_get retrying (type=%d)\n", fufh_type);
