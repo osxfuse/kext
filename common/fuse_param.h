@@ -109,7 +109,7 @@
   "Timed out waiting for the file system to initialize. The volume has "  \
   "been ejected. You can use the init_timeout mount option to wait longer."
 
-#define FUSE_DEFAULT_DAEMON_TIMEOUT                20     /* s */
+#define FUSE_DEFAULT_DAEMON_TIMEOUT                60     /* s */
 #define FUSE_MIN_DAEMON_TIMEOUT                    0      /* s */
 #define FUSE_MAX_DAEMON_TIMEOUT                    600    /* s */
 
