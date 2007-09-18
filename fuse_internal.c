@@ -607,16 +607,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fufh_type = FUFH_RDWR;
         }
 
-        err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
-                                               (vfs_context_t)0, fufh_type);
+        /*
+         * Lets NOT do the filehandle preflight check here.
+         */
 
-#if FUSE_DEBUG
-        fuse_preflight_log(vp, fufh_type, err, "strategy");
-#endif /* FUSE_DEBUG */
-
-        if (!err) {
-            err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
-        }
+        err = fuse_filehandle_get(vp, NULL, fufh_type, 0 /* mode */);
 
         if (!err) {
             fufh = &(fvdat->fufh[fufh_type]);
