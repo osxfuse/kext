@@ -28,7 +28,7 @@
 			<key>FSSubType</key>
 			<integer>0</integer>
 		</dict>
-		<key>PassThrough</key>
+		<key>xmp</key>
 		<dict>
 			<key>FSName</key>
 			<string>PassThrough File System (MacFUSE)</string>

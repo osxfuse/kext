@@ -33,6 +33,7 @@
 #include <fuse_param.h>
 #include <fuse_version.h>
 
+#include <fsproperties.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 #define PROGNAME "mount_" MACFUSE_FS_TYPE
@@ -158,63 +159,169 @@ fuse_to_fsid(void **target, void *value, void *fallback)
     return 0;
 }
 
+static uint32_t
+fsbundle_find_fssubtype(const char *bundle_path_C,
+                        const char *claimed_name_C,
+                        uint32_t    claimed_fssubtype)
+{
+    uint32_t result = MACFUSE_FSSUBTYPE_UNKNOWN;
+
+    CFStringRef bundle_path_string  = NULL;
+    CFStringRef claimed_name_string = NULL;
+
+    CFURLRef    bundleURL = NULL;
+    CFBundleRef bundleRef = NULL;
+
+    CFDictionaryRef fspersonalities = NULL;
+
+    CFIndex idx   = 0;
+    CFIndex count = 0;
+    Boolean found = false;
+
+    CFStringRef     *keys     = NULL;
+    CFDictionaryRef *subdicts = NULL;
+
+    bundle_path_string = CFStringCreateWithCString(kCFAllocatorDefault,
+                                                   bundle_path_C,
+                                                   kCFStringEncodingUTF8);
+    if (!bundle_path_string) {
+        goto out;
+    }
+
+    bundleURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
+                                              bundle_path_string,
+                                              kCFURLPOSIXPathStyle,
+                                              true);
+    if (!bundleURL) {
+        goto out;
+    }
+
+    bundleRef = CFBundleCreate(kCFAllocatorDefault, bundleURL);
+    if (!bundleRef) {
+        goto out;
+    }
+
+    fspersonalities = CFBundleGetValueForInfoDictionaryKey(
+                          bundleRef, CFSTR(kFSPersonalitiesKey));
+    if (!fspersonalities) {
+        goto out;
+    }
+
+    count = CFDictionaryGetCount(fspersonalities);
+    if (count <= 0) {
+        goto out;
+    }
+
+    keys = (CFStringRef *)malloc(count * sizeof(CFStringRef));
+    subdicts = (CFDictionaryRef *)malloc(count * sizeof(CFDictionaryRef));
+
+    if (!keys || !subdicts) {
+        goto out;
+    }
+
+    CFDictionaryGetKeysAndValues(fspersonalities,
+                                 (const void **)keys,
+                                 (const void **)subdicts);
+
+    if (claimed_fssubtype == MACFUSE_FSSUBTYPE_INVALID) {
+        goto lookupbyfsname;
+    }
+
+    for (idx = 0; idx < count; idx++) {
+        CFNumberRef n = NULL;
+        uint32_t candidate_fssubtype = MACFUSE_FSSUBTYPE_INVALID;
+        if (CFDictionaryGetValueIfPresent(subdicts[idx],
+                                          (const void *)CFSTR(kFSSubTypeKey),
+                                          (const void **)&n)) {
+            if (CFNumberGetValue(n, kCFNumberIntType, &candidate_fssubtype)) {
+                if (candidate_fssubtype == claimed_fssubtype) {
+                    found = true;
+                    result = candidate_fssubtype;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (found) {
+        goto out;
+    }
+
+lookupbyfsname:
+
+    claimed_name_string = CFStringCreateWithCString(kCFAllocatorDefault,
+                                                    claimed_name_C,
+                                                    kCFStringEncodingUTF8);
+    if (!claimed_name_string) {
+        goto out;
+    }
+
+    for (idx = 0; idx < count; idx++) {
+        CFRange where = CFStringFind(claimed_name_string, keys[idx],
+                                     kCFCompareCaseInsensitive);
+        if (where.location != kCFNotFound) {
+            found = true;
+        }
+        if (found) {
+            CFNumberRef n = NULL;
+            uint32_t candidate_fssubtype = MACFUSE_FSSUBTYPE_INVALID;
+            if (CFDictionaryGetValueIfPresent(
+                    subdicts[idx], (const void *)CFSTR(kFSSubTypeKey),
+                    (const void **)&n)) {
+                if (CFNumberGetValue(n, kCFNumberIntType,
+                                     &candidate_fssubtype)) {
+                    result = candidate_fssubtype;
+                }
+            }
+            break;
+        }
+    }
+
+out:
+    if (keys) {
+        free(keys);
+    }
+
+    if (subdicts) {
+        free(subdicts);
+    }
+
+    if (bundle_path_string) {
+        CFRelease(bundle_path_string);
+    }
+
+    if (bundleURL) {
+        CFRelease(bundleURL);
+    }
+
+    if (claimed_name_string) {
+        CFRelease(claimed_name_string);
+    }
+
+    if (bundleRef) {
+        CFRelease(bundleRef);
+    }
+
+    return result;
+}
+
 static __inline__ int
 fuse_to_fssubtype(void **target, void *value, void *fallback)
 {
-    int ret = 0;
-    uint32_t u;
+    char *name = getenv("MOUNT_FUSEFS_DAEMON_PATH");
     
-    *(uint32_t *)target = FUSE_FSSUBTYPE_UNKNOWN;
+    *(uint32_t *)target = MACFUSE_FSSUBTYPE_INVALID;
 
     if (value) {
-        ret = fuse_to_uint32(target, value, fallback);
+        int ret = fuse_to_uint32(target, value, fallback);
         if (ret) {
-            return ret;
-        }   
-        u = *(uint32_t *)target;
-        if (u >= FUSE_FSSUBTYPE_MAX) {
-            return EINVAL;
-        }
-        if (u > FUSE_FSSUBTYPE_UNKNOWN) {
-            return 0;
+            *(uint32_t *)target = MACFUSE_FSSUBTYPE_INVALID;
         }
     }
 
-    /* try to guess */
-
-    *(uint32_t *)target = FUSE_FSSUBTYPE_UNKNOWN;
-
-    {
-        char *title = getenv("MOUNT_FUSEFS_DAEMON_PATH");
-
-        if (!title) {
-            return 0;
-        }
-
-        if (strcasestr(title, "xmp")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_XMPFS;
-        } else if (strcasestr(title, "ssh")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_SSHFS;
-        } else if (strcasestr(title, "ftp")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_FTPFS;
-        } else if ((strcasestr(title, "webdav")) ||
-                   (strcasestr(title, "wdfs"))) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_WEBDAVFS;
-        } else if (strcasestr(title, "spotlight")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_SPOTLIGHTFS;
-        } else if (strcasestr(title, "picasa")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_PICASAFS;
-        } else if (strcasestr(title, "proc")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_PROCFS;
-        } else if (strcasestr(title, "ntfs")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_NTFS;
-        } else if (strcasestr(title, "beagle")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_BEAGLEFS;
-        } else if (strcasestr(title, "crypto")) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_CRYPTOFS;
-        }
-    }
-    
+    *(uint32_t *)target = fsbundle_find_fssubtype(MACFUSE_BUNDLE_PATH,
+                                                  name, *(uint32_t *)target);
+                                                  
     return 0;
 }
 

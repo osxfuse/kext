@@ -35,21 +35,10 @@ struct fuse_mount_args {
 };
 typedef struct fuse_mount_args fuse_mount_args;
 
-/* file system subtype identifiers */
+/* file system subtype */
 enum {
-    FUSE_FSSUBTYPE_UNKNOWN     = 0,
-    FUSE_FSSUBTYPE_XMPFS       = 1,
-    FUSE_FSSUBTYPE_SSHFS       = 2,
-    FUSE_FSSUBTYPE_FTPFS       = 3,
-    FUSE_FSSUBTYPE_WEBDAVFS    = 4,
-    FUSE_FSSUBTYPE_SPOTLIGHTFS = 5,
-    FUSE_FSSUBTYPE_PICASAFS    = 6,
-    FUSE_FSSUBTYPE_PROCFS      = 7,
-    FUSE_FSSUBTYPE_NTFS        = 8,
-    FUSE_FSSUBTYPE_BEAGLEFS    = 9,
-    FUSE_FSSUBTYPE_CRYPTOFS    = 10,
-    FUSE_FSSUBTYPE_BRAVEFS     = 11,
-    FUSE_FSSUBTYPE_MAX,
+    MACFUSE_FSSUBTYPE_UNKNOWN = 0,
+    MACFUSE_FSSUBTYPE_INVALID = 0xFFFFFFFF,
 };
 
 /* mount-time flags */
