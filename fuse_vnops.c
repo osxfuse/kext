@@ -2060,10 +2060,6 @@ fuse_vnop_read(struct vnop_read_args *ap)
         }
     }
 
-    if (uio_offset(uio) < 0) {
-        return EINVAL;
-    }
-
     /*
      * if (uio_offset(uio) > SOME_MAXIMUM_SIZE) {
      *     return 0;
