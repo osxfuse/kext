@@ -229,6 +229,13 @@ fuse_isnoubc_mp(mount_t mp)
 
 static __inline__
 int
+fuse_isnegativevncache_mp(mount_t mp)
+{
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_NEGATIVE_VNCACHE);
+}
+
+static __inline__
+int
 fuse_isnovncache(vnode_t vp)
 {
     /* Try global first. */

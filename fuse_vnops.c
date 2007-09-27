@@ -1258,13 +1258,11 @@ calldaemon:
             goto out;
         }
 
-        /*
-         * We could do negative caching here.
-         *
-         * if ((cnp->cn_flags & MAKEENTRY) && (nameiop != CREATE)) {
-         *     fuse_vncache_enter(dvp, NULLVP, cnp);
-         * }
-         */
+        if (fuse_isnegativevncache_mp(mp)) {
+            if ((cnp->cn_flags & MAKEENTRY) && (nameiop != CREATE)) {
+                fuse_vncache_enter(dvp, NULLVP, cnp);
+            }
+        }
 
         err = ENOENT;
         goto out;
