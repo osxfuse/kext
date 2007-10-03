@@ -40,7 +40,7 @@
  *     if (!node) {
  *         return 0;
  *     }
- *     return (node->nodeid);
+ *     return node->nodeid;
  * }
  */
 

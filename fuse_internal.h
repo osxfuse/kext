@@ -60,6 +60,11 @@ struct fuse_ticket;
 
 /* miscellaneous */
 
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+extern char *vnode_getname(vnode_t vp);
+extern void  vnode_putname(char *name);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
 static __inline__
 int
 fuse_match_cred(kauth_cred_t daemoncred, kauth_cred_t requestcred)
@@ -103,14 +108,14 @@ fuse_isdeadfs(vnode_t vp)
         return 1;
     }
 
-    return (fuse_isdeadfs_mp(vnode_mount(vp)));
+    return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
 static __inline__
 int
 fuse_isdeadfs_fs(vnode_t vp)
 {
-    return (fuse_isdeadfs_mp(vnode_mount(vp)));
+    return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
 static __inline__
@@ -567,7 +572,8 @@ int
 fuse_internal_fsync(vnode_t                 vp,
                     vfs_context_t           context,
                     struct fuse_filehandle *fufh,
-                    void                   *param);
+                    void                   *param,
+                    fuse_op_waitfor_t       waitfor);
 
 int
 fuse_internal_fsync_callback(struct fuse_ticket *ftick, uio_t uio);
@@ -674,7 +680,7 @@ fuse_internal_checkentry(struct fuse_entry_out *feo, enum vtype vtype)
         return EINVAL;
     }
 
-    return (0);
+    return 0;
 }
 
 int

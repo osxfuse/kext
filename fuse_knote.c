@@ -61,7 +61,7 @@ filt_fuseread(struct knote *kn, long hint)
          * the knote for deletion.
          */
         kn->kn_flags |= (EV_EOF | EV_ONESHOT);
-        return (1);
+        return 1;
     }
 
     /* poll(2) semantics dictate always saying there is data */
@@ -98,12 +98,12 @@ filt_fusewrite(struct knote *kn, long hint)
          */
         kn->kn_data = 0;
         kn->kn_flags |= (EV_EOF | EV_ONESHOT);
-        return (1);
+        return 1;
     }
 
     kn->kn_data = 0;
 
-    return (1);
+    return 1;
 }
 
 int
@@ -123,7 +123,7 @@ filt_fusevnode(struct knote *kn, long hint)
 
     if ((hint == NOTE_REVOKE)) {
         kn->kn_flags |= (EV_EOF | EV_ONESHOT);
-        return (1);
+        return 1;
     }
         
     return (kn->kn_fflags != 0);

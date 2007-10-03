@@ -418,6 +418,8 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         data->iosize = data->blocksize;
     }
 
+    data->userkernel_bufsize = FUSE_DEFAULT_USERKERNEL_BUFSIZE;
+
     copystr(fusefs_args.fsname, vfs_statfs(mp)->f_mntfromname,
             MNAMELEN - 1, &len);
     bzero(vfs_statfs(mp)->f_mntfromname + len, MNAMELEN - len);
@@ -462,7 +464,7 @@ out:
         }
     }
 
-    return (err);
+    return err;
 }
 
 static errno_t
@@ -523,7 +525,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     err = vflush(mp, rootvp, flags);
     if (err) {
-        return (err);
+        return err;
     }
 
     if (vnode_isinuse(rootvp, 1) && !(flags & FORCECLOSE)) {
@@ -580,7 +582,7 @@ alreadydead:
         proc_signal(daemonpid, MACFUSE_POSTUNMOUNT_SIGNAL);
     }
 
-    return (0);
+    return 0;
 }        
 
 static errno_t
@@ -595,7 +597,7 @@ fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 
     if (data->rootvp != NULLVP) {
         *vpp = data->rootvp;
-        return (vnode_get(*vpp));
+        return vnode_get(*vpp);
     }
 
     bzero(&feo_root, sizeof(feo_root));
@@ -614,7 +616,7 @@ fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
         data->rootvp = *vpp;
     }
 
-    return (err);
+    return err;
 }
 
 static void
@@ -953,7 +955,7 @@ dostatfs:
         fuse_ticket_drop(fdi.tick);
     }
 
-    return (0);
+    return 0;
 }
 
 struct fuse_sync_cargs {
@@ -998,8 +1000,9 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     fdisp_init(&fdi, 0);
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
-        if (fufh->fufh_flags & FUFH_VALID) {
-            fuse_internal_fsync(vp, args->context, fufh, &fdi);
+        if (FUFH_IS_VALID(fufh)) {
+            (void)fuse_internal_fsync(vp, args->context, fufh, &fdi,
+                                      FUSE_OP_FOREGROUNDED);
         }
     }
 

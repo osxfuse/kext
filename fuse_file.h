@@ -8,9 +8,9 @@
 
 #include <sys/fcntl.h>
 #include <sys/kauth.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/vnode.h>
 
@@ -22,19 +22,18 @@ typedef enum fufh_type {
     FUFH_MAXTYPE = 3,
 } fufh_type_t;
 
-#define FUFH_VALID    0x00000001
-#define FUFH_MAPPED   0x00000002
-#define FUFH_STRATEGY 0x00000004
-
 struct fuse_filehandle {
-    uint64_t    fh_id;
-    fufh_type_t type;
-    int         fufh_flags;
-    int         open_count;
-    int         open_flags;
-    int         fuse_open_flags;
+    uint64_t fh_id;
+    int      open_count;
+    int      open_flags;
+    int      fuse_open_flags;
 };
 typedef struct fuse_filehandle * fuse_filehandle_t;
+
+#define FUFH_IS_VALID(f)  ((f)->open_count > 0)
+#define FUFH_USE_INC(f)   ((f)->open_count++)
+#define FUFH_USE_DEC(f)   ((f)->open_count--)
+#define FUFH_USE_RESET(f) ((f)->open_count = 0)
 
 static __inline__
 fufh_type_t
@@ -153,6 +152,6 @@ int fuse_filehandle_get(vnode_t vp, vfs_context_t context,
                         fufh_type_t fufh_type, int mode);
 
 int fuse_filehandle_put(vnode_t vp, vfs_context_t context,
-                        fufh_type_t fufh_type, int foregrounded);
+                        fufh_type_t fufh_type, fuse_op_waitfor_t waitfor);
 
 #endif /* _FUSE_FILE_H_ */

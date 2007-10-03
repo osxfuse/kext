@@ -150,8 +150,20 @@ fuse_internal_access(vnode_t                   vp,
 
     if (err == ENOENT) {
 
-        IOLog("MacFUSE: disappearing vnode %p (root=%d, type=%d, action=%x)\n",
-              vp, vnode_isvroot(vp), vnode_vtype(vp), action);
+        char *vname = NULL;
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+        vname = vnode_getname(vp);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
+        IOLog("MacFUSE: disappearing vnode %p (name=%s type=%d action=%x)\n",
+              vp, (vname) ? vname : "?", vnode_vtype(vp), action);
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+        if (vname) {
+            vnode_putname(vname);
+        }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
         /*
          * On 10.4, I think I can get Finder to lock because of /.Trashes/<uid>
@@ -192,8 +204,10 @@ int
 fuse_internal_fsync(vnode_t                 vp,
                     vfs_context_t           context,
                     struct fuse_filehandle *fufh,
-                    void                   *param)
+                    void                   *param,
+                    fuse_op_waitfor_t       waitfor)
 {
+    int err = 0;
     int op = FUSE_FSYNC;
     struct fuse_fsync_in *ffsi;
     struct fuse_dispatcher *fdip = param;
@@ -210,13 +224,30 @@ fuse_internal_fsync(vnode_t                 vp,
     ffsi = fdip->indata;
     ffsi->fh = fufh->fh_id;
 
-    ffsi->fsync_flags = 1;
-  
-    fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
-    fuse_insert_message(fdip->tick);
+    ffsi->fsync_flags = 1; /* datasync */
 
-    return 0;
+    if (waitfor == FUSE_OP_FOREGROUNDED) {
+        if ((err = fdisp_wait_answ(fdip))) {
+            if (err == ENOSYS) {
+                if (op == FUSE_FSYNC) {
+                    fuse_clear_implemented(fdip->tick->tk_data,
+                                           FSESS_NOIMPLBIT(FSYNC));
+                } else if (op == FUSE_FSYNCDIR) {
+                    fuse_clear_implemented(fdip->tick->tk_data,
+                                           FSESS_NOIMPLBIT(FSYNCDIR));
+                }
+            }
+            goto out;
+        } else {
+            fuse_ticket_drop(fdip->tick);
+        }
+    } else {
+        fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
+        fuse_insert_message(fdip->tick);
+    }
 
+out:
+    return err;
 }
 
 /* ioctl */
@@ -275,7 +306,7 @@ fuse_internal_readdir(vnode_t                 vp,
     struct fuse_data      *data;
 
     if (uio_resid(uio) == 0) {
-        return (0);
+        return 0;
     }
 
     fdisp_init(&fdi, 0);
@@ -333,7 +364,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
     struct fuse_dirent *fudge;
 
     if (bufsize < FUSE_NAME_OFFSET) {
-        return (-1);
+        return -1;
     }
 
     for (;;) {
@@ -412,29 +443,11 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         uio_setoffset(uio, fudge->off);
     }
 
-    return (err);
+    return err;
 }
 
 /* remove */
 
-static int
-fuse_unlink_callback(vnode_t vp, void *cargs)
-{
-    struct vnode_attr *vap;
-    uint64_t target_nlink;
-
-    vap = VTOVA(vp);
-
-    target_nlink = *(uint64_t *)cargs;
-
-    if ((vap->va_nlink == target_nlink) && (vnode_isreg(vp))) {
-        fuse_invalidate_attr(vp);
-    }
-
-    return VNODE_RETURNED;
-}
-
-#define M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK 1
 __private_extern__
 int
 fuse_internal_remove(vnode_t               dvp,
@@ -444,27 +457,14 @@ fuse_internal_remove(vnode_t               dvp,
                      vfs_context_t         context)
 {
     struct fuse_dispatcher fdi;
-    struct vnode_attr *vap = VTOVA(vp);
 
     int err = 0;
-
-#if M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
-    int need_invalidate = 0;
-    uint64_t target_nlink = 0;
-#endif
 
     fdisp_init(&fdi, cnp->cn_namelen + 1);
     fdisp_make_vp(&fdi, op, dvp, context);
 
     memcpy(fdi.indata, cnp->cn_nameptr, cnp->cn_namelen);
     ((char *)fdi.indata)[cnp->cn_namelen] = '\0';
-
-#if M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
-    if (vap->va_nlink > 1) {
-        need_invalidate = 1;
-        target_nlink = vap->va_nlink;
-    }
-#endif
 
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
@@ -473,14 +473,18 @@ fuse_internal_remove(vnode_t               dvp,
     fuse_invalidate_attr(dvp);
     fuse_invalidate_attr(vp);
 
-#if M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
-    if (need_invalidate && !err) {
-        vnode_iterate(vnode_mount(vp), 0, fuse_unlink_callback,
-                      (void *)&target_nlink);
-    }
-#endif
+    /*
+     * XXX: M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
+     *
+     * Consider the case where vap->va_nlink > 1 for the entity being
+     * removed. In our world, other in-memory vnodes that share a link
+     * count each with this one may not know right way that this one just
+     * got deleted. We should let them know, say, through a vnode_iterate()
+     * here and a callback that does fuse_invalidate_attr(vp) on each
+     * relevant vnode.
+     */
 
-    return (err);
+    return err;
 }
 
 /* rename */
@@ -523,7 +527,7 @@ fuse_internal_rename(vnode_t               fdvp,
         }
     }
 
-    return (err);
+    return err;
 }
 
 /* revoke */
@@ -589,10 +593,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     fufh = &(fvdat->fufh[fufh_type]);
-    if (!(fufh->fufh_flags & FUFH_VALID)) {
+
+    if (!FUFH_IS_VALID(fufh)) {
         fufh_type = FUFH_RDWR;
         fufh = &(fvdat->fufh[fufh_type]);
-        if (!(fufh->fufh_flags & FUFH_VALID)) {
+        if (!FUFH_IS_VALID(fufh)) {
             fufh = NULL;
         } else {
             /* We've successfully fallen back to FUFH_RDWR. */
@@ -615,9 +620,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         if (!err) {
             fufh = &(fvdat->fufh[fufh_type]);
-            fufh->fufh_flags |= FUFH_STRATEGY;
 
-            /* We've created a NEW fufh of type fufh_type. */
+            /* We've created a NEW fufh of type fufh_type. open_count is 1. */
         }
 
     } else { /* good fufh */
@@ -648,7 +652,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
          return EIO;
     }
 
-    fufh = &(fvdat->fufh[fufh_type]);
+    if (!fufh) {
+        panic("MacFUSE: tried everything but still no fufh");
+        /* NOTREACHED */
+    }
 
 #define B_INVAL 0x00040000 /* Does not contain valid info. */
 #define B_ERROR 0x00080000 /* I/O error occurred. */
@@ -662,7 +669,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (buf_count(bp) == 0) {
-        return (0);
+        return 0;
     }
 
     fdisp_init(&fdi, 0);
@@ -848,7 +855,7 @@ out:
 
     buf_biodone(bp);
 
-    return (err);
+    return err;
 }    
 
 __private_extern__
@@ -884,7 +891,7 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
     if (!(bflags & B_CLUSTER)) {
 
         if (bupl) {
-            return (cluster_bp(bp));
+            return cluster_bp(bp);
         }
 
         if (blkno == lblkno) {
@@ -920,7 +927,7 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
 
         if (blkno == -1) {
             buf_biodone(bp);
-            return (0);
+            return 0;
         }
     }
 
@@ -964,7 +971,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     mount_t mp = vnode_mount(dvp);
 
     if ((err = fdisp_wait_answ(fdip))) {
-        return (err);
+        return err;
     }
         
     feo = fdip->answ;
@@ -1012,7 +1019,7 @@ fuse_internal_newentry(vnode_t               dvp,
     err = fuse_internal_newentry_core(dvp, vpp, cnp, vtype, &fdi, context);
     fuse_invalidate_attr(dvp);            
                    
-    return (err);  
+    return err;  
 }         
 
 /* entity destruction */
@@ -1144,7 +1151,7 @@ out:
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
-    return (0);
+    return 0;
 }
 
 __private_extern__
@@ -1181,11 +1188,6 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 }
 
 /* other */
-
-#if M_MACFUSE_ENABLE_UNSUPPORTED
-extern char *vnode_getname(vnode_t vp);
-extern void  vnode_putname(char *name);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
 static int
 fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)

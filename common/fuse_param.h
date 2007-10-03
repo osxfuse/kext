@@ -85,20 +85,6 @@
 #define FUSE_MIN_IOSIZE                    512
 #define FUSE_MAX_IOSIZE                    (MAX_UPL_TRANSFER * PAGE_SIZE)
 
-#ifdef KERNEL
-
-/*
- * This is the soft upper limit on the number of "request tickets" FUSE's
- * user-kernel IPC layer can have for a given mount. This can be modified
- * through the fuse.* sysctl interface.
- */
-#define FUSE_DEFAULT_MAX_FREE_TICKETS      1024
-
-#define FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE (1L << 20) /* from 19 */
-#define FUSE_DEFAULT_IOV_CREDIT            16
-
-#endif /* KERNEL */
-
 #define FUSE_DEFAULT_INIT_TIMEOUT                  10     /* s  */
 #define FUSE_MIN_INIT_TIMEOUT                      1      /* s  */
 #define FUSE_MAX_INIT_TIMEOUT                      300    /* s  */
@@ -121,7 +107,27 @@
   "eject this volume immediately, but unsaved changes may be lost."
 #define FUSE_DAEMON_TIMEOUT_ALERT_TIMEOUT          120    /* s */
 
-#define FUSE_MAXATTRIBUTESIZE              (128*1024)
+#ifdef KERNEL
+
+/*
+ * This is the soft upper limit on the number of "request tickets" FUSE's
+ * user-kernel IPC layer can have for a given mount. This can be modified
+ * through the fuse.* sysctl interface.
+ */
+#define FUSE_DEFAULT_MAX_FREE_TICKETS      1024
+#define FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE (1L << 19)
+#define FUSE_DEFAULT_IOV_CREDIT            16
+
+/* User-Kernel IPC Buffer */
+
+#define FUSE_MIN_USERKERNEL_BUFSIZE        (128  * 1024)
+#define FUSE_MAX_USERKERNEL_BUFSIZE        (4096 * 1024)
+
+#define FUSE_REASONABLE_XATTRSIZE          FUSE_MIN_USERKERNEL_BUFSIZE
+
+#endif /* KERNEL */
+
+#define FUSE_DEFAULT_USERKERNEL_BUFSIZE    (4096 * 1024)
 
 #define FUSE_LINK_MAX                      LINK_MAX
 #define FUSE_UIO_BACKUP_MAX                8

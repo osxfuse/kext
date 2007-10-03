@@ -368,7 +368,7 @@ again:
    
     fuse_ticket_drop_invalid(ftick);
 
-    return (err);
+    return err;
 }
 
 int
@@ -390,24 +390,24 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     }
 
     if (uio_resid(uio) < sizeof(struct fuse_out_header)) {
-        return (EINVAL);
+        return EINVAL;
     }
 
     if ((err = uiomove((caddr_t)&ohead, sizeof(struct fuse_out_header), uio))
         != 0) {
-        return (err);
+        return err;
     }
 
     /* begin audit */
 
     if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead.len) {
         IOLog("MacFUSE: message body size does not match that in the header\n");
-        return (EINVAL); 
+        return EINVAL; 
     }   
 
     if (uio_resid(uio) && ohead.error) {
         IOLog("MacFUSE: non-zero error for a message with a body\n");
-        return (EINVAL);
+        return EINVAL;
     }
 
     ohead.error = -(ohead.error);
@@ -434,13 +434,13 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
             err = ftick->tk_aw_handler(ftick, uio);
         } else {
             fuse_ticket_drop(ftick);
-            return (err);
+            return err;
         }
     } else {
         debug_printf("no handler for this response\n");
     }
 
-    return (err);
+    return err;
 }
 
 int
@@ -627,7 +627,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
      *     if (!node) {
      *         return 0;
      *     }
-     *     return (node->nodeid);
+     *     return node->nodeid;
      * }
      */
     case FUSEDEVIOCALTERVNODEFORINODE:

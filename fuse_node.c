@@ -86,7 +86,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             {
                 int k;
                 for (k = 0; k < FUFH_MAXTYPE; k++) {
-                    fvdat->fufh[k].fufh_flags = 0;
+                    FUFH_USE_RESET(&(fvdat->fufh[k]));
                 }
             }
 

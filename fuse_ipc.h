@@ -44,6 +44,7 @@ void fiov_init(struct fuse_iov *fiov, size_t size);
 void fiov_teardown(struct fuse_iov *fiov);
 void fiov_refresh(struct fuse_iov *fiov);
 void fiov_adjust(struct fuse_iov *fiov, size_t size);
+int  fiov_adjust_canfail(struct fuse_iov *fiov, size_t size);
 
 #define FUSE_DIMALLOC(fiov, spc1, spc2, amnt)          \
 do {                                                   \
@@ -90,12 +91,13 @@ struct fuse_ticket {
 #define FT_ANSW  0x01  // request of ticket has already been answered
 #define FT_INVAL 0x02  // ticket is invalidated
 #define FT_DIRTY 0x04  // ticket has been used
+#define FT_KILLL 0x08  // ticket has been marked for death (KILLL => KILL_LATER)
 
 static __inline__
 struct fuse_iov *
 fticket_resp(struct fuse_ticket *ftick)
 {
-    return (&ftick->tk_aw_fiov);
+    return &ftick->tk_aw_fiov;
 }
 
 static __inline__
@@ -110,6 +112,13 @@ void
 fticket_set_answered(struct fuse_ticket *ftick)
 {
     ftick->tk_flag |= FT_ANSW;
+}
+
+static __inline__
+void
+fticket_set_killl(struct fuse_ticket *ftick)
+{
+    ftick->tk_flag |= FT_KILLL;
 }
 
 static __inline__
@@ -130,7 +139,7 @@ int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
 enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
 
-/* 1184 bytes */
+/* 1188 bytes */
 struct fuse_data {
     fuse_device_t              fdev;
     mount_t                    mp;
@@ -167,6 +176,7 @@ struct fuse_data {
     uint32_t                   max_read;
     uint32_t                   blocksize;
     uint32_t                   iosize;
+    uint32_t                   userkernel_bufsize;
     uint32_t                   fssubtype;
     char                       volname[MAXPATHLEN];
 
@@ -246,7 +256,7 @@ fuse_ms_pop(struct fuse_data *data)
         STAILQ_REMOVE_HEAD(&data->ms_head, tk_ms_link);
     }
 
-    return (ftick);
+    return ftick;
 }
 
 static __inline__
@@ -273,12 +283,13 @@ fuse_aw_pop(struct fuse_data *data)
         fuse_aw_remove(ftick);
     }
 
-    return (ftick);
+    return ftick;
 }
 
 struct fuse_ticket *fuse_ticket_fetch(struct fuse_data *data);
 void fuse_ticket_drop(struct fuse_ticket *ftick);
 void fuse_ticket_drop_invalid(struct fuse_ticket *ftick);
+void fuse_ticket_kill(struct fuse_ticket *ftick);
 void fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler);
 void fuse_insert_message(struct fuse_ticket *ftick);
 void fuse_insert_message_head(struct fuse_ticket *ftick);
@@ -320,8 +331,14 @@ fdisp_init(struct fuse_dispatcher *fdisp, size_t iosize)
 void fdisp_make(struct fuse_dispatcher *fdip, enum fuse_opcode op,
                 mount_t mp, uint64_t nid, vfs_context_t context);
 
+int  fdisp_make_canfail(struct fuse_dispatcher *fdip, enum fuse_opcode op,
+                        mount_t mp, uint64_t nid, vfs_context_t context);
+
 void fdisp_make_vp(struct fuse_dispatcher *fdip, enum fuse_opcode op,
                    vnode_t vp, vfs_context_t context);
+
+int  fdisp_make_vp_canfail(struct fuse_dispatcher *fdip, enum fuse_opcode op,
+                           vnode_t vp, vfs_context_t context);
 
 int  fdisp_wait_answ(struct fuse_dispatcher *fdip);
 
@@ -332,7 +349,7 @@ fdisp_simple_putget_vp(struct fuse_dispatcher *fdip, enum fuse_opcode op,
 {
     fdisp_init(fdip, 0);
     fdisp_make_vp(fdip, op, vp, context);
-    return (fdisp_wait_answ(fdip));
+    return fdisp_wait_answ(fdip);
 }
 
 static __inline__
@@ -343,7 +360,7 @@ fdisp_simple_vfs_getattr(struct fuse_dispatcher *fdip,
 {
    fdisp_init(fdip, 0);
    fdisp_make(fdip, FUSE_STATFS, mp, FUSE_ROOT_ID, context);
-   return (fdisp_wait_answ(fdip));
+   return fdisp_wait_answ(fdip);
 }
 
 #endif /* _FUSE_IPC_H_ */

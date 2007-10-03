@@ -120,6 +120,9 @@ fuse_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
 
 #define E_NONE 0
 
+#define fuse_round_page_32(x) \
+    (((uint32_t)(x) + 0x1000 - 1) & ~(0x1000 - 1))
+
 #define FUSE_ZERO_SIZE 0x0000000000000000ULL
 #define FUSE_ROOT_SIZE 0xFFFFFFFFFFFFFFFFULL
 
@@ -165,7 +168,7 @@ FUSE_OSFree(void *addr, uint32_t size, OSMallocTag tag)
 
 static __inline__
 void *
-FUSE_OSRealloc(void *oldptr, int oldsize, int newsize)
+FUSE_OSRealloc_nocopy(void *oldptr, int oldsize, int newsize)
 {   
     void *data;
     
@@ -174,12 +177,33 @@ FUSE_OSRealloc(void *oldptr, int oldsize, int newsize)
         panic("MacFUSE: OSMalloc failed in realloc");
     }
     
-    bcopy(oldptr, data, oldsize);
     FUSE_OSFree(oldptr, oldsize, fuse_malloc_tag);
-    
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_realloc_count);
     
-    return (data);
+    return data;
 }
+
+static __inline__
+void *
+FUSE_OSRealloc_nocopy_canfail(void *oldptr, int oldsize, int newsize)
+{
+    void *data;
+
+    data = FUSE_OSMalloc(newsize, fuse_malloc_tag);
+    if (!data) {
+        goto out;
+    } else {
+        FUSE_OSFree(oldptr, oldsize, fuse_malloc_tag);
+        FUSE_OSAddAtomic(1, (SInt32 *)&fuse_realloc_count);
+    }
+
+out:
+    return data;
+}
+
+typedef enum fuse_op_waitfor {
+    FUSE_OP_BACKGROUNDED = 0,
+    FUSE_OP_FOREGROUNDED = 1,
+} fuse_op_waitfor_t;
 
 #endif /* _MACFUSE_H_ */

@@ -75,8 +75,8 @@ fiov_adjust(struct fuse_iov *fiov, size_t size)
          fiov->allocated_size - size > fuse_iov_permanent_bufsize &&
              --fiov->credit < 0)) {
 
-        fiov->base = FUSE_OSRealloc(fiov->base, fiov->allocated_size,
-                                    FU_AT_LEAST(size));
+        fiov->base = FUSE_OSRealloc_nocopy(fiov->base, fiov->allocated_size,
+                                           FU_AT_LEAST(size));
         if (!fiov->base) {
             panic("MacFUSE: realloc failed");
         }
@@ -86,6 +86,33 @@ fiov_adjust(struct fuse_iov *fiov, size_t size)
     }
 
     fiov->len = size;
+}
+
+int
+fiov_adjust_canfail(struct fuse_iov *fiov, size_t size)
+{
+    if (fiov->allocated_size < size ||
+        (fuse_iov_permanent_bufsize >= 0 &&
+         fiov->allocated_size - size > fuse_iov_permanent_bufsize &&
+             --fiov->credit < 0)) {
+
+        void *tmpbase = NULL;
+
+        tmpbase = FUSE_OSRealloc_nocopy_canfail(fiov->base,
+                                                fiov->allocated_size,
+                                                FU_AT_LEAST(size));
+        if (!tmpbase) {
+            return ENOMEM;
+        }
+
+        fiov->base = tmpbase;
+        fiov->allocated_size = FU_AT_LEAST(size);
+        fiov->credit = fuse_iov_credit;
+    }
+
+    fiov->len = size;
+
+    return 0;
 }
 
 void
@@ -120,7 +147,7 @@ fticket_alloc(struct fuse_data *data)
     fiov_init(&ftick->tk_aw_fiov, 0);
     ftick->tk_aw_type = FT_A_FIOV;
 
-    return (ftick);
+    return ftick;
 }
 
 static __inline__
@@ -301,7 +328,7 @@ out:
         err = ENXIO;
     }
 
-    return (err);
+    return err;
 }
 
 static __inline__
@@ -314,7 +341,12 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
     if (len) {
         switch (ftick->tk_aw_type) {
         case FT_A_FIOV:
-            fiov_adjust(fticket_resp(ftick), len);
+            err = fiov_adjust_canfail(fticket_resp(ftick), len);
+            if (err) {
+                fticket_set_killl(ftick);
+                IOLog("MacFUSE: failed to pull uio (error=%d)\n", err);
+                break;
+            }
             err = uiomove(fticket_resp(ftick)->base, len, uio);
             if (err) {
                 debug_printf("FT_A_FIOV: error is %d (%p, %ld, %p)\n",
@@ -336,7 +368,7 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
         }
     }
 
-    return (err);
+    return err;
 }
 
 int
@@ -345,7 +377,7 @@ fticket_pull(struct fuse_ticket *ftick, uio_t uio)
     int err = 0;
 
     if (ftick->tk_aw_ohead.error) {
-        return (0);
+        return 0;
     }
 
     err = fuse_body_audit(ftick, uio_resid(uio));
@@ -353,7 +385,7 @@ fticket_pull(struct fuse_ticket *ftick, uio_t uio)
         err = fticket_aw_pull_uio(ftick, uio);
     }
 
-    return (err);
+    return err;
 }
 
 struct fuse_data *
@@ -400,7 +432,7 @@ fdata_alloc(struct proc *p)
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     data->timeout_mtx    = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
-    return (data);
+    return data;
 }
 
 void
@@ -514,7 +546,7 @@ fuse_pop_allticks(struct fuse_data *data)
         fuse_remove_allticks(ftick);
     }
 
-    return (ftick);
+    return ftick;
 }
 
 struct fuse_ticket *
@@ -552,7 +584,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         fdata_set_dead(data);
     }
 
-    return (ftick);
+    return ftick;
 }
 
 void
@@ -562,8 +594,9 @@ fuse_ticket_drop(struct fuse_ticket *ftick)
 
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
-    if (fuse_max_freetickets >= 0 &&
-        fuse_max_freetickets <= ftick->tk_data->freeticket_counter) {
+    if ((fuse_max_freetickets >= 0 &&
+        fuse_max_freetickets <= ftick->tk_data->freeticket_counter) ||
+        (ftick->tk_flag & FT_KILLL)) {
         die = 1;
     } else {
         fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
@@ -581,6 +614,15 @@ fuse_ticket_drop(struct fuse_ticket *ftick)
         fuse_push_freeticks(ftick);
         fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
     }
+}
+
+void
+fuse_ticket_kill(struct fuse_ticket *ftick)
+{
+    fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
+    fuse_remove_allticks(ftick);
+    fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
+    fticket_destroy(ftick);
 }
 
 void
@@ -820,7 +862,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         panic("MacFUSE: opcodes out of sync (%d)", opcode);
     }
 
-    return (err);
+    return err;
 }
 
 static void
@@ -872,7 +914,7 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
         fuse_ticket_drop(ftick);
     }
 
-    return (err);
+    return err;
 }
 
 void
@@ -900,13 +942,62 @@ fdisp_make(struct fuse_dispatcher *fdip,
     fuse_setup_ihead(fdip->finh, fdip->tick, nid, op, fdip->iosize, context);
 }
 
+int
+fdisp_make_canfail(struct fuse_dispatcher *fdip,
+                   enum fuse_opcode        op,
+                   mount_t                 mp,
+                   uint64_t                nid,
+                   vfs_context_t           context)
+{
+    int failed = 0;
+    struct fuse_iov *fiov = NULL;
+
+    struct fuse_data *data = fuse_get_mpdata(mp);
+
+    if (fdip->tick) {
+        fticket_refresh(fdip->tick);
+    } else {
+        fdip->tick = fuse_ticket_fetch(data);
+    }
+
+    if (fdip->tick == 0) {
+        panic("MacFUSE: fuse_ticket_fetch() failed");
+    }
+
+    fiov = &fdip->tick->tk_ms_fiov;
+
+    failed = fiov_adjust_canfail(fiov,
+                                 sizeof(struct fuse_in_header) + fdip->iosize);
+
+    if (failed) {
+        fuse_ticket_kill(fdip->tick);
+        return failed;
+    }
+
+    fdip->finh = fiov->base;
+    fdip->indata = (char *)(fiov->base) + sizeof(struct fuse_in_header);
+
+    fuse_setup_ihead(fdip->finh, fdip->tick, nid, op, fdip->iosize, context);
+
+    return 0;
+}
+
 void
 fdisp_make_vp(struct fuse_dispatcher *fdip,
               enum fuse_opcode        op,
               vnode_t                 vp,
               vfs_context_t           context)
 {
-    return (fdisp_make(fdip, op, vnode_mount(vp), VTOI(vp), context));
+    return fdisp_make(fdip, op, vnode_mount(vp), VTOI(vp), context);
+}
+
+int
+fdisp_make_vp_canfail(struct fuse_dispatcher *fdip,
+                      enum fuse_opcode        op,
+                      vnode_t                 vp,
+                      vfs_context_t           context)
+{
+    return fdisp_make_canfail(fdip, op, vnode_mount(vp), VTOI(vp), context);
 }
 
 int
@@ -950,7 +1041,7 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
 
             fuse_lck_mtx_unlock(fdip->tick->tk_data->aw_mtx);
 #endif
-            return (err);
+            return err;
         }
     }
 
@@ -975,10 +1066,10 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     fdip->answ = fticket_resp(fdip->tick)->base;
     fdip->iosize = fticket_resp(fdip->tick)->len;
 
-    return (0);
+    return 0;
 
 out:
     fuse_ticket_drop(fdip->tick);
 
-    return (err);
+    return err;
 }

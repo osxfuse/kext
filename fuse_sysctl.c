@@ -7,8 +7,8 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
+#include "fuse.h"
 #include "fuse_device.h"
-#include "fuse_kernel.h"
 #include "fuse_sysctl.h"
 #include <fuse_param.h>
 #include <fuse_version.h>
@@ -35,24 +35,28 @@ int32_t  fuse_mount_count            = 0;                                  // r
 int32_t  fuse_memory_allocated       = 0;                                  // r
 int32_t  fuse_realloc_count          = 0;                                  // r
 int32_t  fuse_tickets_current        = 0;                                  // r
+uint32_t fuse_userkernel_bufsize     = FUSE_DEFAULT_USERKERNEL_BUFSIZE;    // rw
 int32_t  fuse_vnodes_current         = 0;                                  // r
 
 SYSCTL_DECL(_macfuse);
-SYSCTL_NODE(, OID_AUTO, macfuse, CTLFLAG_RW, 0, "MacFUSE Statistics");
-SYSCTL_NODE(_macfuse, OID_AUTO, control, CTLFLAG_RW, 0, "MacFUSE Controls");
+SYSCTL_NODE(, OID_AUTO, macfuse, CTLFLAG_RW, 0,
+            "MacFUSE Sysctl Interface");
+SYSCTL_NODE(_macfuse, OID_AUTO, control, CTLFLAG_RW, 0,
+            "MacFUSE Controls");
 SYSCTL_NODE(_macfuse, OID_AUTO, counters, CTLFLAG_RW, 0,
-            "MacFUSE Statistics: Monotonic Counters");
+            "MacFUSE Monotonic Counters");
 SYSCTL_NODE(_macfuse, OID_AUTO, resourceusage, CTLFLAG_RW, 0,
-            "MacFUSE Statistics: Resource Usage");
+            "MacFUSE Resource Usage");
 SYSCTL_NODE(_macfuse, OID_AUTO, tunables, CTLFLAG_RW, 0,
-            "MacFUSE Statistics: Tunables");
+            "MacFUSE Tunables");
 SYSCTL_NODE(_macfuse, OID_AUTO, version, CTLFLAG_RW, 0,
-            "MacFUSE Statistics: Version Information");
+            "MacFUSE Version Information");
 
 /* fuse.control */
 
 int sysctl_macfuse_control_kill_handler SYSCTL_HANDLER_ARGS;
 int sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS;
+int sysctl_macfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS;
 
 int
 sysctl_macfuse_control_kill_handler SYSCTL_HANDLER_ARGS
@@ -90,9 +94,9 @@ sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS
     (void)oidp;
 
     if (arg1) {
-        error = SYSCTL_OUT(req, arg1, sizeof(int));
+        error = SYSCTL_OUT(req, arg1, sizeof(uint32_t));
     } else {
-        error = SYSCTL_OUT(req, &arg2, sizeof(int));
+        error = SYSCTL_OUT(req, &arg2, sizeof(uint32_t));
     }
 
     if (error || !req->newptr) {
@@ -107,6 +111,42 @@ sysctl_macfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS
             error = fuse_device_print_vnodes(*(int *)arg1, req->p);
         }
         fuse_print_vnodes = -1; /* set it back */
+    }
+
+    return error;
+}
+
+int
+sysctl_macfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS
+{
+    int error = 0;
+    (void)oidp;
+
+    if (arg1) {
+        error = SYSCTL_OUT(req, arg1, sizeof(int));
+    } else {
+        error = SYSCTL_OUT(req, &arg2, sizeof(int));
+    }
+
+    if (error || !req->newptr) {
+        return error;
+    }
+
+    if (!arg1) {
+        error = EPERM;
+    } else {
+        error = SYSCTL_IN(req, arg1, sizeof(uint32_t));
+        if (error == 0) {
+            uint32_t incoming = *(uint32_t *)arg1;
+            incoming = fuse_round_page_32(incoming);
+            if (incoming > FUSE_MAX_USERKERNEL_BUFSIZE) {
+                error = E2BIG;
+            } else if (incoming < FUSE_MIN_USERKERNEL_BUFSIZE) {
+                error = EINVAL;
+            } else {
+                fuse_userkernel_bufsize = incoming;
+            }
+        }
     }
 
     return error;
@@ -183,6 +223,15 @@ SYSCTL_INT(_macfuse_tunables, OID_AUTO, iov_permanent_bufsize, CTLFLAG_RW,
            &fuse_iov_permanent_bufsize, 0, "");
 SYSCTL_INT(_macfuse_tunables, OID_AUTO, max_freetickets, CTLFLAG_RW,
            &fuse_max_freetickets, 0, "");
+SYSCTL_PROC(_macfuse_tunables,          // our parent
+            OID_AUTO,                   // automatically assign object ID
+            userkernel_bufsize,         // our name
+            (CTLTYPE_INT | CTLFLAG_WR), // type flag/access flag
+            &fuse_userkernel_bufsize,   // location of our data
+            0,                          // argument passed to our handler
+            sysctl_macfuse_tunables_userkernel_bufsize_handler,    
+            "I",                        // our data type (integer)
+            "MacFUSE Tunables");        // our description
 
 /* fuse.version */
 SYSCTL_INT(_macfuse_version, OID_AUTO, api_major, CTLFLAG_RD,
@@ -220,6 +269,7 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__macfuse_tunables_iov_credit,
     &sysctl__macfuse_tunables_iov_permanent_bufsize,
     &sysctl__macfuse_tunables_max_freetickets,
+    &sysctl__macfuse_tunables_userkernel_bufsize,
     &sysctl__macfuse_version_api_major,
     &sysctl__macfuse_version_api_minor,
     &sysctl__macfuse_version_number,

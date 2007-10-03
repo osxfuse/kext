@@ -224,15 +224,13 @@ fuse_vnop_close(struct vnop_close_args *ap)
 
     fufh = &(fvdat->fufh[fufh_type]);
 
-    if (!(fufh->fufh_flags & FUFH_VALID)) {
-        if ((fufh->open_count == 0) && !(fufh->fufh_flags & FUFH_MAPPED)) {
-            return 0;
-        }
-        panic("MacFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
+    if (!FUFH_IS_VALID(fufh)) {
+        IOLog("MacFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
               fufh_type, fufh->open_count, vnode_vtype(vp), fflag);
+        return 0;
     }
 
-    fufh->open_count--;
+    FUFH_USE_DEC(fufh);
 
     if (isdir) {
         goto skipdir;
@@ -272,9 +270,8 @@ fuse_vnop_close(struct vnop_close_args *ap)
 
 skipdir:
 
-    if ((fufh->open_count == 0) &&
-        !(fufh->fufh_flags & FUFH_MAPPED)) {
-        (void)fuse_filehandle_put(vp, context, fufh_type, 0);
+    if (!FUFH_IS_VALID(fufh)) {
+        (void)fuse_filehandle_put(vp, context, fufh_type, FUSE_OP_BACKGROUNDED);
     }
 
     return err;
@@ -426,10 +423,10 @@ bringup:
 
     FUSE_KNOTE(dvp, NOTE_WRITE);
 
-    return (0);
+    return 0;
 
 undo:
-    return (err);
+    return err;
 }
 
 /*
@@ -463,7 +460,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
-    int type;
+    int type, err = 0, tmp_err = 0;
     (void)waitfor;
 
     fuse_trace_printf_vnop();
@@ -500,13 +497,17 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     fdisp_init(&fdi, 0);
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
-        if (fufh->fufh_flags & FUFH_VALID) {
-            fuse_internal_fsync(vp, context, fufh, &fdi);
+        if (FUFH_IS_VALID(fufh)) {
+            tmp_err = fuse_internal_fsync(vp, context, fufh, &fdi,
+                                          FUSE_OP_FOREGROUNDED);
+            if (tmp_err) {
+                err = tmp_err;
+            }
         }
     }
 
 out:
-    return 0;
+    return err;
 }
 
 /*
@@ -556,14 +557,14 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         if (vap != VTOVA(vp)) {
             fuse_internal_attr_loadvap(vp, vap);
         }
-        return (0);
+        return 0;
     }
 
     if (!(dataflags & FSESS_INITED)) {
         if (!vnode_isvroot(vp)) {
             fdata_set_dead(data);
             err = ENOTCONN;
-            return (err);
+            return err;
         } else {
             goto fake;
         }
@@ -577,7 +578,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         if (err == ENOENT) {
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
         }
-        return (err);
+        return err;
     }
 
     /* Could check the sanity/volatility of va_mode here. */
@@ -638,7 +639,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         }
     }
 
-    return (0);
+    return 0;
 
 fake:
     bzero(vap, sizeof(*vap));
@@ -647,7 +648,7 @@ fake:
     VATTR_RETURN(vap, va_gid, data->daemoncred->cr_gid);
     VATTR_RETURN(vap, va_mode, S_IRWXU);
 
-    return (0);
+    return 0;
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -721,6 +722,10 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     memcpy((char *)fdi.indata + sizeof(*fgxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fgxi) + namelen] = '\0';
 
+    if (fgxi->size > FUSE_REASONABLE_XATTRSIZE) {
+        fticket_set_killl(fdi.tick);
+    }
+
     err = fdisp_wait_answ(&fdi);
     if (err) {
         if (err == ENOSYS) {
@@ -776,10 +781,10 @@ fuse_vnop_inactive(struct vnop_inactive_args *ap)
 
         fufh = &(fvdat->fufh[fufh_type]);
 
-        if (fufh->fufh_flags & FUFH_VALID) {
-            fufh->fufh_flags &= ~FUFH_MAPPED;
-            fufh->open_count = 0;
-            (void)fuse_filehandle_put(vp, context, fufh_type, 0);
+        if (FUFH_IS_VALID(fufh)) {
+            FUFH_USE_RESET(fufh);
+            (void)fuse_filehandle_put(vp, context, fufh_type,
+                                      FUSE_OP_BACKGROUNDED);
         }
     }
 
@@ -961,6 +966,8 @@ fuse_vnop_link(struct vnop_link_args *ap)
     struct componentname *cnp     = ap->a_cnp;
     vfs_context_t         context = ap->a_context;
 
+    struct vnode_attr *vap = VTOVA(vp);
+
     struct fuse_dispatcher fdi;
     struct fuse_entry_out *feo;
     struct fuse_link_in    fli;
@@ -974,7 +981,11 @@ fuse_vnop_link(struct vnop_link_args *ap)
     }
 
     if (vnode_mount(tdvp) != vnode_mount(vp)) {
-        return (EXDEV);
+        return EXDEV;
+    }
+
+    if (vap->va_nlink >= FUSE_LINK_MAX) {
+        return EMLINK;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, EPERM);
@@ -986,7 +997,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
                                        FUSE_LINK, &fli, sizeof(fli), &fdi,
                                        context);
     if ((err = fdisp_wait_answ(&fdi))) {
-        return (err);
+        return err;
     }
 
     feo = fdi.answ;
@@ -1001,7 +1012,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
         FUSE_KNOTE(tdvp, NOTE_WRITE);
     }
 
-    return (err);
+    return err;
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -1235,7 +1246,7 @@ calldaemon:
 
     if (lookup_err &&
         (!fdi.answ_stat || lookup_err != ENOENT || op != FUSE_LOOKUP)) {
-        return (lookup_err);
+        return lookup_err;
     }
 
     /* lookup_err, if non-zero, must be ENOENT at this point */
@@ -1383,7 +1394,7 @@ out:
                 fuse_internal_forget_send(vnode_mount(dvp), context,
                                           nodeid, 1, &fdi);
             }
-            return (err);
+            return err;
         } else {
 
             if (!islastcn) {
@@ -1406,7 +1417,7 @@ out:
         fuse_ticket_drop(fdi.tick);
     }
 
-    return (err);
+    return err;
 }
 
 /*
@@ -1545,7 +1556,8 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
 retry:
     fufh = &(fvdat->fufh[fufh_type]);
 
-    if (fufh->fufh_flags & FUFH_VALID) {
+    if (FUFH_IS_VALID(fufh)) {
+        FUFH_USE_INC(fufh);
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_reuse_count);
         goto out;
     }
@@ -1587,7 +1599,6 @@ retry:
     }
 
 out:
-    fufh->fufh_flags |= FUFH_MAPPED;
 
     return 0;
 }
@@ -1602,13 +1613,7 @@ out:
 static int
 fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
 {
-    vnode_t       vp      = ap->a_vp;
-    vfs_context_t context = ap->a_context;
-
-    struct fuse_vnode_data *fvdat = VTOFUD(vp);
-    struct fuse_filehandle *fufh = NULL;
-
-    int type;
+    vnode_t vp = ap->a_vp;
 
     fuse_trace_printf_vnop();
 
@@ -1634,16 +1639,25 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), UBC_PUSHDIRTY);
      */
 
-    for (type = 0; type < FUFH_MAXTYPE; type++) {
-        fufh = &(fvdat->fufh[type]);
-        if ((fufh->fufh_flags & FUFH_VALID) &&
-            (fufh->fufh_flags & FUFH_MAPPED)) {
-            fufh->fufh_flags &= ~FUFH_MAPPED;
-            if (fufh->open_count == 0) {
-                (void)fuse_filehandle_put(vp, context, type, 0);
-            }
-        }
-    }
+    /*
+     * Earlier, we used to go through our vnode's fufh list here, doing
+     * something like the following:
+     *
+     * for (type = 0; type < FUFH_MAXTYPE; type++) {
+     *     fufh = &(fvdat->fufh[type]);
+     *     if ((fufh->fufh_flags & FUFH_VALID) &&
+     *         (fufh->fufh_flags & FUFH_MAPPED)) {
+     *         fufh->fufh_flags &= ~FUFH_MAPPED;
+     *         if (fufh->open_count == 0) {
+     *             (void)fuse_filehandle_put(vp, context, type,
+     *                                       FUSE_OP_BACKGROUNDED);
+     *         }
+     *     }
+     * }
+     *
+     * Now, cleanup is all taken care of in vnop_inactive/reclaim.
+     *
+     */
 
     return 0;
 }
@@ -1740,11 +1754,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
                 fufh_rw = &(fvdat->fufh[FUFH_RDWR]);
 
-                fufh->fufh_flags |= FUFH_VALID;
-                fufh->fufh_flags &= ~FUFH_MAPPED;
                 fufh->open_count = 1;
                 fufh->open_flags = fufh_rw->open_flags;
-                fufh->type = fufh_type;
                 fufh->fh_id = fufh_rw->fh_id;
 
                 /*
@@ -1785,8 +1796,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
         }
     }
 
-    if (fufh->fufh_flags & FUFH_VALID) {
-        fufh->open_count++;
+    if (FUFH_IS_VALID(fufh)) {
+        FUFH_USE_INC(fufh);
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_reuse_count);
         goto ok; /* return 0 */
     }
@@ -2018,7 +2029,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
     uio_t         uio     = ap->a_uio;
-    __unused int  ioflag  = ap->a_ioflag;
+    int           ioflag  = ap->a_ioflag;
     vfs_context_t context = ap->a_context;
 
     struct fuse_vnode_data *fvdat;
@@ -2084,7 +2095,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
     data = fuse_get_mpdata(vnode_mount(vp));
 
     if (!fuse_isdirectio(vp)) {
-        return cluster_read(vp, uio, fvdat->filesize, 0);
+        return cluster_read(vp, uio, fvdat->filesize, ioflag);
     }
 
     /* direct_io */
@@ -2096,10 +2107,11 @@ fuse_vnop_read(struct vnop_read_args *ap)
         off_t                   rounded_iolength;
 
         fufh = &(fvdat->fufh[fufh_type]);
-        if (!(fufh->fufh_flags & FUFH_VALID)) {
+
+        if (!FUFH_IS_VALID(fufh)) {
             fufh_type = FUFH_RDWR;
             fufh = &(fvdat->fufh[fufh_type]);
-            if (!(fufh->fufh_flags & FUFH_VALID)) {
+            if (!FUFH_IS_VALID(fufh)) {
                 fufh = NULL;
             } else {
                 /* Read falling back to FUFH_RDWR. */
@@ -2201,7 +2213,8 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     fvdat = VTOFUD(vp);
 
     fufh = &(fvdat->fufh[FUFH_RDONLY]);
-    if (!(fufh->fufh_flags & FUFH_VALID)) {
+
+    if (!FUFH_IS_VALID(fufh)) {
         err = fuse_filehandle_get(vp, context, FUFH_RDONLY, 0 /* mode */);
         if (err) {
             IOLog("MacFUSE: filehandle_get failed in readdir (err=%d)\n", err);
@@ -2221,8 +2234,9 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     fiov_teardown(&cookediov);
 
     if (freefufh) {
-        fufh->open_count--;
-        (void)fuse_filehandle_put(vp, context, FUFH_RDONLY, 0);
+        FUFH_USE_DEC(fufh);
+        (void)fuse_filehandle_put(vp, context, FUFH_RDONLY,
+                                  FUSE_OP_BACKGROUNDED);
     }
 
     fuse_invalidate_attr(vp);
@@ -2277,7 +2291,7 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     fuse_ticket_drop(fdi.tick);
     fuse_invalidate_attr(vp);
 
-    return (err);
+    return err;
 }
 
 /*
@@ -2311,13 +2325,12 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
-        if (fufh->fufh_flags & FUFH_VALID) {
+        if (FUFH_IS_VALID(fufh)) {
             int open_count = fufh->open_count;
-            fufh->fufh_flags &= ~FUFH_MAPPED;
-            fufh->open_count = 0;
-            if ((fufh->fufh_flags & FUFH_STRATEGY) ||
-                vfs_isforce(vnode_mount(vp))) {
-                (void)fuse_filehandle_put(vp, context, type, 0);
+            FUFH_USE_RESET(fufh);
+            if (vfs_isforce(vnode_mount(vp))) {
+                (void)fuse_filehandle_put(vp, context, type,
+                                          FUSE_OP_BACKGROUNDED);
             } else {
                 /*
                  * This is not a forced unmount. So why is the vnode being
@@ -2326,9 +2339,9 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                 if (!fuse_isdeadfs(vp)) {
                     /*
                      * This needs to be figured out. Looks like we can get
-                     * here if there's a race between open and vflush (latter
-                     * happening because of an unmount). This leads to the
-                     * following behavior:
+                     * here if there's a race between a vnop (say, open) and
+                     * vflush (latter happening because of an unmount). This
+                     * leads to the following _weird_ behavior:
                      * 
                      * open
                      * close
@@ -2458,7 +2471,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
     if (name == NULL || name[0] == '\0') {
-        return (EINVAL);  /* invalid name */
+        return EINVAL;  /* invalid name */
     }
 
     mp = vnode_mount(vp);
@@ -2746,10 +2759,11 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         fsai->valid |= FATTR_SIZE;      
 
         fufh = &(fvdat->fufh[fufh_type]);
-        if (!(fufh->fufh_flags & FUFH_VALID)) {
+
+        if (!FUFH_IS_VALID(fufh)) {
             fufh_type = FUFH_RDWR;
             fufh = &(fvdat->fufh[fufh_type]);
-            if (!(fufh->fufh_flags & FUFH_VALID)) {
+            if (!FUFH_IS_VALID(fufh)) {
                 fufh = NULL;
             }
         }
@@ -2807,6 +2821,13 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     VATTR_SET_SUPPORTED(vap, va_mode);
 
     /*
+     * XXX: This is to just shut up cp -pR & co.
+     */
+    if (VATTR_IS_ACTIVE(vap, va_flags)) {
+        VATTR_SET_SUPPORTED(vap, va_flags);
+    }
+
+    /*
      * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.
      */
 
@@ -2830,7 +2851,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     if ((err = fdisp_wait_answ(&fdi))) {
         fuse_invalidate_attr(vp);
-        return (err);
+        return err;
     }
 
     vtyp = IFTOVT(((struct fuse_attr_out *)fdi.answ)->attr.mode);
@@ -2873,7 +2894,7 @@ out:
         FUSE_KNOTE(vp, NOTE_ATTRIB);
     }
 
-    return (err);
+    return err;
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -2952,18 +2973,27 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
      * Check attrsize for some sane maximum: otherwise, we can fail malloc()
      * in fdisp_make_vp().
      */
-    if (attrsize > FUSE_MAXATTRIBUTESIZE) {
+    if (attrsize > data->userkernel_bufsize) {
         return E2BIG;
     }
 
     namelen = strlen(name);
 
     fdisp_init(&fdi, sizeof(*fsxi) + namelen + 1 + attrsize);
-    fdisp_make_vp(&fdi, FUSE_SETXATTR, vp, ap->a_context);
+    err = fdisp_make_vp_canfail(&fdi, FUSE_SETXATTR, vp, ap->a_context);
+    if (err) {
+        IOLog("MacFUSE: setxattr failed for too large attribute (%lu)\n",
+              attrsize);
+        return ERANGE;
+    }
     fsxi = fdi.indata;
 
     fsxi->size = attrsize;
     fsxi->flags = ap->a_options;
+
+    if (attrsize > FUSE_REASONABLE_XATTRSIZE) {
+        fticket_set_killl(fdi.tick);
+    }
 
     memcpy((char *)fdi.indata + sizeof(*fsxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fsxi) + namelen] = '\0';
@@ -3077,7 +3107,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
         FUSE_KNOTE(dvp, NOTE_WRITE);
     }
 
-    return (err);
+    return err;
 }       
 
 /*
@@ -3176,10 +3206,11 @@ fuse_vnop_write(struct vnop_write_args *ap)
         off_t diff;
 
         fufh = &(fvdat->fufh[fufh_type]);
-        if (!(fufh->fufh_flags & FUFH_VALID)) {
+
+        if (!FUFH_IS_VALID(fufh)) {
             fufh_type = FUFH_RDWR;
             fufh = &(fvdat->fufh[fufh_type]);
-            if (!(fufh->fufh_flags & FUFH_VALID)) {
+            if (!FUFH_IS_VALID(fufh)) {
                 fufh = NULL;
             } else {
                 /* Write falling back to FUFH_RDWR. */
@@ -3272,7 +3303,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
         filesize = original_size;
     }
         
-    lflag = (ioflag & IO_SYNC);
+    lflag = (ioflag & (IO_SYNC | IO_NOCACHE));
 
     if (offset > original_size) {
         zero_off = original_size;

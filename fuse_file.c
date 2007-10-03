@@ -10,6 +10,12 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
+/*
+ * Because of the vagaries of how a filehandle can be used, we try not to
+ * be too smart in here (we try to be smart elsewhere). It is required that
+ * you come in here only if you really do not have the said filehandle--else
+ * we panic.
+ */
 int
 fuse_filehandle_get(vnode_t       vp,
                     vfs_context_t context,
@@ -30,18 +36,19 @@ fuse_filehandle_get(vnode_t       vp,
     fuse_trace_printf("fuse_filehandle_get(vp=%p, fufh_type=%d, mode=%x)\n",
                       vp, fufh_type, mode);
 
+    fufh = &(fvdat->fufh[fufh_type]);
+
+    if (FUFH_IS_VALID(fufh)) {
+        panic("MacFUSE: filehandle_get called despite valid fufh (type=%d)",
+              fufh_type);
+        /* NOTREACHED */
+    }
+
     /*
      * Note that this means we are effectively FILTERING OUT open() flags.
      */
     (void)mode;
     oflags = fuse_filehandle_xlate_to_oflags(fufh_type);
-    
-    fufh = &(fvdat->fufh[fufh_type]);
-    if (fufh->fufh_flags & FUFH_VALID) {
-        IOLog("MacFUSE: fufh (type=%d) already valid... called in vain\n",
-              fufh_type);
-        return 0;
-    }
 
     if (vnode_isdir(vp)) {
         isdir = 1;
@@ -55,28 +62,40 @@ fuse_filehandle_get(vnode_t       vp,
     fdisp_init(&fdi, sizeof(*foi));
     fdisp_make_vp(&fdi, op, vp, context);
 
+    if (vnode_islnk(vp) && (mode & O_SYMLINK)) {
+        oflags |= O_SYMLINK;
+    }
+
     foi = fdi.indata;
     foi->flags = oflags;
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+        char *vname = vnode_getname(vp);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
             /*
              * See comment in fuse_vnop_reclaim().
              */
             cache_purge(vp);
         }
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+        IOLog("MacFUSE: filehandle_get: failed for %s (error=%d)\n",
+              (vname) ? vname : "?", err);
+        if (vname) {
+            vnode_putname(vname);
+        }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
         return err;
     }
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
 
     foo = fdi.answ;
 
-    fufh->fufh_flags |= (0 | FUFH_VALID);
     fufh->open_count = 1;
     fufh->open_flags = oflags;
     fufh->fuse_open_flags = foo->open_flags;
-    fufh->type = fufh_type;
     fufh->fh_id = foo->fh;
     
     fuse_ticket_drop(fdi.tick);
@@ -86,7 +105,7 @@ fuse_filehandle_get(vnode_t       vp,
 
 int
 fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
-                    int foregrounded)
+                    fuse_op_waitfor_t waitfor)
 {
     struct fuse_dispatcher  fdi;
     struct fuse_release_in *fri;
@@ -101,19 +120,10 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
                       vp, fufh_type);
 
     fufh = &(fvdat->fufh[fufh_type]);
-    if (!(fufh->fufh_flags & FUFH_VALID)) {
-        IOLog("MacFUSE: filehandle is already invalid (type=%d)\n", fufh_type);
-        return 0;
-    }
 
-    if (fufh->open_count != 0) {
-        panic("MacFUSE: trying to put fufh with open count %d (type=%d)\n",
-              fufh->open_count, fufh_type);
-        /* NOTREACHED */
-    }
-
-    if (fufh->fufh_flags & FUFH_MAPPED) {
-        panic("MacFUSE: trying to put mapped fufh (type=%d)\n", fufh_type);
+    if (FUFH_IS_VALID(fufh)) {
+        panic("MacFUSE: filehandle_put called on a valid fufh (type=%d)",
+              fufh_type);
         /* NOTREACHED */
     }
 
@@ -133,7 +143,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     fri->fh = fufh->fh_id;
     fri->flags = fufh->open_flags;
 
-    if (foregrounded) {
+    if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
         } else {
@@ -147,7 +157,6 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     }
 
 out:
-    fufh->fufh_flags &= ~FUFH_VALID;
 
-    return (err);
+    return err;
 }

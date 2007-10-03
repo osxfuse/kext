@@ -22,6 +22,7 @@ extern int32_t  fuse_memory_allocated;
 extern int32_t  fuse_mount_count;
 extern int32_t  fuse_realloc_count;
 extern int32_t  fuse_tickets_current;
+extern uint32_t fuse_userkernel_bufsize;
 extern int32_t  fuse_vnodes_current;
 
 extern void fuse_sysctl_start(void);

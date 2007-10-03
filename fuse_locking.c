@@ -59,10 +59,10 @@ fusefs_lock(fusenode_t cp, enum fusefslocktype locktype)
      */
     if ((locktype != FUSEFS_FORCE_LOCK) && (cp->c_flag & C_NOEXISTS)) {
         fusefs_unlock(cp);
-        return (ENOENT);
+        return ENOENT;
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -98,15 +98,15 @@ fusefs_lockpair(fusenode_t cp1, fusenode_t cp2, enum fusefslocktype locktype)
     }
 
     if ( (error = fusefs_lock(first, locktype))) {
-        return (error);
+        return error;
     }
 
     if ( (error = fusefs_lock(last, locktype))) {
         fusefs_unlock(first);
-        return (error);
+        return error;
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -116,23 +116,23 @@ static int
 fusefs_isordered(fusenode_t cp1, fusenode_t cp2)
 {
     if (cp1 == cp2) {
-        return (0);
+        return 0;
     }
 
     if (cp1 == NULL || cp2 == (fusenode_t )0xffffffff) {
-        return (1);
+        return 1;
     }
 
     if (cp2 == NULL || cp1 == (fusenode_t )0xffffffff) {
-        return (0);
+        return 0;
     }
 
     if (cp1->nodeid == cp2->parent_nodeid) {
-        return (1);  /* cp1 is the parent and should go first */
+        return 1;  /* cp1 is the parent and should go first */
     }
 
     if (cp2->nodeid == cp1->parent_nodeid) {
-        return (0);  /* cp1 is the child and should go last */
+        return 0;  /* cp1 is the child and should go last */
     }
 
     return (cp1 < cp2);  /* fall-back is to use address order */
@@ -194,11 +194,11 @@ fusefs_lockfour(fusenode_t cp1, fusenode_t cp2, fusenode_t cp3, fusenode_t cp4,
                     if (list[i])
                         fusefs_unlock(list[i]);
                 }
-                return (error);
+                return error;
             }
     }
 
-    return (0);
+    return 0;
 }
 
 /*
