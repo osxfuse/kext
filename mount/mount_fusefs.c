@@ -573,7 +573,7 @@ main(int argc, char **argv)
     int       fd        = -1;
     int32_t   dindex    = -1;
     char     *fdnam     = NULL;
-    uint64_t  altflags  = 0;
+    uint64_t  altflags  = 0ULL;
     char     *mntpath   = NULL;
 
     int i, ch = '\0', done = 0;
