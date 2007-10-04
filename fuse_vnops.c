@@ -271,7 +271,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
 skipdir:
 
     if (!FUFH_IS_VALID(fufh)) {
-        (void)fuse_filehandle_put(vp, context, fufh_type, FUSE_OP_BACKGROUNDED);
+        (void)fuse_filehandle_put(vp, context, fufh_type, FUSE_OP_FOREGROUNDED);
     }
 
     return err;
@@ -784,7 +784,7 @@ fuse_vnop_inactive(struct vnop_inactive_args *ap)
         if (FUFH_IS_VALID(fufh)) {
             FUFH_USE_RESET(fufh);
             (void)fuse_filehandle_put(vp, context, fufh_type,
-                                      FUSE_OP_BACKGROUNDED);
+                                      FUSE_OP_FOREGROUNDED);
         }
     }
 
@@ -2236,7 +2236,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     if (freefufh) {
         FUFH_USE_DEC(fufh);
         (void)fuse_filehandle_put(vp, context, FUFH_RDONLY,
-                                  FUSE_OP_BACKGROUNDED);
+                                  FUSE_OP_FOREGROUNDED);
     }
 
     fuse_invalidate_attr(vp);
@@ -2330,13 +2330,21 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
             FUFH_USE_RESET(fufh);
             if (vfs_isforce(vnode_mount(vp))) {
                 (void)fuse_filehandle_put(vp, context, type,
-                                          FUSE_OP_BACKGROUNDED);
+                                          FUSE_OP_FOREGROUNDED);
             } else {
+
                 /*
                  * This is not a forced unmount. So why is the vnode being
-                 * reclaimed if a fufh is valid? Well, unless we are dead.
+                 * reclaimed if a fufh is valid? Well...
+                 *
+                 * One reason is that we are dead.
+                 *
+                 * Another reason is an unmount-time vlush race with ongoing
+                 * vnops. Typically happens for a VDIR here.
                  */
+
                 if (!fuse_isdeadfs(vp)) {
+
                     /*
                      * This needs to be figured out. Looks like we can get
                      * here if there's a race between a vnop (say, open) and
@@ -2349,18 +2357,33 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                      * open
                      * reclaim <-- ?????
                      *
-                    panic("MacFUSE: vnode reclaimed with valid fufh "
-                          "(type=%d, vtype=%d, open_count=%d)",
-                          type, vnode_vtype(vp), open_count);
+                     *    panic()?
                      */
+
+#if M_MACFUSE_ENABLE_UNSUPPORTED
+                    char *vname = vnode_getname(vp);
+                    IOLog("MacFUSE: vnode reclaimed with valid fufh "
+                          "(%s type=%d, vtype=%d, open_count=%d, busy=%d)\n",
+                          (vname) ? vname : "?", type, vnode_vtype(vp),
+                          open_count, vnode_isinuse(vp, 0));
+                    if (vname) {
+                        vnode_putname(vname);
+                    }
+#else
                     IOLog("MacFUSE: vnode reclaimed with valid fufh "
                           "(type=%d, vtype=%d, open_count=%d, busy=%d)\n",
                           type, vnode_vtype(vp), open_count,
                           vnode_isinuse(vp, 0));
-                }
-            }
-        }
-    }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+                    FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_zombies);
+                } /* !deadfs */
+
+                (void)fuse_filehandle_put(vp, context, type,
+                                          FUSE_OP_FOREGROUNDED);
+
+            } /* !forced unmount */
+        } /* valid fufh */
+    } /* fufh loop */
 
     if ((!fuse_isdeadfs(vp)) && (fvdat->nlookup)) {
         struct fuse_dispatcher fdi;

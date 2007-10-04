@@ -22,6 +22,7 @@ uint32_t fuse_api_minor              = FUSE_KERNEL_MINOR_VERSION;          // r
 int32_t  fuse_fh_current             = 0;                                  // r
 uint32_t fuse_fh_reuse_count         = 0;                                  // r
 uint32_t fuse_fh_upcall_count        = 0;                                  // r
+uint32_t fuse_fh_zombies             = 0;                                  // r
 int32_t  fuse_iov_credit             = FUSE_DEFAULT_IOV_CREDIT;            // rw
 int32_t  fuse_iov_current            = 0;                                  // r
 uint32_t fuse_iov_permanent_bufsize  = FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE; // rw
@@ -201,6 +202,8 @@ SYSCTL_INT(_macfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
 /* fuse.resourceusage */
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, filehandles, CTLFLAG_RD,
            &fuse_fh_current, 0, "");
+SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, filehandles_zombies, CTLFLAG_RD,
+           &fuse_fh_zombies, 0, "");
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, ipc_iovs, CTLFLAG_RD,
            &fuse_iov_current, 0, "");
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, ipc_tickets, CTLFLAG_RD,
@@ -259,6 +262,7 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__macfuse_counters_lookup_cache_overrides,
     &sysctl__macfuse_counters_memory_reallocs,
     &sysctl__macfuse_resourceusage_filehandles,
+    &sysctl__macfuse_resourceusage_filehandles_zombies,
     &sysctl__macfuse_resourceusage_ipc_iovs,
     &sysctl__macfuse_resourceusage_ipc_tickets,
     &sysctl__macfuse_resourceusage_memory_bytes,

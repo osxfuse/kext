@@ -451,6 +451,24 @@ fuse_internal_readdir_processdata(vnode_t          vp,
 
 /* remove */
 
+static int
+fuse_internal_remove_callback(vnode_t vp, void *cargs)
+{
+    struct vnode_attr *vap;
+    uint64_t target_nlink;
+
+    vap = VTOVA(vp);
+
+    target_nlink = *(uint64_t *)cargs;
+
+    /* somewhat lame "heuristics", but you got better ideas? */
+    if ((vap->va_nlink == target_nlink) && vnode_isreg(vp)) {
+        fuse_invalidate_attr(vp);
+    }
+
+    return VNODE_RETURNED;
+}
+
 __private_extern__
 int
 fuse_internal_remove(vnode_t               dvp,
@@ -461,6 +479,11 @@ fuse_internal_remove(vnode_t               dvp,
 {
     struct fuse_dispatcher fdi;
 
+    struct vnode_attr *vap = VTOVA(vp);
+    int need_invalidate = 0;
+    uint64_t target_nlink = 0;
+    mount_t mp = vnode_mount(vp);
+
     int err = 0;
 
     fdisp_init(&fdi, cnp->cn_namelen + 1);
@@ -468,6 +491,11 @@ fuse_internal_remove(vnode_t               dvp,
 
     memcpy(fdi.indata, cnp->cn_nameptr, cnp->cn_namelen);
     ((char *)fdi.indata)[cnp->cn_namelen] = '\0';
+
+    if ((vap->va_nlink > 1) && vnode_isreg(vp)) {
+        need_invalidate = 1;
+        target_nlink = vap->va_nlink;
+    }
 
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
@@ -486,6 +514,15 @@ fuse_internal_remove(vnode_t               dvp,
      * here and a callback that does fuse_invalidate_attr(vp) on each
      * relevant vnode.
      */
+    if (need_invalidate && !err) {
+        if (!vfs_busy(mp, LK_NOWAIT)) {
+            vnode_iterate(mp, 0, fuse_internal_remove_callback,
+                          (void *)&target_nlink);
+            vfs_unbusy(mp);
+        } else {
+            IOLog("MacFUSE: skipping link count fixup upon remove\n");
+        }
+    }
 
     return err;
 }
@@ -1195,17 +1232,17 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 static int
 fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
 {
-    char *name = NULL;
+    char *vname = NULL;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-    name = vnode_getname(vp);
+    vname = vnode_getname(vp);
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
-    if (name) {
+    if (vname) {
         IOLog("vp=%p ino=%lld parent=%lld inuse=%d %s\n",
               vp, fvdat->nodeid, fvdat->parent_nodeid,
-              vnode_isinuse(vp, 0), name);
+              vnode_isinuse(vp, 0), vname);
     } else {
         if (fvdat->nodeid == FUSE_ROOT_ID) {
             IOLog("vp=%p ino=%lld parent=%lld inuse=%d /\n",
@@ -1219,8 +1256,8 @@ fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
     }
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-    if (name) {
-        vnode_putname(name);
+    if (vname) {
+        vnode_putname(vname);
     }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
  
@@ -1239,27 +1276,27 @@ __private_extern__
 void
 fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
 {
-    char *name = NULL;
+    char *vname = NULL;
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-    name = vnode_getname(vp);
+    vname = vnode_getname(vp);
 #else
-    (void)name;
+    (void)vname;
     (void)vp;
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
-    if (name) {
+    if (vname) {
         IOLog("MacFUSE: file handle preflight "
               "(caller=%s, type=%d, err=%d, name=%s)\n",
-              message, fufh_type, err, name);
+              message, fufh_type, err, vname);
     } else {
         IOLog("MacFUSE: file handle preflight "
               "(caller=%s, type=%d, err=%d)\n", message, fufh_type, err);
     }
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-    if (name) {
-        vnode_putname(name);
+    if (vname) {
+        vnode_putname(vname);
     }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 }
