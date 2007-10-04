@@ -615,20 +615,12 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         break;
 
     /*
-     * In the user-space library, you can get the inode number from a path
-     * by using something like:
+     * The 'AVFI' (alter-vnode-for-inode) ioctls all require an inode number
+     * as an argument. In the user-space library, you can get the inode number
+     * from a path by using fuse_lookup_inode_by_path_np() [lib/fuse.c].
      *
-     * fuse_ino_t
-     * find_fuse_inode_for_path(const char *path)
-     * {
-     *     struct fuse_context *context = fuse_get_context();
-     *     struct fuse *the_fuse = context->fuse;
-     *     struct node *node find_node(the_fuse, FUSE_ROOT_ID, path);
-     *     if (!node) {
-     *         return 0;
-     *     }
-     *     return node->nodeid;
-     * }
+     * To see an example of using this, see the implementation of 
+     * fuse_purge_path_np() in lib/fuse_darwin.c.
      */
     case FUSEDEVIOCALTERVNODEFORINODE:
         {

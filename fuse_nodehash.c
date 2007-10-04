@@ -986,27 +986,27 @@ HNodeLookupRealQuickIfExists(dev_t     dev,
     }
         
     if (thisNode == NULL) {
-        return ENOENT;
+        err = ENOENT;
     } else {
         if (thisNode->attachOutstanding) {
-            return EAGAIN;
+            err = EAGAIN;
         } else if (forkIndex >= thisNode->forkVNodesSize) {
-            return ENOENT;
+            err = ENOENT;
         } else if (thisNode->forkVNodes[forkIndex] == NULL) {
-            return ENOENT;
+            err = ENOENT;
         } else {
             vnode_t candidateVN = thisNode->forkVNodes[forkIndex];
             assert(candidateVN != NULL);
             vid = vnode_vid(candidateVN);
             lck_mtx_unlock(gHashMutex);
             err = vnode_getwithvid(candidateVN, vid);
+            needsUnlock = FALSE;
             if (err == 0) {
                 assert(thisNode != NULL);
                 assert(resultVN == NULL);
                 resultVN = candidateVN;
-                needsUnlock = FALSE;
             } else {
-                return EAGAIN;
+                err = EAGAIN;
             }
         }
     }

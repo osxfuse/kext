@@ -274,7 +274,10 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
     if (avfi->cmd & FUSE_AVFI_UBC) {
         int ubc_flags = avfi->flags & (UBC_PUSHDIRTY  | UBC_PUSHALL |
                                        UBC_INVALIDATE | UBC_SYNC);
-        ret = ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), ubc_flags);
+        if (ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), ubc_flags) == 0) {
+            /* failed */
+            ret = EINVAL; /* don't really have a good error to return */
+        }
     }
 
     /* The result of this doesn't alter our return value. */
@@ -284,7 +287,7 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
 
     /* The result of this doesn't alter our return value. */
     if (avfi->cmd & FUSE_AVFI_PURGEVNCACHE) {
-        fuse_vncache_purge(vp);
+        (void)fuse_vncache_purge(vp);
     }
 
     return ret;
