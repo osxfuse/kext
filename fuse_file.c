@@ -128,7 +128,6 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     }
 
     if (fuse_isdeadfs(vp)) {
-        FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);
         goto out;
     }
 
@@ -147,16 +146,15 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
         } else {
-            FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);
             fuse_ticket_drop(fdi.tick);
         }
     } else {
         fuse_insert_callback(fdi.tick, NULL);
         fuse_insert_message(fdi.tick);
-        FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);
     }
 
 out:
+    FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);
 
     return err;
 }
