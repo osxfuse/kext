@@ -236,7 +236,16 @@ fuse_vnop_close(struct vnop_close_args *ap)
         goto skipdir;
     }
 
-    /* Enforce sync on close unless explicitly told not to. */
+    /*
+     * Enforce sync-on-close unless explicitly told not to.
+     *
+     * We do this to maintain correct semantics in the not so common case when
+     * you create a file with O_RDWR but without write permissions--you /are/
+     * supposed to be able to write to such a file given the descriptor you
+     * you got from open()/create(). Therefore, if we don't finish all our
+     * writing before we close this precious writable descriptor, we might
+     * be doomed.
+     */
     if (vnode_hasdirtyblks(vp) && !fuse_isnosynconclose(vp)) {
         (void)cluster_push(vp, IO_SYNC | IO_CLOSE);
     }
@@ -1010,6 +1019,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     if (err == 0) {
         FUSE_KNOTE(vp, NOTE_LINK);
         FUSE_KNOTE(tdvp, NOTE_WRITE);
+        VTOFUD(vp)->nlookup++;
     }
 
     return err;
