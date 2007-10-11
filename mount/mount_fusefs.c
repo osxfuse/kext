@@ -697,7 +697,7 @@ main(int argc, char **argv)
             err(EX_OSERR, "fstat failed for MacFUSE device file descriptor");
         }
         args.rdev = sb.st_rdev;
-        strcpy(ndev, _PATH_DEV);
+        (void)strlcpy(ndev, _PATH_DEV, sizeof(ndev));
         ndevbas = ndev + strlen(_PATH_DEV);
         devname_r(sb.st_rdev, S_IFCHR, ndevbas,
                   sizeof(ndev) - strlen(_PATH_DEV));
