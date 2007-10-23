@@ -1117,7 +1117,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     fii = fdi.indata;
     fii->unique = ftick->tk_unique;
     fticket_invalidate(fdi.tick);
-    fuse_insert_message_head(fdi.tick);
+    fuse_insert_message(fdi.tick);
 }
 
 __private_extern__
@@ -1240,16 +1240,16 @@ fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
     if (vname) {
-        IOLog("vp=%p ino=%lld parent=%lld inuse=%d %s\n",
+        IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d %s\n",
               vp, fvdat->nodeid, fvdat->parent_nodeid,
               vnode_isinuse(vp, 0), vname);
     } else {
         if (fvdat->nodeid == FUSE_ROOT_ID) {
-            IOLog("vp=%p ino=%lld parent=%lld inuse=%d /\n",
+            IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d /\n",
                   vp, fvdat->nodeid, fvdat->parent_nodeid,
                   vnode_isinuse(vp, 0));
         } else {
-            IOLog("vp=%p ino=%lld parent=%lld inuse=%d\n",
+            IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d\n",
                   vp, fvdat->nodeid, fvdat->parent_nodeid,
                   vnode_isinuse(vp, 0));
         }

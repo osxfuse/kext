@@ -277,7 +277,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 }
 
 int
-fuse_device_read(dev_t dev, uio_t uio, __unused int ioflag)
+fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int i, err = 0;
     int buflen[3];
@@ -307,6 +307,10 @@ again:
     }
 
     if (!(ftick = fuse_ms_pop(data))) {
+        if (ioflag & FNONBLOCK) {
+            fuse_lck_mtx_unlock(data->ms_mtx);
+            return EAGAIN;
+        }
         err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL);
         if (err != 0) {
             fuse_lck_mtx_unlock(data->ms_mtx);
@@ -358,6 +362,13 @@ again:
         if (err) {
             break;
         }
+    }
+
+    /*
+     * XXX: Stop gap! I really need to finish interruption plumbing.
+     */
+    if (fticket_answered(ftick)) {
+        err = EINTR;
     }
 
     /*
@@ -437,7 +448,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
             return err;
         }
     } else {
-        debug_printf("no handler for this response\n");
+        /* ticket has no response handler */
     }
 
     return err;

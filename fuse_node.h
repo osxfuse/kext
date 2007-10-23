@@ -173,7 +173,7 @@ void
 fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("cache enter: dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
+    IOLog("MacFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
 #endif
     return cache_enter(dvp, vp, cnp);
 }
@@ -183,7 +183,7 @@ void
 fuse_vncache_purge(vnode_t vp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("cache purge: vp=%p\n", vp);
+    IOLog("MacFUSE: cache purge vp=%p\n", vp);
 #endif
     return cache_purge(vp);
 }
@@ -194,7 +194,7 @@ fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 {
     int ret = cache_lookup(dvp, vpp, cnp);
 #if FUSE_TRACE_VNCACHE
-    IOLog("cache lookup: ret=%d, dvp=%p, *vpp=%p, %s\n",
+    IOLog("MacFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
           ret, dvp, *vpp, cnp->cn_nameptr);
 #endif
     return ret;

@@ -311,11 +311,10 @@ alreadydead:
     }
 
 #if M_MACFUSE_ENABLE_INTERRUPT
-    /*
-     * If interrupted, we want to do:
-     *     fuse_internal_interrupt_send(ftick);
-     */
-    else if (err == -1) {
+    else if (err == EINTR) {
+       /*
+        * XXX: Stop gap! I really need to finish interruption plumbing.
+        */
        fuse_internal_interrupt_send(ftick);
     }
 #endif
@@ -324,7 +323,7 @@ out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (!(err || fticket_answered(ftick))) {
-        debug_printf("MacFUSE requester was woken up but still no answer");
+        IOLog("MacFUSE: requester was woken up but still no answer");
         err = ENXIO;
     }
 
@@ -349,8 +348,8 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             }
             err = uiomove(fticket_resp(ftick)->base, len, uio);
             if (err) {
-                debug_printf("FT_A_FIOV: error is %d (%p, %ld, %p)\n",
-                             err, fticket_resp(ftick)->base, len, uio);
+                IOLog("MacFUSE: FT_A_FIOV error is %d (%p, %ld, %p)\n",
+                      err, fticket_resp(ftick)->base, len, uio);
             }
             break;
 
@@ -358,8 +357,8 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             ftick->tk_aw_bufsize = len;
             err = uiomove(ftick->tk_aw_bufdata, len, uio);
             if (err) {
-                debug_printf("FT_A_BUF: error is %d (%p, %ld, %p)\n",
-                             err, ftick->tk_aw_bufdata, len, uio);
+                IOLog("MacFUSE: FT_A_BUF error is %d (%p, %ld, %p)\n",
+                      err, ftick->tk_aw_bufdata, len, uio);
             }
             break;
 
