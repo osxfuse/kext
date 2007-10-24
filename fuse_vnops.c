@@ -230,8 +230,6 @@ fuse_vnop_close(struct vnop_close_args *ap)
         return 0;
     }
 
-    FUFH_USE_DEC(fufh);
-
     if (isdir) {
         goto skipdir;
     }
@@ -278,6 +276,9 @@ fuse_vnop_close(struct vnop_close_args *ap)
     }
 
 skipdir:
+
+    /* This must be done after we have flushed any pending I/O. */
+    FUFH_USE_DEC(fufh);
 
     if (!FUFH_IS_VALID(fufh)) {
         (void)fuse_filehandle_put(vp, context, fufh_type, FUSE_OP_FOREGROUNDED);
@@ -422,6 +423,13 @@ bringup:
 
         fufh->fh_id = x_fh_id;
         fufh->open_flags = x_open_flags;
+
+        /*
+         * We're stashing this to be picked up by open. Meanwhile, we set
+         * the use count to 1 because that's what it is. The use count will
+         * later transfer to the slot that this handle ends up falling in.
+         */
+        fufh->open_count = 1;
 
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
     }
@@ -1764,9 +1772,12 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
                 fufh_rw = &(fvdat->fufh[FUFH_RDWR]);
 
-                fufh->open_count = 1;
                 fufh->open_flags = fufh_rw->open_flags;
                 fufh->fh_id = fufh_rw->fh_id;
+
+                /* Note that fufh_rw can be the same as fufh! Order is key. */
+                fufh_rw->open_count = 0;
+                fufh->open_count = 1;
 
                 /*
                  * Creator has picked up stashed handle and moved it to the

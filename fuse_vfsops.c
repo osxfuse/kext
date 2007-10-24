@@ -689,7 +689,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_EXTENDED_SECURITY
 //      | VOL_CAP_INT_USERACCESS
 //      | VOL_CAP_INT_MANLOCK
-        | VOL_CAP_INT_EXTENDED_ATTR
+//      | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
         ;
 

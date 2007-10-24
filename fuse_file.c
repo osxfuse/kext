@@ -87,6 +87,9 @@ fuse_filehandle_get(vnode_t       vp,
             vnode_putname(vname);
         }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+        if (err == ENOENT) {
+            fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+        }
         return err;
     }
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);

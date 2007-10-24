@@ -632,6 +632,17 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         fufh_type = FUFH_WRONLY; /* FUFH_RDWR will also do */
     }
 
+    if (fvdat->flag & FN_CREATING) {
+        fuse_lck_mtx_lock(fvdat->createlock);
+        if (fvdat->flag & FN_CREATING) {
+            (void)fuse_msleep(fvdat->creator, fvdat->createlock,
+                              PDROP | PINOD | PCATCH, "fuse_internal_strategy",
+                              NULL);
+        } else {
+            fuse_lck_mtx_unlock(fvdat->createlock);
+        }
+    }
+
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (!FUFH_IS_VALID(fufh)) {
