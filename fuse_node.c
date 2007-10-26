@@ -179,9 +179,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
             vnode_put(vn);
             err = EIO;
-        }
-
-        if (VTOFUD(vn)->generation != generation) {
+        } else if (VTOFUD(vn)->generation != generation) {
             IOLog("MacFUSE: vnode changed generation\n");
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
             vnode_put(vn);
