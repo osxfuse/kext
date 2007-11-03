@@ -2116,6 +2116,10 @@ fuse_vnop_read(struct vnop_read_args *ap)
     data = fuse_get_mpdata(vnode_mount(vp));
 
     if (!fuse_isdirectio(vp)) {
+        if (fuse_isnoubc(vp)) {
+            /* In case we get here through a short cut (e.g. no open). */
+            ioflag |= IO_NOCACHE;
+        }
         return cluster_read(vp, uio, fvdat->filesize, ioflag);
     }
 
@@ -3346,8 +3350,14 @@ fuse_vnop_write(struct vnop_write_args *ap)
         /* Original size OK. */
         filesize = original_size;
     }
-        
+
     lflag = (ioflag & (IO_SYNC | IO_NOCACHE));
+
+    if (fuse_isnoubc(vp)) {
+        lflag |= (IO_SYNC | IO_NOCACHE);
+    } else if (vfs_issynchronous(vnode_mount(vp))) {
+        lflag |= IO_SYNC;
+    }
 
     if (offset > original_size) {
         zero_off = original_size;
