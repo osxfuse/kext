@@ -509,7 +509,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
     VATTR_RETURN(out_vap, va_linkid, in_vap->va_linkid);
     VATTR_RETURN(out_vap, va_gen,
         (typeof(out_vap->va_gen))fvdat->generation); /* XXX: truncation */
-    if (in_vap->va_fileid != FUSE_ROOT_ID) {
+    if (!vnode_isvroot(vp)) {
         /*
          * If we do return va_parentid for our root vnode, things get
          * a bit too interesting for the Finder.
