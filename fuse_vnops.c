@@ -81,6 +81,10 @@ fuse_vnop_access(struct vnop_access_args *ap)
         return EBADF;
     }
 
+    if (vnode_islnk(vp)) {
+        return 0;
+    }
+
     bzero(&facp, sizeof(facp));
 
     if (fvdat->flag & FN_ACCESS_NOOP) {
