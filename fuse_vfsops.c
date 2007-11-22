@@ -154,6 +154,10 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     /** Option Processing. **/
 
+    if (fusefs_args.altflags & FUSE_MOPT_CASE_INSENSITIVE) {
+        mntopts |= FSESS_CASE_INSENSITIVE;
+    }
+
     if (fusefs_args.altflags & FUSE_MOPT_FSTYPENAME) {
         size_t typenamelen = strlen(fusefs_args.fstypename);
         if ((typenamelen <= 0) || (typenamelen > FUSE_FSTYPENAME_MAXLEN)) {
@@ -284,7 +288,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     if (fusefs_args.altflags & FUSE_MOPT_NO_SYNCWRITES) {
 
         /* Cannot mix 'nosyncwrites' with 'noubc' or 'noreadahead'. */
-        if (mntopts | (FSESS_NO_READAHEAD | FSESS_NO_UBC)) {
+        if (mntopts & (FSESS_NO_READAHEAD | FSESS_NO_UBC)) {
             return EINVAL;
         }
 
@@ -650,10 +654,10 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_NO_ROOT_TIMES
 //      | VOL_CAP_FMT_SPARSE_FILES
 //      | VOL_CAP_FMT_ZERO_RUNS
-        | VOL_CAP_FMT_CASE_SENSITIVE
+//      | VOL_CAP_FMT_CASE_SENSITIVE
         | VOL_CAP_FMT_CASE_PRESERVING
 //      | VOL_CAP_FMT_FAST_STATFS
-        | VOL_CAP_FMT_2TB_FILESIZE
+//      | VOL_CAP_FMT_2TB_FILESIZE
 //      | VOL_CAP_FMT_OPENDENYMODES
 //      | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
@@ -692,6 +696,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
         ;
+
+    if (!(data->dataflags & FSESS_CASE_INSENSITIVE)) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] |=
+            VOL_CAP_FMT_CASE_SENSITIVE;
+    }
 
     if (data->dataflags & FSESS_VOL_RENAME) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
