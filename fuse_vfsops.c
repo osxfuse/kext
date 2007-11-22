@@ -436,6 +436,14 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     copystr(fusefs_args.volname, data->volname, MAXPATHLEN - 1, &len);
     bzero(data->volname + len, MAXPATHLEN - len);
 
+    {
+        struct vfsioattr ioattr;
+
+        vfs_ioattr(mp, &ioattr);
+        ioattr.io_devblocksize = data->blocksize;
+        vfs_setioattr(mp, &ioattr);
+    }
+
     vfs_setfsprivate(mp, data);
 
     fuse_device_unlock(fdev);
@@ -657,7 +665,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_CASE_SENSITIVE
         | VOL_CAP_FMT_CASE_PRESERVING
 //      | VOL_CAP_FMT_FAST_STATFS
-//      | VOL_CAP_FMT_2TB_FILESIZE
+        | VOL_CAP_FMT_2TB_FILESIZE
 //      | VOL_CAP_FMT_OPENDENYMODES
 //      | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
