@@ -346,10 +346,9 @@ fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
     if (ismpoption && nameptr) {
         /* This _will_ allow just "._", that is, a namelen of 2. */
         if (namelen > 2) {
-            if (namelen == ((sizeof(DS_STORE)/sizeof(char)) - 1)) {
-                if (bcmp(nameptr, DS_STORE, sizeof(DS_STORE)) == 0) {
-                    return 1;
-                }
+            if ((namelen == ((sizeof(DS_STORE)/sizeof(char)) - 1)) &&
+                (bcmp(nameptr, DS_STORE, sizeof(DS_STORE)) == 0)) {
+                return 1;
             } else if (nameptr[0] == '.' && nameptr[1] == '_') {
                 return 1;
             }
