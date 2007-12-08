@@ -54,15 +54,6 @@ struct knote {
 
 };
 
-void filt_fusedetach(struct knote *kn);
-int  filt_fuseread(struct knote *kn, long hint);
-int  filt_fusewrite(struct knote *kn, long hint);
-int  filt_fusevnode(struct knote *kn, long hint);
-
-extern struct filterops fuseread_filtops;
-extern struct filterops fusewrite_filtops;
-extern struct filterops fusevnode_filtops;
-
 #define KNOTE(list, hint)       knote(list, hint)
 #define KNOTE_ATTACH(list, kn)  knote_attach(list, kn)
 #define KNOTE_DETACH(list, kn)  knote_detach(list, kn)
@@ -72,6 +63,15 @@ extern int  knote_attach(struct klist *list, struct knote *kn);
 extern int  knote_detach(struct klist *list, struct knote *kn);
 
 #endif /* !KNOTE */
+
+void filt_fusedetach(struct knote *kn);
+int  filt_fuseread(struct knote *kn, long hint);
+int  filt_fusewrite(struct knote *kn, long hint);
+int  filt_fusevnode(struct knote *kn, long hint);
+
+extern struct filterops fuseread_filtops;
+extern struct filterops fusewrite_filtops;
+extern struct filterops fusevnode_filtops;
 
 #define FUSE_KNOTE(vp, hint)    KNOTE(&VTOFUD(vp)->c_knotes, (hint))
 
