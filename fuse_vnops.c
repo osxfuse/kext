@@ -3059,11 +3059,13 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     if (!err) {
         fuse_ticket_drop(fdi.tick);
     } else {
-        if (err == ENOSYS) {
+        if ((err == ENOSYS) || (err == ENOTSUP)) {
 
             int a_spacetype = UIO_USERSPACE;
 
-            fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETXATTR));
+            if (err == ENOSYS) {
+                fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETXATTR));
+            }
 
             if (iov_err) {
                 return EAGAIN;
