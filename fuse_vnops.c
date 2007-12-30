@@ -481,7 +481,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
-    int type, err = 0, tmp_err = 0;
+    int type, err = ENOSYS, tmp_err = 0;
     (void)waitfor;
 
     fuse_trace_printf_vnop();
@@ -509,8 +509,9 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
      * - Can call ubc_sync_range().
      */
 
-    if (!fuse_implemented(fuse_get_mpdata(vnode_mount(vp)),
-            ((vnode_isdir(vp)) ?
+    mount_t mp = vnode_mount(vp);
+
+    if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
                 FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
         goto out;
     }
@@ -528,6 +529,10 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     }
 
 out:
+    if ((err == ENOSYS) && !fuse_isnosyncwrites_mp(mp)) {
+        err = 0;
+    }
+
     return err;
 }
 
