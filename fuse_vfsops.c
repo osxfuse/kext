@@ -469,13 +469,13 @@ out:
         }
         fuse_device_unlock(fdev);
     } else {
-        vnode_t rootvp = NULLVP;
-        err = fuse_vfs_root(mp, &rootvp, context);
+        vnode_t fuse_rootvp = NULLVP;
+        err = fuse_vfs_root(mp, &fuse_rootvp, context);
         if (err) {
             goto out; /* go back and follow error path */
         }
-        err = vnode_ref(rootvp);
-        (void)vnode_put(rootvp);
+        err = vnode_ref(fuse_rootvp);
+        (void)vnode_put(fuse_rootvp);
         if (err) {
             goto out; /* go back and follow error path */
         }
@@ -496,7 +496,7 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
     struct fuse_data      *data;
     struct fuse_dispatcher fdi;
 
-    vnode_t rootvp = NULLVP;
+    vnode_t fuse_rootvp = NULLVP;
 
     fuse_trace_printf_vfsop();
 
@@ -538,14 +538,14 @@ fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
         fdata_set_dead(data);
     }
 
-    rootvp = data->rootvp;
+    fuse_rootvp = data->rootvp;
 
-    err = vflush(mp, rootvp, flags);
+    err = vflush(mp, fuse_rootvp, flags);
     if (err) {
         return err;
     }
 
-    if (vnode_isinuse(rootvp, 1) && !(flags & FORCECLOSE)) {
+    if (vnode_isinuse(fuse_rootvp, 1) && !(flags & FORCECLOSE)) {
         return EBUSY;
     }
 
@@ -572,7 +572,7 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-    vnode_rele(rootvp); /* We got this reference in fuse_vfs_mount(). */
+    vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfs_mount(). */
 
     data->rootvp = NULLVP;
 
