@@ -18,6 +18,7 @@ extern uint32_t fuse_iov_permanent_bufsize;
 extern uint32_t fuse_lookup_cache_hits;
 extern uint32_t fuse_lookup_cache_misses;
 extern uint32_t fuse_lookup_cache_overrides;
+extern uint32_t fuse_max_tickets;
 extern uint32_t fuse_max_freetickets;
 extern int32_t  fuse_memory_allocated;
 extern int32_t  fuse_mount_count;
