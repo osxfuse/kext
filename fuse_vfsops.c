@@ -101,7 +101,7 @@ struct vfs_fsentry fuse_vfs_entry = {
 
 static errno_t
 fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
-               __unused vfs_context_t context)
+               vfs_context_t context)
 {
     int err     = 0;
     int mntopts = 0;
@@ -115,6 +115,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_device_t      fdev = FUSE_DEVICE_NULL;
     struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
+    struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
     fuse_trace_printf_vfsop();
 
@@ -163,7 +164,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         if ((typenamelen <= 0) || (typenamelen > FUSE_FSTYPENAME_MAXLEN)) {
             return EINVAL;
         }
-        snprintf(vfs_statfs(mp)->f_fstypename, MFSTYPENAMELEN, "%s%s",
+        snprintf(vfsstatfsp->f_fstypename, MFSTYPENAMELEN, "%s%s",
                  FUSE_FSTYPENAME_PREFIX, fusefs_args.fstypename);
     }
 
@@ -244,8 +245,8 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
             goto out;
         }
 
-        vfs_statfs(mp)->f_fsid.val[0] = target_dev;
-        vfs_statfs(mp)->f_fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
+        vfsstatfsp->f_fsid.val[0] = target_dev;
+        vfsstatfsp->f_fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
 
     } else {
         vfs_getnewfsid(mp);    
@@ -429,9 +430,9 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     data->userkernel_bufsize = FUSE_DEFAULT_USERKERNEL_BUFSIZE;
 
-    copystr(fusefs_args.fsname, vfs_statfs(mp)->f_mntfromname,
+    copystr(fusefs_args.fsname, vfsstatfsp->f_mntfromname,
             MNAMELEN - 1, &len);
-    bzero(vfs_statfs(mp)->f_mntfromname + len, MNAMELEN - len);
+    bzero(vfsstatfsp->f_mntfromname + len, MNAMELEN - len);
 
     copystr(fusefs_args.volname, data->volname, MAXPATHLEN - 1, &len);
     bzero(data->volname + len, MAXPATHLEN - len);
@@ -450,6 +451,29 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     /* Handshake with the daemon. Blocking. */
     err = fuse_internal_send_init(data, context);
+
+    if (!err) {
+       struct vfs_attr vfs_attr;
+       VFSATTR_INIT(&vfs_attr);
+       /* Our vfs_getattr() doesn't look at most *_IS_ACTIVE()'s */
+       err = fuse_vfs_getattr(mp, &vfs_attr, context);
+       if (!err) {
+           vfsstatfsp->f_bsize = vfs_attr.f_bsize;
+           vfsstatfsp->f_iosize = data->iosize;
+           vfsstatfsp->f_blocks = vfs_attr.f_blocks;
+           vfsstatfsp->f_bfree = vfs_attr.f_bfree;
+           vfsstatfsp->f_bavail = vfs_attr.f_bavail;
+           vfsstatfsp->f_bused = vfs_attr.f_bused; 
+           vfsstatfsp->f_files = vfs_attr.f_files;
+           vfsstatfsp->f_ffree = vfs_attr.f_ffree;
+           /* vfsstatfsp->f_fsid already handled */
+           /* vfsstatfsp->f_owner handled elsewhere */
+           /* vfsstatfsp->f_fstypename already handled */
+           /* vfsstatfsp->f_mntonname handled elsewhere */
+           /* vfsstatfsp->f_mnfromname already handled */
+           vfsstatfsp->f_fssubtype = data->fssubtype;
+       }
+    }
 
 out:
     if (err) {
