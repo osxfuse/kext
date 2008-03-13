@@ -420,6 +420,7 @@ fdata_alloc(struct proc *p)
     TAILQ_INIT(&data->alltickets_head);
 
     data->freeticket_counter = 0;
+    data->deadticket_counter = 0;
     data->ticketer           = 0;
 
     kauth_cred_ref(data->daemoncred);
@@ -484,6 +485,9 @@ fdata_set_dead(struct fuse_data *data)
 
     data->dataflags |= FSESS_DEAD;
     fuse_wakeup_one((caddr_t)data);
+#if M_MACFUSE_ENABLE_DSELECT
+    selwakeup((struct selinfo*)&data->d_rsel);
+#endif /* M_MACFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(data->ms_mtx);
 
     fuse_lck_mtx_lock(data->ticket_mtx);
@@ -533,6 +537,7 @@ static __inline__
 void
 fuse_remove_allticks(struct fuse_ticket *ftick)
 {
+    ftick->tk_data->deadticket_counter++;
     TAILQ_REMOVE(&ftick->tk_data->alltickets_head, ftick, tk_alltickets_link);
 }
 
@@ -576,6 +581,10 @@ fuse_ticket_fetch(struct fuse_data *data)
         err = fuse_msleep(&data->ticketer, data->ticket_mtx, PCATCH | PDROP,
                           "fu_ini", 0);
     } else {
+        if ((fuse_max_tickets != 0) &&
+            ((data->ticketer - data->deadticket_counter) > fuse_max_tickets)) {
+            err = 1;
+        }
         fuse_lck_mtx_unlock(data->ticket_mtx);
     }
 
@@ -662,6 +671,9 @@ fuse_insert_message(struct fuse_ticket *ftick)
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push(ftick);
     fuse_wakeup_one((caddr_t)ftick->tk_data);
+#if M_MACFUSE_ENABLE_DSELECT
+    selwakeup((struct selinfo*)&ftick->tk_data->d_rsel);
+#endif /* M_MACFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
 }
 
@@ -681,6 +693,9 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push_head(ftick);
     fuse_wakeup_one((caddr_t)ftick->tk_data);
+#if M_MACFUSE_ENABLE_DSELECT
+    selwakeup((struct selinfo*)&ftick->tk_data->d_rsel);
+#endif /* M_MACFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
 }
 
@@ -698,7 +713,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
 
     switch (opcode) {
     case FUSE_LOOKUP:
-        err = blen == sizeof(struct fuse_entry_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_FORGET:
@@ -706,74 +721,74 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_GETATTR:
-        err = blen == sizeof(struct fuse_attr_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_attr_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_SETATTR:
-        err = blen == sizeof(struct fuse_attr_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_attr_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_READLINK:
-        err = PAGE_SIZE >= blen ? 0 : EINVAL;
+        err = (PAGE_SIZE >= blen) ? 0 : EINVAL;
         break;
 
     case FUSE_SYMLINK:
-        err = blen == sizeof(struct fuse_entry_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_MKNOD:
-        err = blen == sizeof(struct fuse_entry_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_MKDIR:
-        err = blen == sizeof(struct fuse_entry_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_UNLINK:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_RMDIR:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_RENAME:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_LINK:
-        err = blen == sizeof(struct fuse_entry_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_OPEN:
-        err = blen == sizeof(struct fuse_open_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_open_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_READ:
-        err = ((struct fuse_read_in *)(
+        err = (((struct fuse_read_in *)(
                 (char *)ftick->tk_ms_fiov.base +
                         sizeof(struct fuse_in_header)
-                  ))->size >= blen ? 0 : EINVAL;
+                  ))->size >= blen) ? 0 : EINVAL;
         break;
 
     case FUSE_WRITE:
-        err = blen == sizeof(struct fuse_write_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_write_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_STATFS:
         if (fuse_libabi_geq(ftick->tk_data, 7, 4)) {
-            err = blen == sizeof(struct fuse_statfs_out) ? 0 : EINVAL;
+            err = (blen == sizeof(struct fuse_statfs_out)) ? 0 : EINVAL;
         } else {
-            err = blen == FUSE_COMPAT_STATFS_SIZE ? 0 : EINVAL;
+            err = (blen == FUSE_COMPAT_STATFS_SIZE) ? 0 : EINVAL;
         }
         break;
 
     case FUSE_RELEASE:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_FSYNC:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_SETXATTR:
@@ -793,7 +808,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_FLUSH:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_INIT:
@@ -805,22 +820,22 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_OPENDIR:
-        err = blen == sizeof(struct fuse_open_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_open_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_READDIR:
-        err = ((struct fuse_read_in *)(
+        err = (((struct fuse_read_in *)(
                 (char *)ftick->tk_ms_fiov.base +
                         sizeof(struct fuse_in_header)
-                  ))->size >= blen ? 0 : EINVAL;
+                  ))->size >= blen) ? 0 : EINVAL;
         break;
 
     case FUSE_RELEASEDIR:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_FSYNCDIR:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_GETLK:
@@ -836,12 +851,12 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_ACCESS:
-        err = blen == 0 ? 0 : EINVAL;
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     case FUSE_CREATE:
-        err = blen == sizeof(struct fuse_entry_out) +
-                      sizeof(struct fuse_open_out) ? 0 : EINVAL;
+        err = (blen == sizeof(struct fuse_entry_out) +
+                           sizeof(struct fuse_open_out)) ? 0 : EINVAL;
         break;
 
     case FUSE_INTERRUPT:
@@ -853,7 +868,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_DESTROY:
-        /* TBD */
+        err = (blen == 0) ? 0 : EINVAL;
         break;
 
     default:
