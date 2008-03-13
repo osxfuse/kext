@@ -453,7 +453,7 @@ post_notification(char   *name,
     CFMutableDictionaryRef nf_udata  = NULL;
 
     CFNotificationCenterRef distributedCenter;
-    CFStringEncoding encoding = kCFStringEncodingASCII;
+    CFStringEncoding encoding = kCFStringEncodingUTF8;
 
     distributedCenter = CFNotificationCenterGetDistributedCenter();
 
@@ -479,10 +479,10 @@ post_notification(char   *name,
     for (i = 0; i < nf_num; i++) {
         CFStringRef a_key = CFStringCreateWithCString(kCFAllocatorDefault,
                                                       udata_keys[i],
-                                                      kCFStringEncodingASCII);
+                                                      kCFStringEncodingUTF8);
         CFStringRef a_value = CFStringCreateWithCString(kCFAllocatorDefault,
                                                         udata_values[i],
-                                                        kCFStringEncodingASCII);
+                                                        kCFStringEncodingUTF8);
         CFDictionarySetValue(nf_udata, a_key, a_value);
         CFRelease(a_key);
         CFRelease(a_value);
