@@ -458,19 +458,19 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
        /* Our vfs_getattr() doesn't look at most *_IS_ACTIVE()'s */
        err = fuse_vfs_getattr(mp, &vfs_attr, context);
        if (!err) {
-           vfsstatfsp->f_bsize = vfs_attr.f_bsize;
+           vfsstatfsp->f_bsize  = vfs_attr.f_bsize;
            vfsstatfsp->f_iosize = data->iosize;
            vfsstatfsp->f_blocks = vfs_attr.f_blocks;
-           vfsstatfsp->f_bfree = vfs_attr.f_bfree;
+           vfsstatfsp->f_bfree  = vfs_attr.f_bfree;
            vfsstatfsp->f_bavail = vfs_attr.f_bavail;
-           vfsstatfsp->f_bused = vfs_attr.f_bused; 
-           vfsstatfsp->f_files = vfs_attr.f_files;
-           vfsstatfsp->f_ffree = vfs_attr.f_ffree;
-           /* vfsstatfsp->f_fsid already handled */
-           /* vfsstatfsp->f_owner handled elsewhere */
-           /* vfsstatfsp->f_fstypename already handled */
-           /* vfsstatfsp->f_mntonname handled elsewhere */
-           /* vfsstatfsp->f_mnfromname already handled */
+           vfsstatfsp->f_bused  = vfs_attr.f_bused; 
+           vfsstatfsp->f_files  = vfs_attr.f_files;
+           vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
+           /* vfsstatfsp->f_fsid       already handled above */
+           /* vfsstatfsp->f_owner      handled elsewhere */
+           /* vfsstatfsp->f_fstypename already handled above */
+           /* vfsstatfsp->f_mntonname  handled elsewhere */
+           /* vfsstatfsp->f_mnfromname already handled above */
            vfsstatfsp->f_fssubtype = data->fssubtype;
        }
     }
