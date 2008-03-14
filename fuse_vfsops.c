@@ -468,6 +468,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
            vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
            /* vfsstatfsp->f_fsid already handled above */
            vfsstatfsp->f_owner  = data->daemoncred->cr_uid;
+           vfsstatfsp->f_flags  = vfs_flags(mp);
            /* vfsstatfsp->f_fstypename already handled above */
            /* vfsstatfsp->f_mntonname handled elsewhere */
            /* vfsstatfsp->f_mnfromname already handled above */
