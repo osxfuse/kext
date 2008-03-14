@@ -466,10 +466,10 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
            vfsstatfsp->f_bused  = vfs_attr.f_bused; 
            vfsstatfsp->f_files  = vfs_attr.f_files;
            vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
-           /* vfsstatfsp->f_fsid       already handled above */
-           /* vfsstatfsp->f_owner      handled elsewhere */
+           /* vfsstatfsp->f_fsid already handled above */
+           vfsstatfsp->f_owner  = data->daemoncred->cr_uid;
            /* vfsstatfsp->f_fstypename already handled above */
-           /* vfsstatfsp->f_mntonname  handled elsewhere */
+           /* vfsstatfsp->f_mntonname handled elsewhere */
            /* vfsstatfsp->f_mnfromname already handled above */
            vfsstatfsp->f_fssubtype = data->fssubtype;
        }
