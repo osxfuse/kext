@@ -856,8 +856,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 static errno_t
 fuse_vfs_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
-    int err    = 0;
-    int faking = 0;
+    int err     = 0;
+    int deading = 0;
+    int faking  = 0;
 
     struct fuse_dispatcher  fdi;
     struct fuse_statfs_out *fsfo;
@@ -883,7 +884,7 @@ fuse_vfs_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
          // file system so that we can be gracefully unmounted.
 
         if (err == ENOTCONN) {
-            faking = 1;
+            deading = faking = 1;
             goto dostatfs;
         }
 
@@ -984,7 +985,11 @@ dostatfs:
     VFSATTR_RETURN(attr, f_access_time, kZeroTime);
     VFSATTR_RETURN(attr, f_backup_time, kZeroTime);
 
-    VFSATTR_RETURN(attr, f_fssubtype, data->fssubtype);
+    if (deading) {
+        VFSATTR_RETURN(attr, f_fssubtype, (uint32_t)-1);
+    } else {
+        VFSATTR_RETURN(attr, f_fssubtype, data->fssubtype);
+    }
 
     /* Daemon needs to pass this. */
     if (VFSATTR_IS_ACTIVE(attr, f_vol_name)) {
