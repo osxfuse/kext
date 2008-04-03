@@ -21,10 +21,17 @@
 	<string>MACFUSE_VERSION_LITERAL</string>
 	<key>FSPersonalities</key>
 	<dict>
+		<key>dead</key>
+		<dict>
+			<key>FSName</key>
+			<string>Dead File System (MacFUSE)</string>
+			<key>FSSubType</key>
+			<integer>-1</integer>
+		</dict>
 		<key>Generic</key>
 		<dict>
 			<key>FSName</key>
-			<string>Generic MacFUSE File System (MacFUSE)</string>
+			<string>Generic File System (MacFUSE)</string>
 			<key>FSSubType</key>
 			<integer>0</integer>
 		</dict>
