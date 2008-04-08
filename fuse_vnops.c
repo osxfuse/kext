@@ -2877,12 +2877,11 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     }
     VATTR_SET_SUPPORTED(vap, va_mode);
 
-    /*
-     * XXX: This is to just shut up cp -pR & co.
-     */
     if (VATTR_IS_ACTIVE(vap, va_flags)) {
-        VATTR_SET_SUPPORTED(vap, va_flags);
+        fsai->FUSEATTR(flags) = vap->va_flags;
+        fsai->valid |= FATTR_FLAGS;
     }
+    VATTR_SET_SUPPORTED(vap, va_flags);
 
     /*
      * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.

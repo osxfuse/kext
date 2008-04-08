@@ -487,7 +487,7 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
 
     VATTR_RETURN(vap, va_iosize, data->iosize);
 
-    VATTR_RETURN(vap, va_flags, 0);
+    VATTR_RETURN(vap, va_flags, fat->flags);
 }
 
 static __inline__

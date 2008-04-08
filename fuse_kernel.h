@@ -75,6 +75,9 @@ struct fuse_attr {
 	__u32	uid;
 	__u32	gid;
 	__u32	rdev;
+#if (__FreeBSD__ >= 10)
+	__u32	flags; /* file flags; see chflags(2) */
+#endif /* __FreeBSD__ >= 10 */
 };
 
 struct fuse_kstatfs {
@@ -107,6 +110,9 @@ struct fuse_file_lock {
 #define FATTR_ATIME	(1 << 4)
 #define FATTR_MTIME	(1 << 5)
 #define FATTR_FH	(1 << 6)
+#if (__FreeBSD__ >= 10)
+#define FATTR_FLAGS	(1 << 7)
+#endif /* __FreeBSD__ >= 10 */
 
 /**
  * Flags returned by the OPEN request
@@ -227,6 +233,9 @@ struct fuse_setattr_in {
 	__u32	uid;
 	__u32	gid;
 	__u32	unused5;
+#if (__FreeBSD__ >= 10)
+	__u32	flags; /* file flags; see chflags(2) */
+#endif /* __FreeBSD__ >= 10 */
 };
 
 struct fuse_open_in {
