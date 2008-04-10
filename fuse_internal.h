@@ -463,25 +463,9 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
     t.tv_nsec = fat->atimensec;
     VATTR_RETURN(vap, va_access_time, t);
 
-    if (fat->flags & 0x80000000) {
-
-        fat->flags &= ~0x80000000;
-
-        t.tv_sec = (typeof(t.tv_sec))fat->ctime; /* XXX: truncation */
-        t.tv_nsec = fat->ctimensec;
-        VATTR_RETURN(vap, va_create_time, t);
-
-        t.tv_sec = (typeof(t.tv_sec))fat->mtime; /* XXX: truncation */
-        t.tv_nsec = fat->mtimensec;
-        VATTR_RETURN(vap, va_change_time, t);
-
-    } else {
-
-        t.tv_sec = (typeof(t.tv_sec))fat->ctime; /* XXX: truncation */
-        t.tv_nsec = fat->ctimensec;
-        VATTR_RETURN(vap, va_change_time, t);
-
-    }
+    t.tv_sec = (typeof(t.tv_sec))fat->ctime; /* XXX: truncation */
+    t.tv_nsec = fat->ctimensec;
+    VATTR_RETURN(vap, va_change_time, t);
 
     t.tv_sec = (typeof(t.tv_sec))fat->mtime; /* XXX: truncation */
     t.tv_nsec = fat->mtimensec;
