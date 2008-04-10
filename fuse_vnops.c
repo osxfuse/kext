@@ -2840,7 +2840,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
      * va_access_time    last access time                atime  atime
      * va_backup_time    last backup time                -      -
      * va_change_time    last metadata change time       ctime* -
-     * va_create_time    creation time                   ctime* -
+     * va_create_time    creation time                   -      -
      * va_modify_time    last data modification time     mtime  mtime
      *
      * FUSE has knowledge of atime, ctime, and mtime. A setattr call to
