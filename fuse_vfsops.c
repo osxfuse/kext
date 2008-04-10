@@ -775,15 +775,15 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | ATTR_CMN_PAROBJID
 //      | ATTR_CMN_SCRIPT
 //      | ATTR_CMN_CRTIME
-//      | ATTR_CMN_MODTIME
-//      | ATTR_CMN_CHGTIME
-//      | ATTR_CMN_ACCTIME
+        | ATTR_CMN_MODTIME
+        | ATTR_CMN_CHGTIME
+        | ATTR_CMN_ACCTIME
 //      | ATTR_CMN_BKUPTIME
 //      | ATTR_CMN_FNDRINFO
         | ATTR_CMN_OWNERID
         | ATTR_CMN_GRPID
         | ATTR_CMN_ACCESSMASK
-//      | ATTR_CMN_FLAGS
+        | ATTR_CMN_FLAGS
 //      | ATTR_CMN_USERACCESS
         | ATTR_CMN_EXTENDED_SECURITY
 //      | ATTR_CMN_UUID
