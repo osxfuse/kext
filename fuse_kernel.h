@@ -111,7 +111,7 @@ struct fuse_file_lock {
 #define FATTR_MTIME	(1 << 5)
 #define FATTR_FH	(1 << 6)
 #if (__FreeBSD__ >= 10)
-#define FATTR_FLAGS	(1 << 7)
+#define FATTR_FLAGS	(1 << 31)
 #endif /* __FreeBSD__ >= 10 */
 
 /**
