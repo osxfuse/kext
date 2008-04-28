@@ -71,6 +71,7 @@ struct mntopt mopts[] = {
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
+    { "xtimes",              0, FUSE_MOPT_XTIMES,                 1 }, // kused
 
     /* negative ones */
 
@@ -935,6 +936,7 @@ showhelp()
       "    -o local               mark the volume as \"local\" (default is \"nonlocal\")\n"
       "    -o negative_vncache    enable vnode name caching of non-existent objects\n"
       "    -o volname=<name>      set the file system's volume name\n"      
+      "    -o xtimes              enable backup and creation times\n"       
       "\nAvailable negative mount options:\n"
       "    -o noalerts            disable all graphical alerts (if any) in MacFUSE Core\n"
       "    -o noappledouble       ignore Apple Double (._) and .DS_Store files entirely\n"
