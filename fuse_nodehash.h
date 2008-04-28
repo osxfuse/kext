@@ -47,6 +47,7 @@ extern dev_t     HNodeGetDevice(HNodeRef hnode);
 extern uint64_t  HNodeGetInodeNumber(HNodeRef hnode);
 extern vnode_t   HNodeGetVNodeForForkAtIndex(HNodeRef hnode, size_t forkIndex);
 extern size_t    HNodeGetForkIndexForVNode(vnode_t vn);
+extern void      HNodeExchangeFromFSNode(void *fsnode1, void *fsnode2);
 
 extern errno_t   HNodeLookupRealQuickIfExists(dev_t     dev,
                                               uint64_t  ino,

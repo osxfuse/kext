@@ -334,6 +334,30 @@ HNodeGetForkIndexForVNode(vnode_t vn)
     return forkIndex;
 }
 
+extern void
+HNodeExchangeFromFSNode(void *fsnode1, void *fsnode2)
+{
+    struct HNode tmpHNode;
+
+    lck_mtx_lock(gHashMutex);
+
+    HNodeRef hnode1 = HNodeFromFSNodeGeneric(fsnode1);
+    HNodeRef hnode2 = HNodeFromFSNodeGeneric(fsnode2);
+
+    memcpy(&tmpHNode, hnode1, sizeof(struct HNode));
+    memcpy(hnode1, hnode2, sizeof(struct HNode));
+    memcpy(hnode2, &tmpHNode, sizeof(struct HNode));
+
+    LIST_REMOVE(hnode1, hashLink);
+    LIST_REMOVE(hnode2, hashLink);
+    LIST_INSERT_HEAD(HNodeGetFirstFromHashTable(hnode1->dev, hnode1->ino),
+                     hnode1, hashLink);
+    LIST_INSERT_HEAD(HNodeGetFirstFromHashTable(hnode2->dev, hnode2->ino),
+                     hnode2, hashLink);
+
+    lck_mtx_unlock(gHashMutex);
+}
+
 extern errno_t
 HNodeLookupCreatingIfNecessary(dev_t     dev,
                                uint64_t  ino,
