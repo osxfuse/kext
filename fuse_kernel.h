@@ -111,6 +111,9 @@ struct fuse_file_lock {
 #define FATTR_MTIME	(1 << 5)
 #define FATTR_FH	(1 << 6)
 #if (__FreeBSD__ >= 10)
+#define FATTR_CRTIME	(1 << 28)
+#define FATTR_CHGTIME	(1 << 29)
+#define FATTR_BKUPTIME	(1 << 30)
 #define FATTR_FLAGS	(1 << 31)
 #endif /* __FreeBSD__ >= 10 */
 
@@ -171,6 +174,10 @@ enum fuse_opcode {
 	FUSE_INTERRUPT     = 36,
 	FUSE_BMAP          = 37,
 	FUSE_DESTROY       = 38,
+#if (__FreeBSD__ >= 10)
+	FUSE_GETXTIMES     = 62,
+	FUSE_EXCHANGE      = 63,
+#endif /* __FreeBSD__ >= 10 */
 };
 
 /* The read buffer is required to be at least 8k, but may be much larger */
@@ -198,6 +205,15 @@ struct fuse_attr_out {
 	struct fuse_attr attr;
 };
 
+#if (__FreeBSD__ >= 10)
+struct fuse_getxtimes_out {
+	__u64	bkuptime;
+	__u64	crtime;
+	__u32	bkuptimensec;
+	__u32	crtimensec;
+};
+#endif /* __FreeBSD__ >= 10 */
+
 struct fuse_mknod_in {
 	__u32	mode;
 	__u32	rdev;
@@ -211,6 +227,14 @@ struct fuse_mkdir_in {
 struct fuse_rename_in {
 	__u64	newdir;
 };
+
+#if (__FreeBSD__ >= 10)
+struct fuse_exchange_in {
+	__u64	olddir;
+	__u64	newdir;
+	__u64	options;
+};
+#endif /* __FreeBSD__ >= 10 */
 
 struct fuse_link_in {
 	__u64	oldnodeid;
@@ -235,6 +259,12 @@ struct fuse_setattr_in {
 	__u32	unused5;
 #if (__FreeBSD__ >= 10)
 	__u32	flags; /* file flags; see chflags(2) */
+	__u64	bkuptime;
+	__u64	chgtime;
+	__u64	crtime;
+	__u32	bkuptimensec;
+	__u32	chgtimensec;
+	__u32	crtimensec;
 #endif /* __FreeBSD__ >= 10 */
 };
 
