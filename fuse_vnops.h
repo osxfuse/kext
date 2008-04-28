@@ -40,7 +40,7 @@ static int fuse_vnop_close(struct vnop_close_args *ap);
 
 static int fuse_vnop_create(struct vnop_create_args *ap);
 
-// static int fuse_vnop_exchange(struct vnop_exchange_args *ap);
+static int fuse_vnop_exchange(struct vnop_exchange_args *ap);
 
 static int fuse_vnop_fsync(struct vnop_fsync_args *ap);
 

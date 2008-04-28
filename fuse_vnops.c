@@ -451,6 +451,117 @@ undo:
 }
 
 /*
+    struct vnop_exchange_args {
+        struct vnodeop_desc *a_desc;
+        vnode_t              a_fvp;
+        vnode_t              a_tvp;
+        int                  a_options;
+        vfs_context_t        a_context;
+    };
+*/
+static int
+fuse_vnop_exchange(struct vnop_exchange_args *ap)
+{
+
+#if M_MACFUSE_ENABLE_EXCHANGE
+
+    vnode_t       fvp     = ap->a_fvp;
+    vnode_t       tvp     = ap->a_tvp;
+    int           options = ap->a_options;
+    vfs_context_t context = ap->a_context;
+
+    char *fname = NULL;
+    char *tname = NULL;
+    size_t flen = 0;
+    size_t tlen = 0;
+
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(fvp));
+ 
+    int err = 0;
+
+    fuse_trace_printf_vnop_novp();
+
+    if (vnode_mount(fvp) != vnode_mount(tvp)) {
+        return EXDEV;
+    }
+
+    /* We now know f and t are on the same volume. */
+
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(EXCHANGE))) {
+        return ENOTSUP;
+    }
+
+    if (fuse_isnovncache(fvp)) {
+        return ENOTSUP;
+    }
+
+    if (fvp == tvp) {
+        return EINVAL;
+    }
+
+    if (!vnode_isreg(fvp) || !vnode_isreg(tvp)) {
+        return EINVAL;
+    }
+
+    if (fuse_isdeadfs_fs(fvp)) {
+        panic("MacFUSE: fuse_vnop_exchange(): called on a dead file system");
+    }
+
+    fname = vnode_getname(fvp);
+    if (!fname) {
+        return EIO;
+    }
+
+    tname = vnode_getname(tvp);
+    if (!tname) {
+        vnode_putname(fname);
+        return EIO;
+    }
+
+    flen = strlen(fname);
+    tlen = strlen(tname);
+
+    if ((flen > 2) && (*fname == '.') && (*(fname + 1) == '_')) {
+        err = EINVAL;
+        goto out;
+    }
+
+    if ((tlen > 2) && (*tname == '.') && (*(tname + 1) == '_')) {
+        err = EINVAL;
+        goto out;
+    }
+
+    err = fuse_internal_exchange(fvp, fname, flen, tvp, tname, tlen, options,
+                                 context);
+
+    if (err == ENOSYS) {
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(EXCHANGE));
+        err = ENOTSUP;
+    }
+
+out:
+
+    vnode_putname(fname);
+    vnode_putname(tname);
+
+    if (err == 0) {
+        FUSE_KNOTE(fvp, NOTE_ATTRIB);
+        FUSE_KNOTE(tvp, NOTE_ATTRIB);
+    }
+
+    return err;
+
+#else /* !M_MACFUSE_ENABLE_EXCHANGE */
+
+    (void)ap;
+
+    return ENOTSUP;
+
+#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+
+}
+
+/*
  * Our vnop_fsync roughly corresponds to the FUSE_FSYNC method. The Linux
  * version of FUSE also has a FUSE_FLUSH method.
  *
@@ -481,7 +592,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
-    int type, err = ENOSYS, tmp_err = 0;
+    int type, err = 0, tmp_err = 0;
     (void)waitfor;
 
     fuse_trace_printf_vnop();
@@ -513,6 +624,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
 
     if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
                 FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
+        err = ENOSYS;
         goto out;
     }
 
@@ -581,7 +693,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
     nanouptime(&uptsp);
     if (fuse_timespec_cmp(&uptsp, &VTOFUD(vp)->attr_valid, <=)) {
         if (vap != VTOVA(vp)) {
-            fuse_internal_attr_loadvap(vp, vap);
+            fuse_internal_attr_loadvap(vp, vap, context);
         }
         return 0;
     }
@@ -615,7 +727,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     cache_attrs(vp, (struct fuse_attr_out *)fdi.answ);
 
-    fuse_internal_attr_loadvap(vp, vap);
+    fuse_internal_attr_loadvap(vp, vap, context);
 
 #if M_MACFUSE_EXPERIMENTAL_JUNK
     if (vap != VTOVA(vp)) {
@@ -1545,6 +1657,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 static int
 fuse_vnop_mmap(struct vnop_mmap_args *ap)
 {
+return EPERM;
     vnode_t       vp      = ap->a_vp;
     int           fflags  = ap->a_fflags;
     vfs_context_t context = ap->a_context;
@@ -2557,6 +2670,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
     err = fdisp_wait_answ(&fdi);
     if (!err) {
         fuse_ticket_drop(fdi.tick);
+        VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
     } else {
         if (err == ENOSYS) {
             fuse_clear_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR));
@@ -2843,8 +2957,6 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
      * va_create_time    creation time                   -      -
      * va_modify_time    last data modification time     mtime  mtime
      *
-     * FUSE has knowledge of atime, ctime, and mtime. A setattr call to
-     * the daemon can take atime and mtime.
      */
 
     if (VATTR_IS_ACTIVE(vap, va_access_time)) {
@@ -2852,24 +2964,42 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         fsai->FUSEATTR(atimensec) = vap->va_access_time.tv_nsec;
         fsai->valid |=  FATTR_ATIME;
     }
-
-    if (VATTR_IS_ACTIVE(vap, va_change_time)) {
-        fsai->FUSEATTR(mtime) = vap->va_change_time.tv_sec;
-        fsai->FUSEATTR(mtimensec) = vap->va_change_time.tv_nsec;
-        fsai->valid |=  FATTR_MTIME;
-    }
+    VATTR_SET_SUPPORTED(vap, va_access_time);
 
     if (VATTR_IS_ACTIVE(vap, va_modify_time)) {
         fsai->FUSEATTR(mtime) = vap->va_modify_time.tv_sec;
         fsai->FUSEATTR(mtimensec) = vap->va_modify_time.tv_nsec;
         fsai->valid |=  FATTR_MTIME;
     }
-
-    VATTR_SET_SUPPORTED(vap, va_access_time);
-    VATTR_SET_SUPPORTED(vap, va_change_time);
     VATTR_SET_SUPPORTED(vap, va_modify_time);
 
-    /* We don't support va_{backup, create}_time */
+    if (VATTR_IS_ACTIVE(vap, va_backup_time) && fuse_isxtimes(vp)) {
+        fsai->FUSEATTR(bkuptime) = vap->va_backup_time.tv_sec;
+        fsai->FUSEATTR(mtimensec) = vap->va_backup_time.tv_nsec;
+        fsai->valid |= FATTR_BKUPTIME;
+        VATTR_SET_SUPPORTED(vap, va_backup_time);
+    }
+
+    if (VATTR_IS_ACTIVE(vap, va_change_time)) {
+        if (fuse_isxtimes(vp)) {
+            fsai->FUSEATTR(chgtime) = vap->va_change_time.tv_sec;
+            fsai->FUSEATTR(chgtimensec) = vap->va_change_time.tv_nsec;
+            fsai->valid |=  FATTR_CHGTIME;
+            VATTR_SET_SUPPORTED(vap, va_change_time);
+        } else {
+            fsai->FUSEATTR(mtime) = vap->va_change_time.tv_sec;
+            fsai->FUSEATTR(mtimensec) = vap->va_change_time.tv_nsec;
+            fsai->valid |=  FATTR_MTIME;
+            VATTR_SET_SUPPORTED(vap, va_change_time);
+        }
+    }
+
+    if (VATTR_IS_ACTIVE(vap, va_create_time) && fuse_isxtimes(vp)) {
+        fsai->FUSEATTR(crtime) = vap->va_create_time.tv_sec;
+        fsai->FUSEATTR(crtimensec) = vap->va_create_time.tv_nsec;
+        fsai->valid |= FATTR_CRTIME;
+        VATTR_SET_SUPPORTED(vap, va_create_time);
+    }
 
     if (VATTR_IS_ACTIVE(vap, va_mode)) {
         fsai->FUSEATTR(mode) = vap->va_mode & ALLPERMS;
@@ -2936,6 +3066,9 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
             fuse_invalidate_attr(vp);
         } else {
             cache_attrs(vp, (struct fuse_attr_out *)fdi.answ);
+            if (fsai->valid & FATTR_BKUPTIME || fsai->valid & FATTR_CRTIME) {
+                VTOFUD(vp)->c_flag &= ~C_XTIMES_VALID;
+            }
         }
     }
 
@@ -3062,6 +3195,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     if (!err) {
         fuse_ticket_drop(fdi.tick);
+        VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
     } else {
         if ((err == ENOSYS) || (err == ENOTSUP)) {
 
@@ -3459,7 +3593,7 @@ fuse_fifo_vnop_read(struct vnop_read_args *ap)
 static int
 fuse_fifo_vnop_write(struct vnop_write_args *ap)
 {
-    VTOFUD(ap->a_vp)->c_flag |= C_TOUCH_CHGTIME | C_TOUCH_MODTIME;
+    VTOFUD(ap->a_vp)->c_flag |= (C_TOUCH_CHGTIME | C_TOUCH_MODTIME);
 
     return fifo_write(ap);
 }
@@ -3491,7 +3625,7 @@ fuse_spec_vnop_read(struct vnop_read_args *ap)
 static int
 fuse_spec_vnop_write(struct vnop_write_args *ap)
 {
-    VTOFUD(ap->a_vp)->c_flag |= C_TOUCH_CHGTIME | C_TOUCH_MODTIME;
+    VTOFUD(ap->a_vp)->c_flag |= (C_TOUCH_CHGTIME | C_TOUCH_MODTIME);
 
     return spec_write(ap);
 }
@@ -3509,7 +3643,7 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
 //  { &vnop_copyfile_desc,      (fuse_vnode_op_t) fuse_vnop_copyfile      },
     { &vnop_create_desc,        (fuse_vnode_op_t) fuse_vnop_create        },
     { &vnop_default_desc,       (fuse_vnode_op_t) vn_default_error        },
-//  { &vnop_exchange_desc,      (fuse_vnode_op_t) fuse_vnop_exchange      },
+    { &vnop_exchange_desc,      (fuse_vnode_op_t) fuse_vnop_exchange      },
     { &vnop_fsync_desc,         (fuse_vnode_op_t) fuse_vnop_fsync         },
     { &vnop_getattr_desc,       (fuse_vnode_op_t) fuse_vnop_getattr       },
 //  { &vnop_getattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_getattrlist   },

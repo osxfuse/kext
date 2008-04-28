@@ -305,6 +305,20 @@ fuse_isdeferpermissions_mp(mount_t mp)
 }
 
 static __inline__
+int
+fuse_isxtimes(vnode_t vp)
+{
+    return (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_XTIMES);
+}
+
+static __inline__
+int
+fuse_isxtimes_mp(mount_t mp)
+{
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_XTIMES);
+}
+
+static __inline__
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
@@ -423,6 +437,10 @@ fuse_internal_access(vnode_t                   vp,
 
 /* attributes */
 
+int
+fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
+                         vfs_context_t context);
+
 static __inline__
 void
 fuse_internal_attr_fat2vat(vnode_t            vp,
@@ -492,7 +510,8 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
 
 static __inline__
 void
-fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
+fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
+                           vfs_context_t context)
 {
     mount_t mp = vnode_mount(vp);
     struct vnode_attr *in_vap = VTOVA(vp);
@@ -532,10 +551,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
         VATTR_RETURN(in_vap,  va_data_size, fvdat->filesize);
     }
 
-    VATTR_RETURN(out_vap, va_access_time, in_vap->va_access_time);
-    VATTR_RETURN(out_vap, va_change_time, in_vap->va_change_time);
-    VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
-
     VATTR_RETURN(out_vap, va_mode, in_vap->va_mode);
     VATTR_RETURN(out_vap, va_nlink, in_vap->va_nlink);
     VATTR_RETURN(out_vap, va_uid, in_vap->va_uid);
@@ -547,6 +562,12 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
     VATTR_RETURN(out_vap, va_iosize, in_vap->va_iosize);
 
     VATTR_RETURN(out_vap, va_flags, in_vap->va_flags);
+
+    VATTR_RETURN(out_vap, va_access_time, in_vap->va_access_time);
+    VATTR_RETURN(out_vap, va_change_time, in_vap->va_change_time);
+    VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
+
+    (void)fuse_internal_loadxtimes(vp, out_vap, context);
 }
 
 /*
@@ -565,6 +586,22 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap)
     fuse_internal_attr_fat2vat(vp, &(fuse_out)->attr, VTOVA(vp));    \
 } while (0)
 
+#if M_MACFUSE_ENABLE_EXCHANGE
+
+/* exchange */
+
+int
+fuse_internal_exchange(vnode_t       fvp,
+                       const char   *fname,
+                       size_t        flen,
+                       vnode_t       tvp,
+                       const char   *tname,
+                       size_t        tlen,
+                       int           options,
+                       vfs_context_t context);
+
+#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+                       
 /* fsync */
 
 int

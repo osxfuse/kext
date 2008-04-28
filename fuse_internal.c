@@ -35,6 +35,7 @@
 #include "fuse_file.h"
 #include "fuse_nodehash.h"
 #include "fuse_sysctl.h"
+#include "fuse_kludges.h"
 
 /* access */
 
@@ -176,6 +177,107 @@ fuse_internal_access(vnode_t                   vp,
     return err;
 }
 
+#if M_MACFUSE_ENABLE_EXCHANGE
+
+/* exchange */
+
+__private_extern__
+int
+fuse_internal_exchange(vnode_t       fvp,
+                       const char   *fname,
+                       size_t        flen,
+                       vnode_t       tvp,
+                       const char   *tname,
+                       size_t        tlen,
+                       int           options,
+                       vfs_context_t context)
+{
+    struct fuse_dispatcher fdi;
+    struct fuse_exchange_in *fei;
+    struct fuse_vnode_data *ffud = VTOFUD(fvp);
+    struct fuse_vnode_data *tfud = VTOFUD(tvp);
+    vnode_t fdvp = ffud->parentvp;
+    vnode_t tdvp = tfud->parentvp;
+    int err = 0;
+
+    fdisp_init(&fdi, sizeof(*fei) + flen + tlen + 2);
+    fdisp_make_vp(&fdi, FUSE_EXCHANGE, fvp, context);
+
+    fei = fdi.indata;
+    fei->olddir = VTOI(fdvp);
+    fei->newdir = VTOI(tdvp);
+    fei->options = (uint64_t)options;
+
+    memcpy((char *)fdi.indata + sizeof(*fei), fname, flen);
+    ((char *)fdi.indata)[sizeof(*fei) + flen] = '\0';
+
+    memcpy((char *)fdi.indata + sizeof(*fei) + flen + 1, tname, tlen);
+    ((char *)fdi.indata)[sizeof(*fei) + flen + tlen + 1] = '\0';
+
+    ubc_sync_range(fvp, (off_t)0, (off_t)ffud->filesize,
+                   UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+    ubc_sync_range(tvp, (off_t)0, (off_t)tfud->filesize,
+                   UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+        
+    if (!(err = fdisp_wait_answ(&fdi))) {
+        fuse_ticket_drop(fdi.tick);
+    }
+
+    if (err == 0) {
+        if (fdvp) {
+            fuse_invalidate_attr(fdvp);
+        }
+        if (tdvp != fdvp) {
+            if (tdvp) {
+                fuse_invalidate_attr(tdvp);
+            }
+        }
+
+        fuse_invalidate_attr(fvp);
+        fuse_invalidate_attr(tvp);
+
+        cache_purge(fvp);
+        cache_purge(tvp);
+
+        /* Swap sizes */
+        off_t tmpfilesize = ffud->filesize;
+        ffud->filesize = tfud->filesize;
+        tfud->filesize = tmpfilesize;
+        ubc_setsize(fvp, (off_t)ffud->filesize);
+        ubc_setsize(tvp, (off_t)tfud->filesize);
+
+        fuse_kludge_exchange(fvp, tvp);
+
+        /*
+         * Another approach (will need additional kernel support to work):
+         *
+        vnode_t tmpvp = ffud->vp;
+        ffud->vp = tfud->vp;
+        tfud->vp = tmpvp;
+
+        vnode_t tmpparentvp = ffud->parentvp;
+        ffud->parentvp = tfud->parentvp;
+        tfud->parentvp = tmpparentvp;
+
+        off_t tmpfilesize = ffud->filesize;
+        ffud->filesize = tfud->filesize;
+        tfud->filesize = tmpfilesize;
+
+        struct fuse_vnode_data tmpfud;
+        memcpy(&tmpfud, ffud, sizeof(struct fuse_vnode_data));
+        memcpy(ffud, tfud, sizeof(struct fuse_vnode_data));
+        memcpy(tfud, &tmpfud, sizeof(struct fuse_vnode_data));
+        
+        HNodeExchangeFromFSNode(ffud, tfud);
+        *
+        */
+    }
+
+    return err;
+}
+
+#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+
 /* fsync */
 
 __private_extern__
@@ -245,6 +347,75 @@ fuse_internal_fsync(vnode_t                 vp,
         fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
         fuse_insert_message(fdip->tick);
     }
+
+out:
+    return err;
+}
+
+/* getattr sidekicks */
+__private_extern__
+int
+fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
+                         vfs_context_t context)
+{
+    struct vnode_attr *in_vap = VTOVA(vp);
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    struct fuse_dispatcher fdi;
+    struct fuse_getxtimes_out *fgxo = NULL;
+    int isvroot = vnode_isvroot(vp);
+    struct timespec t = { 0, 0 };
+    const struct timespec kZeroTime = { 0, 0 };
+    int err = 0;
+
+    if (!(data->dataflags & FSESS_XTIMES)) {
+        /* We don't return anything. */
+        goto out;
+    }
+
+    if (VTOFUD(vp)->c_flag & C_XTIMES_VALID) {
+        VATTR_RETURN(out_vap, va_backup_time, in_vap->va_backup_time);
+        VATTR_RETURN(out_vap, va_create_time, in_vap->va_create_time);
+        goto out;
+    }
+
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(GETXTIMES))) {
+        goto fake;
+    }
+
+    if (fuse_isdeadfs(vp) && isvroot) {
+        goto fake;
+    }
+
+    if (!(data->dataflags & FSESS_INITED) && isvroot) {
+        goto fake;
+    }
+
+    err = fdisp_simple_putget_vp(&fdi, FUSE_GETXTIMES, vp, context);
+    if (err) {
+        /* We don't ever treat this as a hard error. */
+        err = 0;
+        goto fake;
+    }
+
+    fgxo = (struct fuse_getxtimes_out *)fdi.answ;
+
+    t.tv_sec = fgxo->bkuptime;
+    t.tv_nsec = fgxo->bkuptimensec;
+    VATTR_RETURN(in_vap, va_backup_time, t);
+    VATTR_RETURN(out_vap, va_backup_time, t);
+
+    t.tv_sec = fgxo->crtime;
+    t.tv_nsec = fgxo->crtimensec;
+    VATTR_RETURN(in_vap, va_create_time, t);
+    VATTR_RETURN(out_vap, va_create_time, t);
+
+    fuse_ticket_drop(fdi.tick);
+
+    VTOFUD(vp)->c_flag |= C_XTIMES_VALID;
+
+fake:
+    VATTR_RETURN(out_vap, va_backup_time, kZeroTime);
+    VATTR_RETURN(out_vap, va_create_time, kZeroTime);
 
 out:
     return err;
