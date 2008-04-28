@@ -728,6 +728,10 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         err = (blen == sizeof(struct fuse_attr_out)) ? 0 : EINVAL;
         break;
 
+    case FUSE_GETXTIMES:
+        err = (blen == sizeof(struct fuse_getxtimes_out)) ? 0 : EINVAL;
+        break;
+
     case FUSE_READLINK:
         err = (PAGE_SIZE >= blen) ? 0 : EINVAL;
         break;
@@ -868,6 +872,10 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_DESTROY:
+        err = (blen == 0) ? 0 : EINVAL;
+        break;
+
+    case FUSE_EXCHANGE:
         err = (blen == 0) ? 0 : EINVAL;
         break;
 
