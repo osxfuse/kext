@@ -27,12 +27,31 @@ enum {
     kHNodeMagic     = 'HNOD',
 };
 
-#define FN_ACCESS_NOOP 0x00000001
-#define FN_CREATING    0x00000002
-#define FN_DIRECT_IO   0x00000004
-#define FN_HAS_ACL     0x00000008
-#define FN_IS_ROOT     0x00000010
-#define FN_REVOKED     0x00000020
+#define FN_ACCESS_NOOP       0x00000001
+#define FN_CREATING          0x00000002
+#define FN_DIRECT_IO         0x00000004
+#define FN_HAS_ACL           0x00000008
+#define FN_IS_ROOT           0x00000010
+#define FN_REVOKED           0x00000020
+
+#define C_NEED_RVNODE_PUT    0x000000001
+#define C_NEED_DVNODE_PUT    0x000000002
+#define C_ZFWANTSYNC         0x000000004
+#define C_FROMSYNC           0x000000008
+#define C_MODIFIED           0x000000010
+#define C_NOEXISTS           0x000000020
+#define C_DELETED            0x000000040
+#define C_HARDLINK           0x000000080
+#define C_FORCEUPDATE        0x000000100
+#define C_HASXATTRS          0x000000200
+#define C_NEED_DATA_SETSIZE  0x000001000
+#define C_NEED_RSRC_SETSIZE  0x000002000
+#define C_CREATING           0x000004000
+#define C_ACCESS_NOOP        0x000008000
+#define C_TOUCH_ACCTIME      0x000010000
+#define C_TOUCH_CHGTIME      0x000020000
+#define C_TOUCH_MODTIME      0x000040000
+#define C_XTIMES_VALID       0x000080000
 
 /* 408 bytes */
 struct fuse_vnode_data {
@@ -108,6 +127,7 @@ fuse_invalidate_attr(vnode_t vp)
 {
     if (VTOFUD(vp)) {
         bzero(&VTOFUD(vp)->attr_valid, sizeof(struct timespec));
+        VTOFUD(vp)->c_flag &= ~C_XTIMES_VALID;
     }
 }
 
@@ -127,24 +147,6 @@ struct get_filehandle_param {
     uid_t uid;
     gid_t gid;
 };
-
-#define C_NEED_RVNODE_PUT    0x000000001
-#define C_NEED_DVNODE_PUT    0x000000002
-#define C_ZFWANTSYNC         0x000000004
-#define C_FROMSYNC           0x000000008
-#define C_MODIFIED           0x000000010
-#define C_NOEXISTS           0x000000020
-#define C_DELETED            0x000000040
-#define C_HARDLINK           0x000000080
-#define C_FORCEUPDATE        0x000000100
-#define C_HASXATTRS          0x000000200
-#define C_NEED_DATA_SETSIZE  0x000001000
-#define C_NEED_RSRC_SETSIZE  0x000002000
-#define C_CREATING           0x000004000
-#define C_ACCESS_NOOP        0x000008000
-#define C_TOUCH_ACCTIME      0x000010000
-#define C_TOUCH_CHGTIME      0x000020000
-#define C_TOUCH_MODTIME      0x000040000
 
 errno_t
 FSNodeGetOrCreateFileVNodeByID(vnode_t               *vpp,
