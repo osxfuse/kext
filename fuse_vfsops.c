@@ -149,14 +149,16 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = ENOTSUP;
 
-#if M_MACFUSE_ENABLE_LOCKLOCAL
     vfs_setlocklocal(mp);
-#endif
 
     /** Option Processing. **/
 
     if (fusefs_args.altflags & FUSE_MOPT_CASE_INSENSITIVE) {
         mntopts |= FSESS_CASE_INSENSITIVE;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_XTIMES) {
+        mntopts |= FSESS_XTIMES;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_FSTYPENAME) {
@@ -717,7 +719,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_ATTRLIST
 //      | VOL_CAP_INT_NFSEXPORT
 //      | VOL_CAP_INT_READDIRATTR
-//      | VOL_CAP_INT_EXCHANGEDATA
+        | VOL_CAP_INT_EXCHANGEDATA
 //      | VOL_CAP_INT_COPYFILE
 //      | VOL_CAP_INT_ALLOCATE
 //      | VOL_CAP_INT_VOL_RENAME
@@ -776,7 +778,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_CMN_SCRIPT
 //      | ATTR_CMN_CRTIME
         | ATTR_CMN_MODTIME
-        | ATTR_CMN_CHGTIME
+//      | ATTR_CMN_CHGTIME
 //      | ATTR_CMN_ACCTIME
 //      | ATTR_CMN_BKUPTIME
 //      | ATTR_CMN_FNDRINFO
@@ -791,6 +793,12 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_CMN_FILEID
 //      | ATTR_CMN_PARENTID
         ;
+
+    if (data->dataflags & FSESS_XTIMES) {
+        attr->f_attributes.validattr.commonattr |=
+            (ATTR_CMN_BKUPTIME | ATTR_CMN_CHGTIME | ATTR_CMN_CRTIME);
+    }
+
     attr->f_attributes.validattr.volattr = 0
         | ATTR_VOL_FSTYPE
         | ATTR_VOL_SIGNATURE
