@@ -12,6 +12,7 @@
 #include <sys/cdefs.h>
 #include <sys/mount.h>
 #include <sys/types.h>
+#include <sys/vnode.h>
 
 #if M_MACFUSE_ENABLE_DSELECT
 
@@ -28,5 +29,18 @@ struct fuse_selinfo {
 #define POLLWRBAND      0x0100          /* OOB/Urgent data can be written */
 
 #endif /* M_MACFUSE_ENABLE_DSELECT */
+
+#if M_MACFUSE_ENABLE_EXCHANGE
+
+struct fuse_kludge_vnode {
+    char    dummy0[112];
+    char   *v_name;
+    vnode_t v_parent;
+    char    dummy1[12];
+};
+
+extern void fuse_kludge_exchange(vnode_t v1, vnode_t v2);
+
+#endif /* M_MACFUSE_ENABLE_EXCHANGE */
 
 #endif /* _FUSE_KLUDGES_H_ */
