@@ -428,6 +428,7 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
                          struct fuse_avfi_ioctl *avfi)
 {
     int ret = 0;
+    uint32_t hint = 0;
 
     if (!avfi) {
         return EINVAL;
@@ -443,8 +444,8 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
 
     /* The result of this /does/ alter our return value. */
     if (avfi->cmd & FUSE_AVFI_UBC) {
-        int ubc_flags = avfi->flags & (UBC_PUSHDIRTY  | UBC_PUSHALL |
-                                       UBC_INVALIDATE | UBC_SYNC);
+        int ubc_flags = avfi->ubc_flags & (UBC_PUSHDIRTY  | UBC_PUSHALL |
+                                           UBC_INVALIDATE | UBC_SYNC);
         if (ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), ubc_flags) == 0) {
             /* failed */
             ret = EINVAL; /* don't really have a good error to return */
@@ -452,19 +453,34 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
     }
 
     if (avfi->cmd & FUSE_AVFI_UBC_SETSIZE) {
-        VTOFUD(vp)->filesize = avfi->size;
-        ubc_setsize(vp, avfi->size);
+        if (VTOFUD(vp)->filesize != avfi->size) {
+            hint |= NOTE_WRITE;
+            if (avfi->size > VTOFUD(vp)->filesize) {
+                hint |= NOTE_EXTEND;
+            }
+            VTOFUD(vp)->filesize = avfi->size;
+            ubc_setsize(vp, avfi->size);
+        }
         (void)fuse_invalidate_attr(vp);
     }
 
     /* The result of this doesn't alter our return value. */
     if (avfi->cmd & FUSE_AVFI_PURGEATTRCACHE) {
+        hint |= NOTE_ATTRIB;
         (void)fuse_invalidate_attr(vp);
     }
 
     /* The result of this doesn't alter our return value. */
     if (avfi->cmd & FUSE_AVFI_PURGEVNCACHE) {
         (void)fuse_vncache_purge(vp);
+    }
+
+    if (avfi->cmd & FUSE_AVFI_KNOTE) {
+        hint |= avfi->note;
+    }
+
+    if (hint) {
+        FUSE_KNOTE(vp, hint);
     }
 
     return ret;
