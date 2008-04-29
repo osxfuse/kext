@@ -496,7 +496,8 @@ fuse_internal_readdir(vnode_t                 vp,
                       uio_t                   uio,
                       vfs_context_t           context,
                       struct fuse_filehandle *fufh,
-                      struct fuse_iov        *cookediov)
+                      struct fuse_iov        *cookediov,
+                      int                    *numdirent)
 {
     int err = 0;
     struct fuse_dispatcher fdi;
@@ -531,7 +532,8 @@ fuse_internal_readdir(vnode_t                 vp,
                                                      fri->size,
                                                      fdi.answ,
                                                      fdi.iosize,
-                                                     cookediov))) {
+                                                     cookediov,
+                                                     numdirent))) {
             break;
         }
     }
@@ -551,10 +553,12 @@ fuse_internal_readdir_processdata(vnode_t          vp,
                          __unused size_t           reqsize,
                                   void            *buf,
                                   size_t           bufsize,
-                                  struct fuse_iov *cookediov)
+                                  struct fuse_iov *cookediov,
+                                  int             *numdirent)
 {
     int err = 0;
     int cou = 0;
+    int n   = 0;
     int bytesavail;
     size_t freclen;
 
@@ -636,9 +640,15 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             break;
         }
 
+        n++;
+
         buf = (char *)buf + freclen;
         bufsize -= freclen;
         uio_setoffset(uio, fudge->off);
+    }
+
+    if (!err && numdirent) {
+        *numdirent = n;
     }
 
     return err;

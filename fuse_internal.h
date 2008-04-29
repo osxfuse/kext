@@ -632,7 +632,8 @@ fuse_internal_readdir(vnode_t                 vp,
                       uio_t                   uio,
                       vfs_context_t           context,
                       struct fuse_filehandle *fufh,
-                      struct fuse_iov        *cookediov);
+                      struct fuse_iov        *cookediov,
+                      int                    *numdirent);
 
 int
 fuse_internal_readdir_processdata(vnode_t          vp,
@@ -640,7 +641,8 @@ fuse_internal_readdir_processdata(vnode_t          vp,
                                   size_t           reqsize,
                                   void            *buf,
                                   size_t           bufsize,
-                                  struct fuse_iov *cookediov);
+                                  struct fuse_iov *cookediov,
+                                  int             *numdirent);
 
 /* remove */
 

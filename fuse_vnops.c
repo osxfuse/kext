@@ -2325,7 +2325,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     uio_t          uio          = ap->a_uio;
     int            flags        = ap->a_flags;
     __unused int  *eofflagPtr   = ap->a_eofflag;
-    __unused int  *numdirentPtr = ap->a_numdirent;
+    int           *numdirentPtr = ap->a_numdirent;
     vfs_context_t  context      = ap->a_context;
 
     struct fuse_filehandle *fufh = NULL;
@@ -2378,7 +2378,8 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
 
     fiov_init(&cookediov, DIRCOOKEDSIZE);
 
-    err = fuse_internal_readdir(vp, uio, context, fufh, &cookediov);
+    err = fuse_internal_readdir(vp, uio, context, fufh, &cookediov,
+                                numdirentPtr);
 
     fiov_teardown(&cookediov);
 
