@@ -2900,6 +2900,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     fdisp_init(&fdi, sizeof(*fsai));
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
     fsai = fdi.indata;
+    fsai->valid = 0;
 
 #define FUSEATTR(x) x
 
