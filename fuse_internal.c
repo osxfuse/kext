@@ -413,6 +413,8 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
 
     VTOFUD(vp)->c_flag |= C_XTIMES_VALID;
 
+    goto out;
+
 fake:
     VATTR_RETURN(out_vap, va_backup_time, kZeroTime);
     VATTR_RETURN(out_vap, va_create_time, kZeroTime);
