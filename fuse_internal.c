@@ -451,6 +451,12 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
         }
     }
 
+    if (avfi->cmd & FUSE_AVFI_UBC_SETSIZE) {
+        VTOFUD(vp)->filesize = avfi->size;
+        ubc_setsize(vp, avfi->size);
+        (void)fuse_invalidate_attr(vp);
+    }
+
     /* The result of this doesn't alter our return value. */
     if (avfi->cmd & FUSE_AVFI_PURGEATTRCACHE) {
         (void)fuse_invalidate_attr(vp);

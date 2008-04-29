@@ -37,8 +37,9 @@
 
 struct fuse_avfi_ioctl {
     uint64_t inode;
-    uint32_t cmd;
-    uint32_t flags;
+    uint64_t cmd;
+    uint64_t flags;
+    off_t    size;
 };
 
 /* Alter the vnode (if any) specified by the given inode. */
@@ -53,6 +54,7 @@ struct fuse_avfi_ioctl {
 #define FUSE_AVFI_PURGEATTRCACHE 0x00000002 /* no flags   */
 #define FUSE_AVFI_PURGEVNCACHE   0x00000004 /* no flags   */
 #define FUSE_AVFI_UBC            0x00000008 /* uses flags */
+#define FUSE_AVFI_UBC_SETSIZE    0x00000010 /* uses flags, size */
 
 #define FUSE_SETACLSTATE              _IOW('h', 10, int32_t)
 #define FSCTLSETACLSTATE              IOCBASECMD(FUSE_SETACLSTATE)
