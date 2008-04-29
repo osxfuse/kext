@@ -727,6 +727,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     cache_attrs(vp, (struct fuse_attr_out *)fdi.answ);
 
+    VTOFUD(vp)->c_flag &= ~C_XTIMES_VALID;
+
     fuse_internal_attr_loadvap(vp, vap, context);
 
 #if M_MACFUSE_EXPERIMENTAL_JUNK
