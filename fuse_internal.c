@@ -1395,6 +1395,18 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
         data->max_write = 4096;
     }
 
+    if (fiio->flags & FUSE_CASE_INSENSITIVE) {
+        data->dataflags |= FSESS_CASE_INSENSITIVE;
+    }
+
+    if (fiio->flags & FUSE_VOL_RENAME) {
+        data->dataflags |= FSESS_VOL_RENAME;
+    }
+
+    if (fiio->flags & FUSE_XTIMES) {
+        data->dataflags |= FSESS_XTIMES;
+    }
+
 out:
     fuse_ticket_drop(ftick);
 
