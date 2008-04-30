@@ -879,6 +879,10 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         err = (blen == 0) ? 0 : EINVAL;
         break;
 
+    case FUSE_SETVOLNAME:
+        err = (blen == 0) ? 0 : EINVAL;
+        break;
+
     default:
         IOLog("MacFUSE: opcodes out of sync (%d)\n", opcode);
         panic("MacFUSE: opcodes out of sync (%d)", opcode);
