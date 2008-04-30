@@ -206,7 +206,7 @@ enum {
 };
 
 /* Not-Implemented Bits */
-#define FSESS_NOIMPLBIT(MSG)      (1LL << FUSE_##MSG)
+#define FSESS_NOIMPLBIT(MSG)      (1ULL << FUSE_##MSG)
 
 #define FSESS_DEAD                0x00000001 // session is to be closed
 #define FSESS_OPENED              0x00000002 // session device has been opened
@@ -233,8 +233,8 @@ enum {
 #define FSESS_NO_SYNCWRITES       0x00200000
 #define FSESS_NO_UBC              0x00400000
 #define FSESS_NO_VNCACHE          0x00800000
-#define FSESS_VOL_RENAME          0x01000000
-#define FSESS_CASE_INSENSITIVE    0x02000000
+#define FSESS_CASE_INSENSITIVE    0x01000000
+#define FSESS_VOL_RENAME          0x02000000
 #define FSESS_XTIMES              0x04000000
 
 static __inline__
