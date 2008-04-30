@@ -131,6 +131,11 @@ struct fuse_file_lock {
  */
 #define FUSE_ASYNC_READ		(1 << 0)
 #define FUSE_POSIX_LOCKS	(1 << 1)
+#if (__FreeBSD__ >= 10)
+#define FUSE_CASE_INSENSITIVE	(1 << 29)
+#define FUSE_VOL_RENAME		(1 << 30)
+#define FUSE_XTIMES		(1 << 31)
+#endif /* __FreeBSD__ >= 10 */
 
 /**
  * Release flags
@@ -175,6 +180,7 @@ enum fuse_opcode {
 	FUSE_BMAP          = 37,
 	FUSE_DESTROY       = 38,
 #if (__FreeBSD__ >= 10)
+        FUSE_SETVOLNAME    = 61,
 	FUSE_GETXTIMES     = 62,
 	FUSE_EXCHANGE      = 63,
 #endif /* __FreeBSD__ >= 10 */
