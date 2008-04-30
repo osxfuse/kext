@@ -31,7 +31,7 @@
 //#define FUSE_TRACE_MSLEEP  1
 //#define FUSE_TRACE_OP      1
 //#define FUSE_TRACE_VNCACHE 1
-#define FUSE_TRACK_STATS 1
+#define FUSE_TRACK_MEMORY 1
 
 #define FUSEFS_SIGNATURE 0x55464553 // 'FUSE'
 
@@ -128,7 +128,7 @@ fuse_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
 
 extern OSMallocTag fuse_malloc_tag;
 
-#ifdef FUSE_TRACK_STATS
+#ifdef FUSE_TRACK_MEMORY
 
 #define FUSE_OSAddAtomic(amount, value) OSAddAtomic((amount), (value))
 
@@ -164,7 +164,7 @@ FUSE_OSFree(void *addr, uint32_t size, OSMallocTag tag)
 #define FUSE_OSMalloc(size, tag)           OSMalloc((size), (tag))
 #define FUSE_OSFree(addr, size, tag)       OSFree((addr), (size), (tag))
 
-#endif /* FUSE_TRACK_STATS */
+#endif /* FUSE_TRACK_MEMORY */
 
 static __inline__
 void *
