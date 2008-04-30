@@ -71,7 +71,6 @@ struct mntopt mopts[] = {
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
-    { "xtimes",              0, FUSE_MOPT_XTIMES,                 1 }, // kused
 
     /* negative ones */
 
