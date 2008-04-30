@@ -784,7 +784,7 @@ fuse_implemented(struct fuse_data *data, uint64_t which)
     int result;
 
     /* FUSE_DATA_LOCK_SHARED(data); */
-    result = !(int)(data->noimplflags & which);
+    result = (int)!(data->noimplflags & which);
     /* FUSE_DATA_UNLOCK_SHARED(data); */
 
     return result;
