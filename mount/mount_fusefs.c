@@ -52,7 +52,6 @@ struct mntopt mopts[] = {
     { "allow_root",          0, FUSE_MOPT_ALLOW_ROOT,             1 }, // kused
     { "auto_xattr",          0, FUSE_MOPT_AUTO_XATTR,             1 }, // kused
     { "blocksize=",          0, FUSE_MOPT_BLOCKSIZE,              1 }, // kused
-    { "case_insensitive",    0, FUSE_MOPT_CASE_INSENSITIVE,       1 }, // kused
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
     { "debug",               0, FUSE_MOPT_DEBUG,                  1 }, // kused
     { "default_permissions", 0, FUSE_MOPT_DEFAULT_PERMISSIONS,    1 }, // kused
