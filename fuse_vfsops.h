@@ -30,24 +30,24 @@ extern struct vnodeopv_entry_desc fuse_fifo_operation_entries[];
 /* VFS operations */
 
 static errno_t
-fuse_vfs_mount(mount_t mp, vnode_t devvp, user_addr_t data,
-               vfs_context_t context);
+fuse_vfsop_mount(mount_t mp, vnode_t devvp, user_addr_t data,
+                 vfs_context_t context);
 
 static errno_t
-fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context);
+fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context);
 
 static errno_t
-fuse_vfs_root(mount_t mp, vnode_t *vpp, vfs_context_t context);
+fuse_vfsop_root(mount_t mp, vnode_t *vpp, vfs_context_t context);
 
 static errno_t
-fuse_vfs_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context);
+fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context);
 
 static errno_t
-fuse_vfs_sync(mount_t mp, int waitfor, vfs_context_t context);
+fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context);
 
 static errno_t
-fuse_vfs_setattr(mount_t mp, struct vfs_attr *fsap,
-                 __unused vfs_context_t context);
+fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap,
+                   __unused vfs_context_t context);
 
 /* Other VFS operations */
 

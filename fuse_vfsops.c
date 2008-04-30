@@ -58,19 +58,19 @@ static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[] =
 };
 
 static struct vfsops fuse_vfs_ops = {
-    fuse_vfs_mount,   // vfs_mount
-    NULL,             // vfs_start
-    fuse_vfs_unmount, // vfs_unmount
-    fuse_vfs_root,    // vfs_root
-    NULL,             // vfs_quotactl
-    fuse_vfs_getattr, // vfs_getattr
-    fuse_vfs_sync,    // vfs_sync
-    NULL,             // vfs_vget
-    NULL,             // vfs_fhtovp
-    NULL,             // vfs_vptofh
-    NULL,             // vfs_init
-    NULL,             // vfs_sysctl
-    fuse_vfs_setattr, // vfs_setattr
+    fuse_vfsop_mount,   // vfs_mount
+    NULL,               // vfs_start
+    fuse_vfsop_unmount, // vfs_unmount
+    fuse_vfsop_root,    // vfs_root
+    NULL,               // vfs_quotactl
+    fuse_vfsop_getattr, // vfs_getattr
+    fuse_vfsop_sync,    // vfs_sync
+    NULL,               // vfs_vget
+    NULL,               // vfs_fhtovp
+    NULL,               // vfs_vptofh
+    NULL,               // vfs_init
+    NULL,               // vfs_sysctl
+    fuse_vfsop_setattr, // vfs_setattr
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL } // vfs_reserved[]
 };
 
@@ -100,8 +100,8 @@ struct vfs_fsentry fuse_vfs_entry = {
 };
 
 static errno_t
-fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
-               vfs_context_t context)
+fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
+                 vfs_context_t context)
 {
     int err     = 0;
     int mntopts = 0;
@@ -458,7 +458,7 @@ fuse_vfs_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
        struct vfs_attr vfs_attr;
        VFSATTR_INIT(&vfs_attr);
        /* Our vfs_getattr() doesn't look at most *_IS_ACTIVE()'s */
-       err = fuse_vfs_getattr(mp, &vfs_attr, context);
+       err = fuse_vfsop_getattr(mp, &vfs_attr, context);
        if (!err) {
            vfsstatfsp->f_bsize  = vfs_attr.f_bsize;
            vfsstatfsp->f_iosize = data->iosize;
@@ -497,7 +497,7 @@ out:
         fuse_device_unlock(fdev);
     } else {
         vnode_t fuse_rootvp = NULLVP;
-        err = fuse_vfs_root(mp, &fuse_rootvp, context);
+        err = fuse_vfsop_root(mp, &fuse_rootvp, context);
         if (err) {
             goto out; /* go back and follow error path */
         }
@@ -512,7 +512,7 @@ out:
 }
 
 static errno_t
-fuse_vfs_unmount(mount_t mp, int mntflags, vfs_context_t context)
+fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 {
     int   err        = 0;
     int   flags      = 0;
@@ -599,7 +599,7 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-    vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfs_mount(). */
+    vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfsop_mount(). */
 
     data->rootvp = NULLVP;
 
@@ -630,7 +630,7 @@ alreadydead:
 }        
 
 static errno_t
-fuse_vfs_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
+fuse_vfsop_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
     int err = 0;
     vnode_t vp = NULLVP;
@@ -862,7 +862,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 }
 
 static errno_t
-fuse_vfs_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
+fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
     int err     = 0;
     int deading = 0;
@@ -1078,7 +1078,7 @@ fuse_sync_callback(vnode_t vp, void *cargs)
 }
 
 static errno_t
-fuse_vfs_sync(mount_t mp, int waitfor, vfs_context_t context)
+fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
 {
     uint64_t mntflags;
     struct fuse_sync_cargs args;
@@ -1125,7 +1125,7 @@ fuse_vfs_sync(mount_t mp, int waitfor, vfs_context_t context)
 }
 
 static errno_t
-fuse_vfs_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
+fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 {
     int error = 0;
     struct fuse_data *data;
