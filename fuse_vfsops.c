@@ -153,14 +153,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     /** Option Processing. **/
 
-    if (fusefs_args.altflags & FUSE_MOPT_CASE_INSENSITIVE) {
-        mntopts |= FSESS_CASE_INSENSITIVE;
-    }
-
-    if (fusefs_args.altflags & FUSE_MOPT_XTIMES) {
-        mntopts |= FSESS_XTIMES;
-    }
-
     if (fusefs_args.altflags & FUSE_MOPT_FSTYPENAME) {
         size_t typenamelen = strlen(fusefs_args.fstypename);
         if ((typenamelen <= 0) || (typenamelen > FUSE_FSTYPENAME_MAXLEN)) {
@@ -697,6 +689,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
         ;
+
     attr->f_capabilities.valid[VOL_CAPABILITIES_FORMAT] = 0
         | VOL_CAP_FMT_PERSISTENTOBJECTIDS
         | VOL_CAP_FMT_SYMBOLICLINKS
@@ -714,6 +707,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_HIDDEN_FILES
         | VOL_CAP_FMT_PATH_FROM_ID
         ;
+
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
 //      | VOL_CAP_INT_SEARCHFS
 //      | VOL_CAP_INT_ATTRLIST
@@ -731,16 +725,6 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
         ;
-
-    if (!(data->dataflags & FSESS_CASE_INSENSITIVE)) {
-        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] |=
-            VOL_CAP_FMT_CASE_SENSITIVE;
-    }
-
-    if (data->dataflags & FSESS_VOL_RENAME) {
-        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
-            VOL_CAP_INT_VOL_RENAME;
-    }
 
     attr->f_capabilities.valid[VOL_CAPABILITIES_INTERFACES] = 0
         | VOL_CAP_INT_SEARCHFS
@@ -794,11 +778,6 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_CMN_PARENTID
         ;
 
-    if (data->dataflags & FSESS_XTIMES) {
-        attr->f_attributes.validattr.commonattr |=
-            (ATTR_CMN_BKUPTIME | ATTR_CMN_CHGTIME | ATTR_CMN_CRTIME);
-    }
-
     attr->f_attributes.validattr.volattr = 0
         | ATTR_VOL_FSTYPE
         | ATTR_VOL_SIGNATURE
@@ -844,7 +823,28 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_FORK_TOTALSIZE
 //      | ATTR_FORK_ALLOCSIZE
         ;
-    
+
+    // Handle some special cases
+
+    if (!(data->dataflags & FSESS_CASE_INSENSITIVE)) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] |=
+            VOL_CAP_FMT_CASE_SENSITIVE;
+    }
+
+    if (data->dataflags & FSESS_VOL_RENAME) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_VOL_RENAME;
+    } else {
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
+    }
+
+    if (data->dataflags & FSESS_XTIMES) {
+        attr->f_attributes.validattr.commonattr |=
+            (ATTR_CMN_BKUPTIME | ATTR_CMN_CHGTIME | ATTR_CMN_CRTIME);
+    } else {
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(GETXTIMES));
+    }
+
     // All attributes that we do support, we support natively.
     
     attr->f_attributes.nativeattr.commonattr = \
@@ -1128,23 +1128,21 @@ static errno_t
 fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 {
     int error = 0;
-    struct fuse_data *data;
-    kauth_cred_t cred = vfs_context_ucred(context);
 
     fuse_trace_printf_vfsop();
+
+    kauth_cred_t cred = vfs_context_ucred(context);
 
     if (!fuse_vfs_context_issuser(context) &&
         (kauth_cred_getuid(cred) != vfs_statfs(mp)->f_owner)) {
         return EACCES;
     }
 
-    data = fuse_get_mpdata(mp);
+    struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (VFSATTR_IS_ACTIVE(fsap, f_vol_name)) {
 
-        size_t vlen;
-
-        if (!(data->dataflags & FSESS_VOL_RENAME)) {
+        if (!fuse_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME))) {
             error = ENOTSUP;
             goto out;
         }
@@ -1154,13 +1152,42 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
             goto out;
         }
 
-        /*
-         * If the FUSE API supported volume name change, we would be sending
-         * a message to the FUSE daemon at this point.
-         */
+        size_t namelen = strlen(fsap->f_vol_name);
+        if (namelen >= MAXPATHLEN) {
+            error = ENAMETOOLONG;
+            goto out;
+        }
+        
+        vnode_t root_vp;
+        
+        error = fuse_vfsop_root(mp, &root_vp, context);
+        if (error) {
+            goto out;
+        }
 
-        copystr(fsap->f_vol_name, data->volname, MAXPATHLEN - 1, &vlen);
-        bzero(data->volname + vlen, MAXPATHLEN - vlen);
+        struct fuse_dispatcher fdi;
+        fdisp_init(&fdi, namelen + 1);
+        fdisp_make_vp(&fdi, FUSE_SETVOLNAME, root_vp, context);
+        memcpy((char *)fdi.indata, fsap->f_vol_name, namelen);
+        ((char *)fdi.indata)[namelen] = '\0';
+
+        if (!(error = fdisp_wait_answ(&fdi))) {
+            fuse_ticket_drop(fdi.tick);
+        }
+
+        (void)vnode_put(root_vp);
+
+        if (error) {
+            if (error == ENOSYS) {
+                error = ENOTSUP;
+                fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
+            }
+            goto out;
+        }
+
+        copystr(fsap->f_vol_name, data->volname, MAXPATHLEN - 1, &namelen);
+        bzero(data->volname + namelen, MAXPATHLEN - namelen);
+
         VFSATTR_SET_SUPPORTED(fsap, f_vol_name);
     }
 
