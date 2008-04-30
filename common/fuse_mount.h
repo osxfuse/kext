@@ -87,9 +87,6 @@ enum {
 /* Next 32 bits */
 #define FUSE_MOPT_USE_INO                0x0000000100000000ULL
 #define FUSE_MOPT_VOLNAME                0x0000000200000000ULL
-#define FUSE_MOPT_VOL_RENAME             0x0000000400000000ULL
-#define FUSE_MOPT_CASE_INSENSITIVE       0x0000000800000000ULL
-#define FUSE_MOPT_XTIMES                 0x0000001000000000ULL
 
 #define FUSE_MAKEDEV(x, y)              ((dev_t)(((x) << 24) | (y)))
 #define FUSE_MINOR_MASK                 0x00FFFFFFUL
