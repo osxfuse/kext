@@ -858,6 +858,8 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     } else {
         fgxi->size = 0;
     }
+
+    fgxi->position = (uint32_t)uio_offset(uio);
     
     memcpy((char *)fdi.indata + sizeof(*fgxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fgxi) + namelen] = '\0';
@@ -3192,6 +3194,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     fsxi->size = attrsize;
     fsxi->flags = ap->a_options;
+    fsxi->position = (uint32_t)uio_offset(uio);
 
     if (attrsize > FUSE_REASONABLE_XATTRSIZE) {
         fticket_set_killl(fdi.tick);
