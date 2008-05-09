@@ -710,7 +710,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
 //      | VOL_CAP_INT_SEARCHFS
-//      | VOL_CAP_INT_ATTRLIST
+        | VOL_CAP_INT_ATTRLIST
 //      | VOL_CAP_INT_NFSEXPORT
 //      | VOL_CAP_INT_READDIRATTR
         | VOL_CAP_INT_EXCHANGEDATA
