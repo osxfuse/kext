@@ -37,7 +37,7 @@ struct fuse_kludge_vnode {
     char   *v_name;
     vnode_t v_parent;
     char    dummy1[12];
-};
+} __attribute__ ((packed));
 
 extern void fuse_kludge_exchange(vnode_t v1, vnode_t v2);
 
