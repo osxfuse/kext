@@ -235,8 +235,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
         other_mp = vfs_getvfs(&fsid);
         if (other_mp != NULL) {
-            err = EPERM;
-            goto out;
+            return EPERM;
         }
 
         vfsstatfsp->f_fsid.val[0] = target_dev;
