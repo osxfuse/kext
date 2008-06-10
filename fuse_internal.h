@@ -404,6 +404,11 @@ fuse_blanket_deny(vnode_t vp, vfs_context_t context)
         return 0;
     }
 
+    /* If kernel itself, allow. */
+    if (vfs_context_pid(context) == 0) {
+        return 0;
+    }
+
     return 1;
 }
 
