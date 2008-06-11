@@ -117,7 +117,7 @@ typedef struct fuse_vnode_data * fusenode_t;
     ((struct fuse_vnode_data *)FSNodeGenericFromHNode(vnode_fsnode(vp)))
 #define VTOI(vp)    (VTOFUD(vp)->nodeid)
 #define VTOVA(vp)   (&(VTOFUD(vp)->cached_attr))
-#define VTOILLU(vp) ((unsigned long long)(VTOFUD(vp) ? VTOI(vp) : 0))
+#define VTOILLU(vp) ((uint64_t)(VTOFUD(vp) ? VTOI(vp) : 0))
 
 #define FUSE_NULL_ID 0
 
