@@ -34,7 +34,7 @@ struct fuse_iov {
     void   *base;
     size_t  len;
     size_t  allocated_size;
-    int     credit;
+    int32_t credit;
 };
 
 #define FUSE_DATA_LOCK_SHARED(d)      fuse_lck_rw_lock_shared((d)->rwlock)
@@ -74,13 +74,13 @@ struct fuse_ticket {
 
     struct fuse_iov              tk_ms_fiov;
     void                        *tk_ms_bufdata;
-    unsigned long                tk_ms_bufsize;
+    size_t                       tk_ms_bufsize;
     enum { FT_M_FIOV, FT_M_BUF } tk_ms_type;
     STAILQ_ENTRY(fuse_ticket)    tk_ms_link;
 
     struct fuse_iov              tk_aw_fiov;
     void                        *tk_aw_bufdata;
-    unsigned long                tk_aw_bufsize;
+    size_t                       tk_aw_bufsize;
     enum { FT_A_FIOV, FT_A_BUF } tk_aw_type;
 
     struct fuse_out_header       tk_aw_ohead;
