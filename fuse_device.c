@@ -293,7 +293,7 @@ int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int i, err = 0;
-    int buflen[3];
+    size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
 
     struct fuse_device  *fdev;
