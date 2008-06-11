@@ -24,10 +24,10 @@ typedef enum fufh_type {
 
 struct fuse_filehandle {
     uint64_t fh_id;
-    int      open_count;
-    int      open_flags;
-    int      fuse_open_flags;
-    int      aux_count;
+    int32_t  open_count;
+    int32_t  open_flags;
+    int32_t  fuse_open_flags;
+    int32_t  aux_count;
 };
 typedef struct fuse_filehandle * fuse_filehandle_t;
 
