@@ -681,7 +681,7 @@ main(int argc, char **argv)
     }
 
     errno = 0;
-    fd = strtol(fdnam, NULL, 10);
+    fd = (int)strtol(fdnam, NULL, 10);
     if ((errno == EINVAL) || (errno == ERANGE)) {
         errx(EX_USAGE,
              "invalid name (%s) for MacFUSE device file descriptor", fdnam);
@@ -701,7 +701,7 @@ main(int argc, char **argv)
         (void)strlcpy(ndev, _PATH_DEV, sizeof(ndev));
         ndevbas = ndev + strlen(_PATH_DEV);
         devname_r(sb.st_rdev, S_IFCHR, ndevbas,
-                  sizeof(ndev) - strlen(_PATH_DEV));
+                  (int)(sizeof(ndev) - strlen(_PATH_DEV)));
 
         if (strncmp(ndevbas, MACFUSE_DEVICE_BASENAME,
                     strlen(MACFUSE_DEVICE_BASENAME))) {
@@ -709,7 +709,8 @@ main(int argc, char **argv)
         }
 
         errno = 0;
-        dindex = strtol(ndevbas + strlen(MACFUSE_DEVICE_BASENAME), NULL, 10);
+        dindex = (int)strtol(ndevbas + strlen(MACFUSE_DEVICE_BASENAME),
+                             NULL, 10);
         if ((errno == EINVAL) || (errno == ERANGE) ||
             (dindex < 0) || (dindex > MACFUSE_NDEVICES)) {
             errx(EX_USAGE, "invalid MacFUSE device unit (#%d)\n", dindex);
