@@ -214,10 +214,10 @@ fuse_internal_exchange(vnode_t       fvp,
     memcpy((char *)fdi.indata + sizeof(*fei) + flen + 1, tname, tlen);
     ((char *)fdi.indata)[sizeof(*fei) + flen + tlen + 1] = '\0';
 
-    ubc_sync_range(fvp, (off_t)0, (off_t)ffud->filesize,
-                   UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
-    ubc_sync_range(tvp, (off_t)0, (off_t)tfud->filesize,
-                   UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+    ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, (off_t*)0,
+              UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+    ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, (off_t*)0,
+              UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
         
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
@@ -448,7 +448,8 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
     if (avfi->cmd & FUSE_AVFI_UBC) {
         int ubc_flags = avfi->ubc_flags & (UBC_PUSHDIRTY  | UBC_PUSHALL |
                                            UBC_INVALIDATE | UBC_SYNC);
-        if (ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), ubc_flags) == 0) {
+        if (ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+                      ubc_flags) == 0) {
             /* failed */
             ret = EINVAL; /* don't really have a good error to return */
         }

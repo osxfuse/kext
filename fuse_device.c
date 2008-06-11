@@ -748,7 +748,7 @@ fuse_device_kill(int unit, struct proc *p)
     if (fdev->data) {
         error = EPERM;
         if (p) {
-            kauth_cred_t request_cred = proc_ucred(p);
+            kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
 
@@ -770,6 +770,7 @@ fuse_device_kill(int unit, struct proc *p)
                 }
                 fuse_lck_mtx_unlock(fdev->data->aw_mtx);
             }
+            kauth_cred_unref(&request_cred);
         }
     }
 
@@ -808,12 +809,13 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
         
         error = EPERM;
         if (p) {
-            kauth_cred_t request_cred = proc_ucred(p);
+            kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
                 (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
                 fuse_internal_print_vnodes(fdev->data->mp);
                 error = 0;
             }
+            kauth_cred_unref(&request_cred);
         }
 
         vfs_unbusy(mp);

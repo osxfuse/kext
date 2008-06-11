@@ -617,7 +617,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     /*
      * - UBC and vnode are in lock-step.
      * - Can call vnode_isinuse().
-     * - Can call ubc_sync_range().
+     * - Can call ubc_msync().
      */
 
     mount_t mp = vnode_mount(vp);
@@ -1780,7 +1780,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * I once noted that sync() is not going to help here, but I think
      * I've forgotten the context. Need to think about this again.
      *
-     * ubc_sync_range(vp, (off_t)0, ubc_getsize(vp), UBC_PUSHDIRTY);
+     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0, UBC_PUSHDIRTY);
      */
 
     /*
@@ -1973,8 +1973,8 @@ ok:
          * - nosyncwrites disabled FOR THE ENTIRE MOUNT
          * - no vncache for the vnode (handled in lookup)
          */
-        ubc_sync_range(vp, (off_t)0, ubc_getsize(vp),
-                       UBC_PUSHALL | UBC_INVALIDATE);
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+                  UBC_PUSHALL | UBC_INVALIDATE);
         vnode_setnocache(vp);
         vnode_setnoreadahead(vp);
         fuse_clearnosyncwrites_mp(vnode_mount(vp));

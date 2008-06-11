@@ -403,7 +403,7 @@ fdata_alloc(struct proc *p)
     data->mp            = NULL;
     data->rootvp        = NULLVP;
     data->mount_state   = FM_NOTMOUNTED;
-    data->daemoncred    = proc_ucred(p);
+    data->daemoncred    = kauth_cred_proc_ref(p);
     data->daemonpid     = proc_pid(p);
     data->dataflags     = 0;
     data->mountaltflags = 0ULL;
@@ -422,8 +422,6 @@ fdata_alloc(struct proc *p)
     data->freeticket_counter = 0;
     data->deadticket_counter = 0;
     data->ticketer           = 0;
-
-    kauth_cred_ref(data->daemoncred);
 
 #if M_MACFUSE_EXCPLICIT_RENAME_LOCK
     data->rename_lock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
