@@ -39,7 +39,7 @@ typedef struct fuse_mount_args fuse_mount_args;
 /* file system subtype */
 enum {
     FUSE_FSSUBTYPE_UNKNOWN = 0,
-    FUSE_FSSUBTYPE_INVALID = 0xFFFFFFFF,
+    FUSE_FSSUBTYPE_INVALID = -1,
 };
 
 /* File system type name. */
