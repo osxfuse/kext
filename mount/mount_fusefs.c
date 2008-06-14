@@ -226,13 +226,13 @@ fsbundle_find_fssubtype(const char *bundle_path_C,
                                  (const void **)keys,
                                  (const void **)subdicts);
 
-    if (claimed_fssubtype == FUSE_FSSUBTYPE_INVALID) {
+    if (claimed_fssubtype == (uint32_t)FUSE_FSSUBTYPE_INVALID) {
         goto lookupbyfsname;
     }
 
     for (idx = 0; idx < count; idx++) {
         CFNumberRef n = NULL;
-        uint32_t candidate_fssubtype = FUSE_FSSUBTYPE_INVALID;
+        uint32_t candidate_fssubtype = (uint32_t)FUSE_FSSUBTYPE_INVALID;
         if (CFDictionaryGetValueIfPresent(subdicts[idx],
                                           (const void *)CFSTR(kFSSubTypeKey),
                                           (const void **)&n)) {
@@ -267,7 +267,7 @@ lookupbyfsname:
         }
         if (found) {
             CFNumberRef n = NULL;
-            uint32_t candidate_fssubtype = FUSE_FSSUBTYPE_INVALID;
+            uint32_t candidate_fssubtype = (uint32_t)FUSE_FSSUBTYPE_INVALID;
             if (CFDictionaryGetValueIfPresent(
                     subdicts[idx], (const void *)CFSTR(kFSSubTypeKey),
                     (const void **)&n)) {
@@ -313,12 +313,12 @@ fuse_to_fssubtype(void **target, void *value, void *fallback)
 {
     char *name = getenv("MOUNT_FUSEFS_DAEMON_PATH");
 
-    *(uint32_t *)target = FUSE_FSSUBTYPE_INVALID;
+    *(uint32_t *)target = (uint32_t)FUSE_FSSUBTYPE_INVALID;
 
     if (value) {
         int ret = fuse_to_uint32(target, value, fallback);
         if (ret) {
-            *(uint32_t *)target = FUSE_FSSUBTYPE_INVALID;
+            *(uint32_t *)target = (uint32_t)FUSE_FSSUBTYPE_INVALID;
         }
     }
 
