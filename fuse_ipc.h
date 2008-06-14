@@ -34,7 +34,7 @@ struct fuse_iov {
     void   *base;
     size_t  len;
     size_t  allocated_size;
-    int32_t credit;
+    ssize_t credit;
 };
 
 #define FUSE_DATA_LOCK_SHARED(d)      fuse_lck_rw_lock_shared((d)->rwlock)

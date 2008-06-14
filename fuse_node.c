@@ -95,9 +95,15 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fvdat->c_flag       = 0;
 
             /* meta */
-            fvdat->entry_valid.tv_sec  = feo->entry_valid; /* XXX:truncation */
+
+            /* XXX: truncation */
+            fvdat->entry_valid.tv_sec  = (time_t)feo->entry_valid;
+
             fvdat->entry_valid.tv_nsec = feo->entry_valid_nsec;
-            fvdat->attr_valid.tv_sec   = feo->attr_valid;  /* XXX:truncation */
+
+            /* XXX: truncation */
+            fvdat->attr_valid.tv_sec   = (time_t)feo->attr_valid;
+
             fvdat->attr_valid.tv_nsec  = feo->attr_valid_nsec;
             fvdat->filesize            = size;
             fvdat->nlookup             = 0;

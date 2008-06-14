@@ -399,12 +399,12 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
 
     fgxo = (struct fuse_getxtimes_out *)fdi.answ;
 
-    t.tv_sec = fgxo->bkuptime;
+    t.tv_sec = (time_t)fgxo->bkuptime;
     t.tv_nsec = fgxo->bkuptimensec;
     VATTR_RETURN(in_vap, va_backup_time, t);
     VATTR_RETURN(out_vap, va_backup_time, t);
 
-    t.tv_sec = fgxo->crtime;
+    t.tv_sec = (time_t)fgxo->crtime;
     t.tv_nsec = fgxo->crtimensec;
     VATTR_RETURN(in_vap, va_create_time, t);
     VATTR_RETURN(out_vap, va_create_time, t);
@@ -522,7 +522,7 @@ fuse_internal_readdir(vnode_t                 vp,
         fri->fh = fufh->fh_id;
         fri->offset = uio_offset(uio);
         data = fuse_get_mpdata(vnode_mount(vp));
-        fri->size = min(uio_resid(uio), data->iosize);
+        fri->size = min((size_t)uio_resid(uio), data->iosize);
 
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
@@ -620,7 +620,11 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_adjust(cookediov, bytesavail);
 
         de = (struct dirent *)cookediov->base;
-        de->d_fileno = fudge->ino; /* XXX: truncation */
+#if __DARWIN_64_BIT_INO_T
+        de->d_fileno = fudge->ino;
+#else
+        de->d_fileno = (ino_t)fudge->ino; /* XXX: truncation */
+#endif /* __DARWIN_64_BIT_INO_T */
         de->d_reclen = bytesavail;
         de->d_type   = fudge->type; 
         de->d_namlen = fudge->namelen;
@@ -800,12 +804,13 @@ __private_extern__
 int
 fuse_internal_strategy(vnode_t vp, buf_t bp)
 {
-    int biosize;
-    int chunksize;
+    size_t biosize;
+    size_t chunksize;
+    size_t respsize;
+
     int mapped = FALSE;
     int mode;
     int op;
-    int respsize;
     int vtype = vnode_vtype(vp);
 
     int err = 0;
@@ -948,9 +953,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             return 0;
         }
 
+        /* Note that we just made sure that offset < fvdat->filesize. */
         if ((offset + buf_count(bp)) > fvdat->filesize) {
             /* Trimming read */
-            buf_setcount(bp, fvdat->filesize - offset);
+            buf_setcount(bp, (uint32_t)(fvdat->filesize - offset));
         }
 
         if (buf_map(bp, &bufdat)) {
@@ -962,7 +968,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         while (buf_resid(bp) > 0) {
 
-            chunksize = min(buf_resid(bp), data->iosize);
+            chunksize = min((size_t)buf_resid(bp), data->iosize);
 
             fdi.iosize = sizeof(*fri);
 
@@ -1025,17 +1031,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         int merr = 0;
         off_t diff;
 
-        /*
-         * XXX: historical
-         *
-         * Panic? Try doing something like:
-         *
-         *   err = EIO;
-         *   goto out;
-         *
-         * Investigate later.
-         */
-
         if (buf_map(bp, &bufdat)) {
             IOLog("MacFUSE: failed to map buffer in strategy\n");
             return EFAULT;
@@ -1058,7 +1053,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             op = FUSE_WRITE;
 
             fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
-            chunksize = min(left, data->iosize);
+            chunksize = min((size_t)left, data->iosize);
 
             fwi = fdi.indata;
             fwi->fh = fufh->fh_id;

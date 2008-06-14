@@ -355,7 +355,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     foi = fdip->indata;
     foi->mode = mode;
 
-    /* XXX: We /always/ creat() like this. */
+    /* XXX: We /always/ creat() like this. Wish we were on Linux. */
     foi->flags = O_CREAT | O_RDWR;
 
     memcpy((char *)fdip->indata + sizeof(*foi), cnp->cn_nameptr,
@@ -854,7 +854,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     fgxi = fdi.indata;
     
     if (uio) {
-        fgxi->size = uio_resid(uio);
+        fgxi->size = (size_t)uio_resid(uio);
     } else {
         fgxi->size = 0;
     }
@@ -1215,7 +1215,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, context);
     fgxi = fdi.indata;
     if (uio) {
-        fgxi->size = uio_resid(uio);
+        fgxi->size = (size_t)uio_resid(uio);
     } else {
         fgxi->size = 0;
     }
@@ -2286,7 +2286,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
             fri = fdi.indata;
             fri->fh = fufh->fh_id;
             fri->offset = uio_offset(uio);
-            fri->size = min(uio_resid(uio), data->iosize);
+            fri->size = min((size_t)uio_resid(uio), data->iosize);
 
             if ((err = fdisp_wait_answ(&fdi))) {
                 return err;
@@ -3162,7 +3162,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         return ENOTSUP;
     }
 
-    attrsize = uio_resid(uio);
+    attrsize = (size_t)uio_resid(uio);
     saved_offset = uio_offset(uio);
 
     iov_cnt = uio_iovcnt(uio);
@@ -3412,8 +3412,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
         struct fuse_write_out  *fwo  = NULL;
         struct fuse_data       *data = fuse_get_mpdata(vnode_mount(vp));
 
-        int chunksize;
-        off_t diff;
+        size_t chunksize;
+        off_t  diff;
 
         fufh = &(fvdat->fufh[fufh_type]);
 
@@ -3437,7 +3437,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
         fdisp_init(&fdi, 0);
 
         while (uio_resid(uio) > 0) {
-            chunksize = min(uio_resid(uio), data->iosize);
+            chunksize = min((size_t)uio_resid(uio), data->iosize);
             fdi.iosize = sizeof(*fwi) + chunksize;
             fdisp_make_vp(&fdi, FUSE_WRITE, vp, context);
             fwi = fdi.indata;

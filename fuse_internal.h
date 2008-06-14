@@ -575,14 +575,11 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     (void)fuse_internal_loadxtimes(vp, out_vap, context);
 }
 
-/*
- * XXX: truncation
- * Note that user space sends us a 64-bit tv_sec.
- */
 #define cache_attrs(vp, fuse_out) do {                               \
     struct timespec uptsp_ ## __func__;                              \
                                                                      \
-    VTOFUD(vp)->attr_valid.tv_sec = (fuse_out)->attr_valid;          \
+    /* XXX: truncation; user space sends us a 64-bit tv_sec */       \
+    VTOFUD(vp)->attr_valid.tv_sec = (time_t)(fuse_out)->attr_valid;  \
     VTOFUD(vp)->attr_valid.tv_nsec = (fuse_out)->attr_valid_nsec;    \
     nanouptime(&uptsp_ ## __func__);                                 \
                                                                      \

@@ -335,7 +335,7 @@ int
 fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
 {
     int err = 0;
-    size_t len = uio_resid(uio);
+    size_t len = (size_t)uio_resid(uio);
 
     if (len) {
         switch (ftick->tk_aw_type) {
@@ -379,7 +379,7 @@ fticket_pull(struct fuse_ticket *ftick, uio_t uio)
         return 0;
     }
 
-    err = fuse_body_audit(ftick, uio_resid(uio));
+    err = fuse_body_audit(ftick, (size_t)uio_resid(uio));
     if (!err) {
         err = fticket_aw_pull_uio(ftick, uio);
     }
@@ -444,8 +444,8 @@ fdata_destroy(struct fuse_data *data)
     lck_mtx_free(data->aw_mtx, fuse_lock_group);
     data->aw_mtx = NULL;
 
-    lck_mtx_free(data->ticket_mtx, fuse_lock_group); /* XXX: can do? */
-    data->ticket_mtx = NULL;                         /* XXX: can do? */
+    lck_mtx_free(data->ticket_mtx, fuse_lock_group);
+    data->ticket_mtx = NULL;
 
 #if M_MACFUSE_EXPLICIT_RENAME_LOCK
     lck_rw_free(data->rename_lock, fuse_lock_group);
@@ -907,7 +907,7 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
         ihead->uid = vfs_context_ucred(context)->cr_uid;
         ihead->gid = vfs_context_ucred(context)->cr_gid;
     } else {
-        /* XXX: more thought */
+        /* XXX: could use more thought */
         ihead->pid = proc_pid((proc_t)current_proc());
         ihead->uid = kauth_cred_getuid(kauth_cred_get());
         ihead->gid = kauth_cred_getgid(kauth_cred_get());
