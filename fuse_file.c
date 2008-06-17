@@ -72,7 +72,7 @@ fuse_filehandle_get(vnode_t       vp,
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-        char *vname = vnode_getname(vp);
+        const char *vname = vnode_getname(vp);
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
             /*
