@@ -32,7 +32,6 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 {
     int   err;
     int   junk;
-    dev_t dummy_device;
 
     vnode_t  vn    = NULLVP;
     HNodeRef hn    = NULL;
@@ -40,6 +39,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     struct fuse_vnode_data *fvdat   = NULL;
     struct fuse_data       *mntdata = NULL;
+    fuse_device_t           dummy_device;
 
     enum vtype vtyp = IFTOVT(feo->attr.mode);
 
@@ -53,7 +53,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
     uint64_t generation = feo->generation;
 
     mntdata = fuse_get_mpdata(mp);
-    dummy_device = (dev_t)mntdata->fdev;
+    dummy_device = mntdata->fdev;
 
     err = HNodeLookupCreatingIfNecessary(dummy_device, feo->nodeid,
                                          0 /* fork index */, &hn, &vn);
@@ -156,7 +156,8 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             params.vnfs_filesize   = size;
             params.vnfs_markroot   = markroot;
 
-            err = vnode_create(VNCREATE_FLAVOR, sizeof(params), &params, &vn);
+            err = vnode_create(VNCREATE_FLAVOR, (uint32_t)sizeof(params),
+                               &params, &vn);
         }
 
         if (err == 0) {
