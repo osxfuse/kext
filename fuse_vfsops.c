@@ -80,8 +80,8 @@ struct vfs_fsentry fuse_vfs_entry = {
     &fuse_vfs_ops,
 
     // Number of vnodeopv_desc being registered
-    (sizeof(fuse_vnode_operation_vector_desc_list) /\
-        sizeof(*fuse_vnode_operation_vector_desc_list)),
+    (int)(sizeof(fuse_vnode_operation_vector_desc_list) /\
+          sizeof(*fuse_vnode_operation_vector_desc_list)),
 
     // The vnodeopv_desc's
     fuse_vnode_operation_vector_desc_list,
