@@ -29,6 +29,8 @@
 #include <sys/vnode.h>
 #include <libkern/OSMalloc.h>
 
+#include "fuse_device.h"
+
 typedef struct HNode * HNodeRef;
 
 extern errno_t HNodeInit(lck_grp_t   *lockGroup, 
@@ -43,22 +45,23 @@ extern HNodeRef  HNodeFromFSNodeGeneric(void *fsNode);
 extern HNodeRef  HNodeFromVNode(vnode_t vn);
 extern void *    FSNodeGenericFromVNode(vnode_t vn);
 
-extern dev_t     HNodeGetDevice(HNodeRef hnode);
-extern uint64_t  HNodeGetInodeNumber(HNodeRef hnode);
-extern vnode_t   HNodeGetVNodeForForkAtIndex(HNodeRef hnode, size_t forkIndex);
-extern size_t    HNodeGetForkIndexForVNode(vnode_t vn);
-extern void      HNodeExchangeFromFSNode(void *fsnode1, void *fsnode2);
+extern fuse_device_t HNodeGetDevice(HNodeRef hnode);
+extern uint64_t      HNodeGetInodeNumber(HNodeRef hnode);
+extern vnode_t       HNodeGetVNodeForForkAtIndex(HNodeRef hnode,
+                                                 size_t forkIndex);
+extern size_t        HNodeGetForkIndexForVNode(vnode_t vn);
+extern void          HNodeExchangeFromFSNode(void *fsnode1, void *fsnode2);
 
-extern errno_t   HNodeLookupRealQuickIfExists(dev_t     dev,
-                                              uint64_t  ino,
-                                              size_t    forkIndex,
-                                              HNodeRef *hnodePtr,
-                                              vnode_t  *vnPtr);
-extern errno_t   HNodeLookupCreatingIfNecessary(dev_t     dev,
-                                                uint64_t  ino,
-                                                size_t    forkIndex,
-                                                HNodeRef *hnodePtr,
-                                                vnode_t  *vnPtr);
+extern errno_t   HNodeLookupRealQuickIfExists(fuse_device_t dev,
+                                              uint64_t      ino,
+                                              size_t        forkIndex,
+                                              HNodeRef     *hnodePtr,
+                                              vnode_t      *vnPtr);
+extern errno_t   HNodeLookupCreatingIfNecessary(fuse_device_t dev,
+                                                uint64_t      ino,
+                                                size_t        forkIndex,
+                                                HNodeRef     *hnodePtr,
+                                                vnode_t      *vnPtr);
 extern void      HNodeAttachVNodeSucceeded(HNodeRef hnode,
                                            size_t   forkIndex,
                                            vnode_t  vn);
