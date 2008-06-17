@@ -116,7 +116,7 @@
  * through the fuse.* sysctl interface.
  */
 #define FUSE_DEFAULT_MAX_FREE_TICKETS      1024
-#define FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE (1L << 19)
+#define FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE (1 << 19)
 #define FUSE_DEFAULT_IOV_CREDIT            16
 
 /* User-Kernel IPC Buffer */
