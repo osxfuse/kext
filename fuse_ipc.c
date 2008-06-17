@@ -41,7 +41,7 @@ static fuse_handler_t  fuse_standard_handler;
 void
 fiov_init(struct fuse_iov *fiov, size_t size)
 {
-    uint32_t msize = FU_AT_LEAST(size);
+    size_t msize = FU_AT_LEAST(size);
 
     fiov->len = 0;
 
@@ -346,7 +346,7 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
                 IOLog("MacFUSE: failed to pull uio (error=%d)\n", err);
                 break;
             }
-            err = uiomove(fticket_resp(ftick)->base, len, uio);
+            err = uiomove(fticket_resp(ftick)->base, (int)len, uio);
             if (err) {
                 IOLog("MacFUSE: FT_A_FIOV error is %d (%p, %ld, %p)\n",
                       err, fticket_resp(ftick)->base, len, uio);
@@ -355,7 +355,7 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
 
         case FT_A_BUF:
             ftick->tk_aw_bufsize = len;
-            err = uiomove(ftick->tk_aw_bufdata, len, uio);
+            err = uiomove(ftick->tk_aw_bufdata, (int)len, uio);
             if (err) {
                 IOLog("MacFUSE: FT_A_BUF error is %d (%p, %ld, %p)\n",
                       err, ftick->tk_aw_bufdata, len, uio);
@@ -897,7 +897,7 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
                  size_t                 blen,
                  vfs_context_t          context)
 {
-    ihead->len = sizeof(*ihead) + blen;
+    ihead->len = (uint32_t)(sizeof(*ihead) + blen);
     ihead->unique = ftick->tk_unique;
     ihead->nodeid = nid;
     ihead->opcode = op;
