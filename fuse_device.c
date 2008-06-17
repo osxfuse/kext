@@ -139,7 +139,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
 {
     int unit;
     struct fuse_device *fdev;
-    struct fuse_data  *fdata;
+    struct fuse_data   *fdata;
 
     fuse_trace_printf_func();
 
@@ -213,7 +213,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 {
     int unit;
     struct fuse_device *fdev;
-    struct fuse_data  *data;
+    struct fuse_data   *data;
 
     fuse_trace_printf_func();
 
@@ -296,7 +296,7 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
 
-    struct fuse_device  *fdev;
+    struct fuse_device *fdev;
     struct fuse_data   *data;
     struct fuse_ticket *ftick;
 
@@ -364,13 +364,13 @@ again:
     }
 
     for (i = 0; buf[i]; i++) {
-        if (uio_resid(uio) < buflen[i]) {
+        if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
             data->dataflags |= FSESS_DEAD;
             err = ENODEV;
             break;
         }
 
-        err = uiomove(buf[i], buflen[i], uio);
+        err = uiomove(buf[i], (int)buflen[i], uio);
 
         if (err) {
             break;
@@ -413,11 +413,12 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return ENXIO;
     }
 
-    if (uio_resid(uio) < sizeof(struct fuse_out_header)) {
+    if (uio_resid(uio) < (user_ssize_t)sizeof(struct fuse_out_header)) {
         return EINVAL;
     }
 
-    if ((err = uiomove((caddr_t)&ohead, sizeof(struct fuse_out_header), uio))
+    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header),
+                       uio))
         != 0) {
         return err;
     }
@@ -650,7 +651,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         {
             HNodeRef hn;
             vnode_t  vn;
-            dev_t    dummy_device = (dev_t)data->fdev;
+            fuse_device_t dummy_device = data->fdev;
 
             struct fuse_avfi_ioctl *avfi = (struct fuse_avfi_ioctl *)udata;
 
