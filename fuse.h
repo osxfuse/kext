@@ -136,39 +136,39 @@ extern int32_t fuse_memory_allocated;
 
 static __inline__
 void *
-FUSE_OSMalloc(uint32_t size, OSMallocTag tag)
+FUSE_OSMalloc(size_t size, OSMallocTag tag)
 {
-    void *addr = OSMalloc(size, tag);
+    void *addr = OSMalloc((uint32_t)size, tag);
 
     if (!addr) {
-        panic("MacFUSE: memory allocation failed (size=%d)", size);
+        panic("MacFUSE: memory allocation failed (size=%lu)", size);
     }
 
-    FUSE_OSAddAtomic(size, (SInt32 *)&fuse_memory_allocated);
+    FUSE_OSAddAtomic((UInt32)size, (SInt32 *)&fuse_memory_allocated);
     
     return addr;
 }
 
 static __inline__
 void
-FUSE_OSFree(void *addr, uint32_t size, OSMallocTag tag)
+FUSE_OSFree(void *addr, size_t size, OSMallocTag tag)
 {
-    OSFree(addr, size, tag);
+    OSFree(addr, (uint32_t)size, tag);
 
-    FUSE_OSAddAtomic(-(size), (SInt32 *)&fuse_memory_allocated);
+    FUSE_OSAddAtomic(-(UInt32)(size), (SInt32 *)&fuse_memory_allocated);
 }
 
 #else
 
 #define FUSE_OSAddAtomic(amount, value)    {}
-#define FUSE_OSMalloc(size, tag)           OSMalloc((size), (tag))
+#define FUSE_OSMalloc(size, tag)           OSMalloc((uint32_t)(size), (tag))
 #define FUSE_OSFree(addr, size, tag)       OSFree((addr), (size), (tag))
 
 #endif /* FUSE_COUNT_MEMORY */
 
 static __inline__
 void *
-FUSE_OSRealloc_nocopy(void *oldptr, int oldsize, int newsize)
+FUSE_OSRealloc_nocopy(void *oldptr, size_t oldsize, size_t newsize)
 {   
     void *data;
     
@@ -185,7 +185,7 @@ FUSE_OSRealloc_nocopy(void *oldptr, int oldsize, int newsize)
 
 static __inline__
 void *
-FUSE_OSRealloc_nocopy_canfail(void *oldptr, int oldsize, int newsize)
+FUSE_OSRealloc_nocopy_canfail(void *oldptr, size_t oldsize, size_t newsize)
 {
     void *data;
 
