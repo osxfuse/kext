@@ -164,15 +164,33 @@ fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
         return EIO;
     }
 
+    if (vnode_isdir(vp)) {
+        return ENOTSUP;
+    }
+
+    if (ap->a_bpn == NULL) {
+        return 0;
+    }
+
     fvdat = VTOFUD(vp);
     data = fuse_get_mpdata(vnode_mount(vp));
+
+    /*
+     * We could assert that:
+     *
+     * (foffset % data->blocksize) == 0
+     * (foffset < fvdat->filesize)
+     * (size % data->blocksize) == 0)
+     */
 
     *bpnPtr = foffset / data->blocksize;
 
     contiguousPhysicalBytes = \
         fvdat->filesize - (off_t)(*bpnPtr * data->blocksize);
 
-    if (contiguousPhysicalBytes > size) {
+    /* contiguousPhysicalBytes cannot really be negative (could assert) */
+
+    if (contiguousPhysicalBytes > (off_t)size) {
         contiguousPhysicalBytes = (off_t)size;
     }
 
@@ -470,8 +488,8 @@ fuse_vnop_exchange(struct vnop_exchange_args *ap)
     int           options = ap->a_options;
     vfs_context_t context = ap->a_context;
 
-    char *fname = NULL;
-    char *tname = NULL;
+    const char *fname = NULL;
+    const char *tname = NULL;
     size_t flen = 0;
     size_t tlen = 0;
 
@@ -818,7 +836,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     mount_t mp;
 
     int err = 0;
-    int namelen;      
+    size_t namelen;      
     
     fuse_trace_printf_vnop();
 
@@ -854,7 +872,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     fgxi = fdi.indata;
     
     if (uio) {
-        fgxi->size = (size_t)uio_resid(uio);
+        fgxi->size = (uint32_t)uio_resid(uio);
     } else {
         fgxi->size = 0;
     }
@@ -879,10 +897,10 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
                      
     if (uio) {       
         *ap->a_size = fdi.iosize;
-        if (fdi.iosize > uio_resid(uio)) {
+        if ((user_ssize_t)fdi.iosize > uio_resid(uio)) {
             err = ERANGE;
         } else {
-            err = uiomove((char *)fdi.answ, fdi.iosize, uio);
+            err = uiomove((char *)fdi.answ, (int)fdi.iosize, uio);
         }
     } else {
         fgxo = (struct fuse_getxattr_out *)fdi.answ;
@@ -1215,7 +1233,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
     fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, context);
     fgxi = fdi.indata;
     if (uio) {
-        fgxi->size = (size_t)uio_resid(uio);
+        fgxi->size = (uint32_t)uio_resid(uio);
     } else {
         fgxi->size = 0;
     }
@@ -1231,10 +1249,10 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
 
     if (uio) {
         *ap->a_size = fdi.iosize;
-        if (fdi.iosize > uio_resid(uio)) {
+        if ((user_ssize_t)fdi.iosize > uio_resid(uio)) {
             err = ERANGE;
         } else {
-            err = uiomove((char *)fdi.answ, fdi.iosize, uio);
+            err = uiomove((char *)fdi.answ, (int)fdi.iosize, uio);
         }
     } else {
         fgxo = (struct fuse_getxattr_out *)fdi.answ;
@@ -2023,7 +2041,7 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
 
     if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
         if (!(flags & UPL_NOCOMMIT)) {
-            ubc_upl_abort_range(pl, pl_offset, size,
+            ubc_upl_abort_range(pl, (upl_offset_t)pl_offset, (int)size,
                                 UPL_ABORT_FREE_ON_EMPTY | UPL_ABORT_ERROR);
         }
         /*
@@ -2037,7 +2055,7 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
         return EIO;
     }
 
-    err = cluster_pagein(vp, pl, pl_offset, f_offset, size,
+    err = cluster_pagein(vp, pl, (upl_offset_t)pl_offset, f_offset, (int)size,
                          fvdat->filesize, flags);
 
     return err;
@@ -2072,7 +2090,7 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
 
     if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
         if (!(flags & UPL_NOCOMMIT)) {
-            ubc_upl_abort_range(pl, pl_offset, size,
+            ubc_upl_abort_range(pl, (upl_offset_t)pl_offset, (upl_size_t)size,
                                 UPL_ABORT_FREE_ON_EMPTY | UPL_ABORT_ERROR);
         }
         /*
@@ -2081,8 +2099,8 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         return ENOTSUP;
     }
 
-    error = cluster_pageout(vp, pl, pl_offset, f_offset, size,
-                            (off_t)fvdat->filesize, flags);
+    error = cluster_pageout(vp, pl, (upl_offset_t)pl_offset, f_offset,
+                            (int)size, (off_t)fvdat->filesize, flags);
 
     return error;
 }
@@ -2092,7 +2110,7 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         struct vnodeop_desc *a_desc;
         vnode_t              a_vp;
         int                  a_name;
-        register_t          *a_retval;
+        int                 *a_retval;
         vfs_context_t        a_context;
     };
 */
@@ -2101,7 +2119,7 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
 {
     vnode_t        vp        = ap->a_vp;
     int            name      = ap->a_name;
-    register_t    *retvalPtr = ap->a_retval;
+    int           *retvalPtr = ap->a_retval;
     vfs_context_t  context   = ap->a_context;
 
     int err;
@@ -2286,13 +2304,14 @@ fuse_vnop_read(struct vnop_read_args *ap)
             fri = fdi.indata;
             fri->fh = fufh->fh_id;
             fri->offset = uio_offset(uio);
-            fri->size = min((size_t)uio_resid(uio), data->iosize);
+            fri->size = (uint32_t)min((size_t)uio_resid(uio), data->iosize);
 
             if ((err = fdisp_wait_answ(&fdi))) {
                 return err;
             }
 
-            if ((err = uiomove(fdi.answ, min(fri->size, fdi.iosize), uio))) {
+            if ((err = uiomove(fdi.answ, (int)min(fri->size, fdi.iosize),
+                               uio))) {
                 break;
             }
 
@@ -2433,11 +2452,11 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     if (((char *)fdi.answ)[0] == '/' &&
         fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_JAIL_SYMLINKS) {
             char *mpth = vfs_statfs(vnode_mount(vp))->f_mntonname;
-            err = uiomove(mpth, strlen(mpth), uio);
+            err = uiomove(mpth, (int)strlen(mpth), uio);
     }
 
     if (!err) {
-        err = uiomove(fdi.answ, fdi.iosize, uio);
+        err = uiomove(fdi.answ, (int)fdi.iosize, uio);
     }
 
     fuse_ticket_drop(fdi.tick);
@@ -2519,7 +2538,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 
                     if (open_count != aux_count) {
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-                        char *vname = vnode_getname(vp);
+                        const char *vname = vnode_getname(vp);
                         IOLog("MacFUSE: vnode reclaimed with valid fufh "
                               "(%s type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
@@ -2643,7 +2662,8 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
     struct fuse_data      *data;
 
     mount_t mp;
-    int namelen;
+    size_t  namelen;
+
     int err = 0;
 
     fuse_trace_printf_vnop();
@@ -2976,21 +2996,24 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     if (VATTR_IS_ACTIVE(vap, va_access_time)) {
         fsai->FUSEATTR(atime) = vap->va_access_time.tv_sec;
-        fsai->FUSEATTR(atimensec) = vap->va_access_time.tv_nsec;
+        /* XXX: truncation */
+        fsai->FUSEATTR(atimensec) = (uint32_t)vap->va_access_time.tv_nsec;
         fsai->valid |=  FATTR_ATIME;
     }
     VATTR_SET_SUPPORTED(vap, va_access_time);
 
     if (VATTR_IS_ACTIVE(vap, va_modify_time)) {
         fsai->FUSEATTR(mtime) = vap->va_modify_time.tv_sec;
-        fsai->FUSEATTR(mtimensec) = vap->va_modify_time.tv_nsec;
+        /* XXX: truncation */
+        fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_modify_time.tv_nsec;
         fsai->valid |=  FATTR_MTIME;
     }
     VATTR_SET_SUPPORTED(vap, va_modify_time);
 
     if (VATTR_IS_ACTIVE(vap, va_backup_time) && fuse_isxtimes(vp)) {
         fsai->FUSEATTR(bkuptime) = vap->va_backup_time.tv_sec;
-        fsai->FUSEATTR(mtimensec) = vap->va_backup_time.tv_nsec;
+        /* XXX: truncation */
+        fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_backup_time.tv_nsec;
         fsai->valid |= FATTR_BKUPTIME;
         VATTR_SET_SUPPORTED(vap, va_backup_time);
     }
@@ -2998,12 +3021,14 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     if (VATTR_IS_ACTIVE(vap, va_change_time)) {
         if (fuse_isxtimes(vp)) {
             fsai->FUSEATTR(chgtime) = vap->va_change_time.tv_sec;
-            fsai->FUSEATTR(chgtimensec) = vap->va_change_time.tv_nsec;
+            /* XXX: truncation */
+            fsai->FUSEATTR(chgtimensec) = (uint32_t)vap->va_change_time.tv_nsec;
             fsai->valid |=  FATTR_CHGTIME;
             VATTR_SET_SUPPORTED(vap, va_change_time);
         } else {
             fsai->FUSEATTR(mtime) = vap->va_change_time.tv_sec;
-            fsai->FUSEATTR(mtimensec) = vap->va_change_time.tv_nsec;
+            /* XXX: truncation */
+            fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_change_time.tv_nsec;
             fsai->valid |=  FATTR_MTIME;
             VATTR_SET_SUPPORTED(vap, va_change_time);
         }
@@ -3011,7 +3036,8 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     if (VATTR_IS_ACTIVE(vap, va_create_time) && fuse_isxtimes(vp)) {
         fsai->FUSEATTR(crtime) = vap->va_create_time.tv_sec;
-        fsai->FUSEATTR(crtimensec) = vap->va_create_time.tv_nsec;
+        /* XXX: truncation */
+        fsai->FUSEATTR(crtimensec) = (uint32_t)vap->va_create_time.tv_nsec;
         fsai->valid |= FATTR_CRTIME;
         VATTR_SET_SUPPORTED(vap, va_create_time);
     }
@@ -3131,7 +3157,8 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     int err = 0;
     int iov_err = 0;
-    int i, iov_cnt, namelen;
+    int i, iov_cnt;
+    size_t namelen;
     size_t attrsize;
     off_t  saved_offset;
 
@@ -3194,7 +3221,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     }
     fsxi = fdi.indata;
 
-    fsxi->size = attrsize;
+    fsxi->size = (uint32_t)attrsize;
     fsxi->flags = ap->a_options;
     fsxi->position = (uint32_t)saved_offset;
 
@@ -3205,8 +3232,8 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     memcpy((char *)fdi.indata + sizeof(*fsxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fsxi) + namelen] = '\0';
 
-    err = uiomove((char *)fdi.indata + sizeof(*fsxi) + namelen + 1, attrsize,
-                  uio);
+    err = uiomove((char *)fdi.indata + sizeof(*fsxi) + namelen + 1,
+                  (int)attrsize, uio);
     if (!err) {
         err = fdisp_wait_answ(&fdi);
     }
@@ -3443,9 +3470,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fwi = fdi.indata;
             fwi->fh = fufh->fh_id;
             fwi->offset = uio_offset(uio);
-            fwi->size = chunksize;
+            fwi->size = (uint32_t)chunksize;
 
-            error = uiomove((char *)fdi.indata + sizeof(*fwi), chunksize, uio);
+            error = uiomove((char *)fdi.indata + sizeof(*fwi), (int)chunksize,
+                            uio);
             if (error) {
                 break;
             }
