@@ -151,7 +151,7 @@ fuse_internal_access(vnode_t                   vp,
 
     if (err == ENOENT) {
 
-        char *vname = NULL;
+        const char *vname = NULL;
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
         vname = vnode_getname(vp);
@@ -512,7 +512,7 @@ fuse_internal_readdir(vnode_t                 vp,
     fdisp_init(&fdi, 0);
 
     /* Note that we DO NOT have a UIO_SYSSPACE here (so no need for p2p I/O). */
-
+	
     while (uio_resid(uio) > 0) {
 
         fdi.iosize = sizeof(*fri);
@@ -522,7 +522,7 @@ fuse_internal_readdir(vnode_t                 vp,
         fri->fh = fufh->fh_id;
         fri->offset = uio_offset(uio);
         data = fuse_get_mpdata(vnode_mount(vp));
-        fri->size = min((size_t)uio_resid(uio), data->iosize);
+        fri->size = (typeof(fri->size))min((size_t)uio_resid(uio), data->iosize);
 
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
@@ -560,7 +560,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
     int err = 0;
     int cou = 0;
     int n   = 0;
-    int bytesavail;
+    size_t bytesavail;
     size_t freclen;
 
     struct dirent      *de;
@@ -611,7 +611,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
 
         bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen); 
 
-        if (bytesavail > uio_resid(uio)) {
+        if (bytesavail > (size_t)uio_resid(uio)) {
             err = -1;
             break;
         }
@@ -640,7 +640,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
                (char *)buf + FUSE_NAME_OFFSET, fudge->namelen);
         ((char *)cookediov->base)[bytesavail] = '\0';
 
-        err = uiomove(cookediov->base, cookediov->len, uio);
+        err = uiomove(cookediov->base, (int)cookediov->len, uio);
         if (err) {
             break;
         }
@@ -990,7 +990,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
              */
 
             fri->offset = offset;
-            fri->size = chunksize;
+            fri->size = (typeof(fri->size))chunksize;
             fdi.tick->tk_aw_type = FT_A_BUF;
             fdi.tick->tk_aw_bufdata = bufdat;
         
@@ -1006,7 +1006,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 goto out;
             }
 
-            buf_setresid(bp, buf_resid(bp) - respsize);
+            buf_setresid(bp, (uint32_t)(buf_resid(bp) - respsize));
             bufdat += respsize;
             offset += respsize;
 
@@ -1058,7 +1058,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fwi = fdi.indata;
             fwi->fh = fufh->fh_id;
             fwi->offset = offset;
-            fwi->size = chunksize;
+            fwi->size = (typeof(fwi->size))chunksize;
 
             fdi.tick->tk_ms_type = FT_M_BUF;
             fdi.tick->tk_ms_bufdata = bufdat;
@@ -1456,7 +1456,7 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 static int
 fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
 {
-    char *vname = NULL;
+    const char *vname = NULL;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
@@ -1500,7 +1500,7 @@ __private_extern__
 void
 fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
 {
-    char *vname = NULL;
+    const char *vname = NULL;
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
     vname = vnode_getname(vp);
