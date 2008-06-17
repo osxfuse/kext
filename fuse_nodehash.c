@@ -58,7 +58,7 @@ struct HNode {
     LIST_ENTRY(HNode) hashLink;
 
     /* [1] device number on which file system object (fsobj) resides */
-    dev_t dev;
+    fuse_device_t dev;
 
     /* [1] inode number of fsobj resides */
     uint64_t ino;
@@ -150,9 +150,9 @@ static u_long gHashTableMask;
  * hash chain head.
  */
 static HNodeHashHead *
-HNodeGetFirstFromHashTable(dev_t dev, uint64_t ino)
+HNodeGetFirstFromHashTable(fuse_device_t dev, uint64_t ino)
 {
-    return (HNodeHashHead *)&gHashTable[((uint64_t)dev + ino) & gHashTableMask];
+    return (HNodeHashHead *)&gHashTable[((uint64_t)(u_long)dev + ino) & gHashTableMask];
 }
 
 extern errno_t
@@ -255,7 +255,7 @@ FSNodeGenericFromVNode(vnode_t vn)
     return FSNodeGenericFromHNode(HNodeFromVNode(vn));
 }
 
-extern dev_t
+extern fuse_device_t 
 HNodeGetDevice(HNodeRef hnode)
 {
     assert(hnode != NULL);
@@ -359,9 +359,9 @@ HNodeExchangeFromFSNode(void *fsnode1, void *fsnode2)
 }
 
 extern errno_t
-HNodeLookupCreatingIfNecessary(dev_t     dev,
-                               uint64_t  ino,
-                               size_t    forkIndex,
+HNodeLookupCreatingIfNecessary(fuse_device_t dev,
+                               uint64_t      ino,
+                               size_t        forkIndex,
                                HNodeRef *hnodePtr,
                                vnode_t  *vnPtr)
 {
@@ -946,7 +946,7 @@ HNodePrintState(void)
             
             thisNode = &nodes[nodeIndex];
             
-            printf("{%d.%lld %c%c ", thisNode->dev, thisNode->ino,
+            printf("{%p.%lld %c%c ", thisNode->dev, thisNode->ino,
                    " A"[thisNode->attachOutstanding], " W"[thisNode->waiting]);
 
             for (forkIndex = 0; forkIndex < thisNode->forkVNodesSize;
@@ -974,11 +974,11 @@ HNodePrintState(void)
  */
 
 extern errno_t
-HNodeLookupRealQuickIfExists(dev_t     dev,
-                             uint64_t  ino,
-                             size_t    forkIndex,
-                             HNodeRef *hnodePtr,
-                             vnode_t  *vnPtr)
+HNodeLookupRealQuickIfExists(fuse_device_t dev,
+                             uint64_t      ino,
+                             size_t        forkIndex,
+                             HNodeRef     *hnodePtr,
+                             vnode_t      *vnPtr)
 {
     errno_t   err = EAGAIN;
     HNodeRef  thisNode;
