@@ -118,7 +118,7 @@ filt_fusevnode(struct knote *kn, long hint)
     }
 
     if (kn->kn_sfflags & hint) {
-        kn->kn_fflags |= hint;
+        kn->kn_fflags |= (int)hint;
     }
 
     if ((hint == NOTE_REVOKE)) {
