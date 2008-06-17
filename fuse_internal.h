@@ -61,8 +61,8 @@ struct fuse_ticket;
 /* miscellaneous */
 
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-extern char *vnode_getname(vnode_t vp);
-extern void  vnode_putname(char *name);
+extern const char *vnode_getname(vnode_t vp);
+extern void  vnode_putname(const char *name);
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
 static __inline__
