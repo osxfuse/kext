@@ -830,12 +830,16 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
             VOL_CAP_FMT_CASE_SENSITIVE;
     }
 
+    /*
     if (data->dataflags & FSESS_VOL_RENAME) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
             VOL_CAP_INT_VOL_RENAME;
     } else {
         fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
     }
+    */
+    /* Not yet. */
+    fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
 
     if (data->dataflags & FSESS_XTIMES) {
         attr->f_attributes.validattr.commonattr |=
