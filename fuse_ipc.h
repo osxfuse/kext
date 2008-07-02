@@ -29,7 +29,6 @@
 #include "fuse_kludges.h"
 #include "fuse_locking.h"
 
-/* 16 bytes */
 struct fuse_iov {
     void   *base;
     size_t  len;
@@ -62,7 +61,6 @@ struct fuse_data;
 
 typedef int fuse_handler_t(struct fuse_ticket *ftick, uio_t uio);
 
-/* 128 bytes */
 struct fuse_ticket {
     uint64_t                     tk_unique;
     struct fuse_data            *tk_data;
@@ -140,12 +138,6 @@ fticket_invalidate(struct fuse_ticket *ftick)
 int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
 enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
-
-#if M_MACFUSE_ENABLE_DSELECT
-/* 1220 bytes */
-#else
-/* 1188 bytes */
-#endif /* M_MACFUSE_ENABLE_DSELECT */
 
 struct fuse_data {
     fuse_device_t              fdev;
