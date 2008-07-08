@@ -53,7 +53,6 @@ enum {
 #define C_TOUCH_MODTIME      0x000040000
 #define C_XTIMES_VALID       0x000080000
 
-/* 408 bytes */
 struct fuse_vnode_data {
 
     /** check **/
@@ -77,6 +76,7 @@ struct fuse_vnode_data {
     uint32_t   c_flag;
 
     /** meta **/
+    struct timespec   modify_time;
     struct timespec   entry_valid;
     struct timespec   attr_valid;
     struct vnode_attr cached_attr;
