@@ -399,12 +399,12 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
 
     fgxo = (struct fuse_getxtimes_out *)fdi.answ;
 
-    t.tv_sec = (time_t)fgxo->bkuptime;
+    t.tv_sec = (time_t)fgxo->bkuptime; /* XXX: truncation */
     t.tv_nsec = fgxo->bkuptimensec;
     VATTR_RETURN(in_vap, va_backup_time, t);
     VATTR_RETURN(out_vap, va_backup_time, t);
 
-    t.tv_sec = (time_t)fgxo->crtime;
+    t.tv_sec = (time_t)fgxo->crtime; /* XXX: truncation */
     t.tv_nsec = fgxo->crtimensec;
     VATTR_RETURN(in_vap, va_create_time, t);
     VATTR_RETURN(out_vap, va_create_time, t);
@@ -512,7 +512,7 @@ fuse_internal_readdir(vnode_t                 vp,
     fdisp_init(&fdi, 0);
 
     /* Note that we DO NOT have a UIO_SYSSPACE here (so no need for p2p I/O). */
-	
+
     while (uio_resid(uio) > 0) {
 
         fdi.iosize = sizeof(*fri);
