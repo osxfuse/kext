@@ -737,7 +737,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         return err;
     }
 
-    /* Could check the sanity/volatility of va_mode here. */
+    /* XXX: Could check the sanity/volatility of va_mode here. */
 
     if ((((struct fuse_attr_out *)fdi.answ)->attr.mode & S_IFMT) == 0) {
         return EIO;
@@ -1875,6 +1875,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
     struct fuse_filehandle *fufh_rw = NULL;
 
     int error, isdir = 0;
+    long hint = 0;
 
     fuse_trace_printf_vnop();
 
@@ -1998,6 +1999,37 @@ ok:
         fuse_clearnosyncwrites_mp(vnode_mount(vp));
         fvdat->flag |= FN_DIRECT_IO;
         goto out;
+    } else if (fufh->fuse_open_flags & FOPEN_PURGE_UBC) {
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+                  UBC_PUSHALL | UBC_INVALIDATE);
+        fufh->fuse_open_flags &= ~FOPEN_PURGE_UBC;
+        hint |= NOTE_WRITE;
+        if (fufh->fuse_open_flags & FOPEN_PURGE_ATTR) {
+            int serr = 0;
+            struct fuse_dispatcher fdi;
+            fuse_invalidate_attr(vp);
+            hint |= NOTE_ATTRIB;
+            serr = fdisp_simple_putget_vp(&fdi, FUSE_GETATTR, vp, context);
+            if (!serr) {
+                /* XXX: Could check the sanity/volatility of va_mode here. */
+                if ((((struct fuse_attr_out*)fdi.answ)->attr.mode & S_IFMT)) {
+                    cache_attrs(vp, (struct fuse_attr_out *)fdi.answ);
+                    off_t new_filesize =
+                        ((struct fuse_attr_out *)fdi.answ)->attr.size;
+                    if (new_filesize > VTOFUD(vp)->filesize) {
+                        hint |= NOTE_EXTEND;
+                    }
+                    VTOFUD(vp)->filesize = new_filesize;
+                    ubc_setsize(vp, (off_t)new_filesize);
+                }
+                fuse_ticket_drop(fdi.tick);
+            }
+            fufh->fuse_open_flags &= ~FOPEN_PURGE_ATTR;
+        }
+    }
+
+    if (hint) {
+        FUSE_KNOTE(vp, hint);
     }
 
     if (fuse_isnoreadahead(vp)) {
