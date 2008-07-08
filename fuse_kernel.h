@@ -126,6 +126,10 @@ struct fuse_file_lock {
  */
 #define FOPEN_DIRECT_IO		(1 << 0)
 #define FOPEN_KEEP_CACHE	(1 << 1)
+#if (__FreeBSD__ >= 10)
+#define FOPEN_PURGE_ATTR	(1 << 30)
+#define FOPEN_PURGE_UBC		(1 << 31)
+#endif
 
 /**
  * INIT request/reply flags
