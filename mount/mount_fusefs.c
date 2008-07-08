@@ -50,6 +50,7 @@ struct mntopt mopts[] = {
     { "allow_other",         0, FUSE_MOPT_ALLOW_OTHER,            1 }, // kused
     { "allow_recursion",     0, FUSE_MOPT_ALLOW_RECURSION,        1 }, // uused
     { "allow_root",          0, FUSE_MOPT_ALLOW_ROOT,             1 }, // kused
+    { "auto_cache",          0, FUSE_MOPT_AUTO_CACHE,             1 }, // kused
     { "auto_xattr",          0, FUSE_MOPT_AUTO_XATTR,             1 }, // kused
     { "blocksize=",          0, FUSE_MOPT_BLOCKSIZE,              1 }, // kused
     { "daemon_timeout=",     0, FUSE_MOPT_DAEMON_TIMEOUT,         1 }, // kused
