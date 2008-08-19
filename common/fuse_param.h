@@ -59,7 +59,7 @@
  * This is the number of /dev/fuse<n> nodes we will create. <n> goes from
  * 0 to (FUSE_NDEVICES - 1).
  */
-#define MACFUSE_NDEVICES                   16
+#define MACFUSE_NDEVICES                   24
 
 /*
  * This is the default block size of the virtual storage devices that are
