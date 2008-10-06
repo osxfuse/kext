@@ -1679,7 +1679,6 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 static int
 fuse_vnop_mmap(struct vnop_mmap_args *ap)
 {
-return EPERM;
     vnode_t       vp      = ap->a_vp;
     int           fflags  = ap->a_fflags;
     vfs_context_t context = ap->a_context;
@@ -1749,7 +1748,8 @@ retry:
          */
         if (!retried && (err == EACCES) &&
             ((fufh_type == FUFH_RDWR) || (fufh_type == FUFH_WRONLY))) {
-            IOLog("MacFUSE: filehandle_get retrying (type=%d)\n", fufh_type);
+            IOLog("MacFUSE: filehandle_get retrying (type=%d, err=%d)\n",
+                  fufh_type, err);
             fufh_type = FUFH_RDONLY;
             retried = 1;
             goto retry;
@@ -2559,7 +2559,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 
                     /*
                      * Miselading symptoms (can be seen at unmount time):
-                     * 
+                     *
                      * open
                      * close
                      * inactive
