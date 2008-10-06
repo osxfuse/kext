@@ -81,8 +81,10 @@ fuse_filehandle_get(vnode_t       vp,
             cache_purge(vp);
         }
 #if M_MACFUSE_ENABLE_UNSUPPORTED
-        IOLog("MacFUSE: filehandle_get: failed for %s (error=%d)\n",
-              (vname) ? vname : "?", err);
+        IOLog("MacFUSE: filehandle_get: failed for %s "
+              "(type=%d, err=%d, caller=%p)\n",
+              (vname) ? vname : "?", fufh_type, err,
+               __builtin_return_address(0));
         if (vname) {
             vnode_putname(vname);
         }
