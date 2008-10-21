@@ -181,7 +181,12 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_AUTO_XATTR) {
+        if (fusefs_args.altflags & FUSE_MOPT_NATIVE_XATTR) {
+            return EINVAL;
+        }
         mntopts |= FSESS_AUTO_XATTR;
+    } else if (fusefs_args.altflags & FUSE_MOPT_NATIVE_XATTR) {
+        mntopts |= FSESS_NATIVE_XATTR;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_BROWSE) {
@@ -728,6 +733,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
         ;
+
+    if (data->dataflags & FSESS_NATIVE_XATTR) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_EXTENDED_ATTR;
+    }
 
     attr->f_capabilities.valid[VOL_CAPABILITIES_INTERFACES] = 0
         | VOL_CAP_INT_SEARCHFS

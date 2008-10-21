@@ -68,6 +68,7 @@ struct mntopt mopts[] = {
     { "jail_symlinks",       0, FUSE_MOPT_JAIL_SYMLINKS,          1 }, // kused
     { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused 
     { "local",               0, FUSE_MOPT_LOCALVOL,               1 }, // kused
+    { "native_xattr",        0, FUSE_MOPT_NATIVE_XATTR,           1 }, // kused
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
@@ -813,6 +814,12 @@ main(int argc, char **argv)
         (altflags & FUSE_MOPT_DEFER_PERMISSIONS)) {
         errx(EX_USAGE,
              "'default_permissions' can't be used with 'defer_permissions'");
+    }
+
+    if ((altflags & FUSE_MOPT_AUTO_XATTR) &&
+        (altflags & FUSE_MOPT_NATIVE_XATTR)) {
+        errx(EX_USAGE,
+             "'auto_xattr' can't be used with 'native_xattr'");
     }
 
     if (getenv("MOUNT_FUSEFS_NO_ALERTS")) {
