@@ -423,6 +423,164 @@ out:
     return err;
 }
 
+/* setattr sidekicks */
+__private_extern__
+int
+fuse_internal_attr_vat2fsai(mount_t                 mp,
+                            vnode_t                 vp,
+                            struct vnode_attr      *vap,
+                            struct fuse_setattr_in *fsai,
+                            uint64_t               *newsize)
+{
+    /*
+     * XXX: Locking
+     *
+     * We need to worry about the file size changing in setattr(). If the call
+     * is indeed altering the size, then:
+     *
+     * lock_exclusive(truncatelock)
+     *   lock(nodelock)
+     *     set the new size
+     *   unlock(nodelock)
+     *   adjust ubc
+     *   lock(nodelock)
+     *     do cleanup
+     *   unlock(nodelock)
+     * unlock(truncatelock)
+     * ...
+     */
+
+    int sizechanged = 0;
+    uid_t nuid;
+    gid_t ngid;
+
+    fsai->valid = 0;
+
+    if (newsize) {
+        *newsize = 0;
+    }
+
+    nuid = VATTR_IS_ACTIVE(vap, va_uid) ? vap->va_uid : (uid_t)VNOVAL;
+    if (nuid != (uid_t)VNOVAL) {
+        fsai->uid = nuid;
+        fsai->valid |= FATTR_UID;
+    }
+    VATTR_SET_SUPPORTED(vap, va_uid);
+
+    ngid = VATTR_IS_ACTIVE(vap, va_gid) ? vap->va_gid : (gid_t)VNOVAL;
+    if (ngid != (gid_t)VNOVAL) {
+        fsai->gid = ngid;
+        fsai->valid |= FATTR_GID;
+    }
+    VATTR_SET_SUPPORTED(vap, va_gid);
+
+    if (VATTR_IS_ACTIVE(vap, va_data_size)) {
+
+        // Truncate to a new value.
+        fsai->size = vap->va_data_size;
+        sizechanged = 1;
+	if (newsize) {
+            *newsize = vap->va_data_size;
+        }
+        fsai->valid |= FATTR_SIZE;      
+
+        if (vp) {
+            struct fuse_filehandle *fufh = NULL;
+            fufh_type_t fufh_type = FUFH_WRONLY;
+            struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+            fufh = &(fvdat->fufh[fufh_type]);
+
+            if (!FUFH_IS_VALID(fufh)) {
+                fufh_type = FUFH_RDWR;
+                fufh = &(fvdat->fufh[fufh_type]);
+                if (!FUFH_IS_VALID(fufh)) {
+                    fufh = NULL;
+                }
+            }
+
+            if (fufh) {
+                fsai->fh = fufh->fh_id;
+                fsai->valid |= FATTR_FH;
+            }
+        }
+    }
+    VATTR_SET_SUPPORTED(vap, va_data_size);
+
+    /*
+     * Possible timestamps:
+     *
+     * Mac OS X                                          Linux  FUSE API
+     *  
+     * va_access_time    last access time                atime  atime
+     * va_backup_time    last backup time                -      -
+     * va_change_time    last metadata change time       ctime* -
+     * va_create_time    creation time                   -      -
+     * va_modify_time    last data modification time     mtime  mtime
+     *
+     */
+
+    if (VATTR_IS_ACTIVE(vap, va_access_time)) {
+        fsai->atime = vap->va_access_time.tv_sec;
+        /* XXX: truncation */
+        fsai->atimensec = (uint32_t)vap->va_access_time.tv_nsec;
+        fsai->valid |=  FATTR_ATIME;
+    }
+    VATTR_SET_SUPPORTED(vap, va_access_time);
+
+    if (VATTR_IS_ACTIVE(vap, va_modify_time)) {
+        fsai->mtime = vap->va_modify_time.tv_sec;
+        /* XXX: truncation */
+        fsai->mtimensec = (uint32_t)vap->va_modify_time.tv_nsec;
+        fsai->valid |=  FATTR_MTIME;
+    }
+    VATTR_SET_SUPPORTED(vap, va_modify_time);
+
+    if (VATTR_IS_ACTIVE(vap, va_backup_time) && fuse_isxtimes_mp(mp)) {
+        fsai->bkuptime = vap->va_backup_time.tv_sec;
+        /* XXX: truncation */
+        fsai->bkuptimensec = (uint32_t)vap->va_backup_time.tv_nsec;
+        fsai->valid |= FATTR_BKUPTIME;
+        VATTR_SET_SUPPORTED(vap, va_backup_time);
+    }
+
+    if (VATTR_IS_ACTIVE(vap, va_change_time)) {
+        if (fuse_isxtimes_mp(mp)) {
+            fsai->chgtime = vap->va_change_time.tv_sec;
+            /* XXX: truncation */
+            fsai->chgtimensec = (uint32_t)vap->va_change_time.tv_nsec;
+            fsai->valid |=  FATTR_CHGTIME;
+            VATTR_SET_SUPPORTED(vap, va_change_time);
+        }
+    }
+
+    if (VATTR_IS_ACTIVE(vap, va_create_time) && fuse_isxtimes_mp(mp)) {
+        fsai->crtime = vap->va_create_time.tv_sec;
+        /* XXX: truncation */
+        fsai->crtimensec = (uint32_t)vap->va_create_time.tv_nsec;
+        fsai->valid |= FATTR_CRTIME;
+        VATTR_SET_SUPPORTED(vap, va_create_time);
+    }
+
+    if (VATTR_IS_ACTIVE(vap, va_mode)) {
+        fsai->mode = vap->va_mode & ALLPERMS;
+        fsai->valid |= FATTR_MODE;
+    }
+    VATTR_SET_SUPPORTED(vap, va_mode);
+
+    if (VATTR_IS_ACTIVE(vap, va_flags)) {
+        fsai->flags = vap->va_flags;
+        fsai->valid |= FATTR_FLAGS;
+    }
+    VATTR_SET_SUPPORTED(vap, va_flags);
+
+    /*
+     * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.
+     */
+
+    return sizechanged;
+}
+
 /* ioctl */
 __private_extern__
 int

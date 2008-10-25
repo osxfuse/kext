@@ -453,6 +453,13 @@ int
 fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
                          vfs_context_t context);
 
+int
+fuse_internal_attr_vat2fsai(mount_t                 mp,
+                            vnode_t                 vp,
+                            struct vnode_attr      *vap,
+                            struct fuse_setattr_in *fsai,
+                            uint64_t               *newsize);
+
 static __inline__
 void
 fuse_internal_attr_fat2vat(vnode_t            vp,
