@@ -2966,18 +2966,16 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     fsai = fdi.indata;
     fsai->valid = 0;
 
-#define FUSEATTR(x) x
-
     nuid = VATTR_IS_ACTIVE(vap, va_uid) ? vap->va_uid : (uid_t)VNOVAL;
     ngid = VATTR_IS_ACTIVE(vap, va_gid) ? vap->va_gid : (gid_t)VNOVAL;
 
     if (nuid != (uid_t)VNOVAL) {
-        fsai->FUSEATTR(uid) = nuid;
+        fsai->uid = nuid;
         fsai->valid |= FATTR_UID;
     }
 
     if (ngid != (gid_t)VNOVAL) {
-        fsai->FUSEATTR(gid) = ngid;
+        fsai->gid = ngid;
         fsai->valid |= FATTR_GID;
     }
 
@@ -2991,7 +2989,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
         // Truncate to a new value.
-        fsai->FUSEATTR(size) = vap->va_data_size;
+        fsai->size = vap->va_data_size;
         sizechanged = 1;
         newsize = vap->va_data_size;
         fsai->valid |= FATTR_SIZE;      
@@ -3027,61 +3025,55 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
      */
 
     if (VATTR_IS_ACTIVE(vap, va_access_time)) {
-        fsai->FUSEATTR(atime) = vap->va_access_time.tv_sec;
+        fsai->atime = vap->va_access_time.tv_sec;
         /* XXX: truncation */
-        fsai->FUSEATTR(atimensec) = (uint32_t)vap->va_access_time.tv_nsec;
+        fsai->atimensec = (uint32_t)vap->va_access_time.tv_nsec;
         fsai->valid |=  FATTR_ATIME;
     }
     VATTR_SET_SUPPORTED(vap, va_access_time);
 
     if (VATTR_IS_ACTIVE(vap, va_modify_time)) {
-        fsai->FUSEATTR(mtime) = vap->va_modify_time.tv_sec;
+        fsai->mtime = vap->va_modify_time.tv_sec;
         /* XXX: truncation */
-        fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_modify_time.tv_nsec;
+        fsai->mtimensec = (uint32_t)vap->va_modify_time.tv_nsec;
         fsai->valid |=  FATTR_MTIME;
     }
     VATTR_SET_SUPPORTED(vap, va_modify_time);
 
     if (VATTR_IS_ACTIVE(vap, va_backup_time) && fuse_isxtimes(vp)) {
-        fsai->FUSEATTR(bkuptime) = vap->va_backup_time.tv_sec;
+        fsai->bkuptime = vap->va_backup_time.tv_sec;
         /* XXX: truncation */
-        fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_backup_time.tv_nsec;
+        fsai->bkuptimensec = (uint32_t)vap->va_backup_time.tv_nsec;
         fsai->valid |= FATTR_BKUPTIME;
         VATTR_SET_SUPPORTED(vap, va_backup_time);
     }
 
     if (VATTR_IS_ACTIVE(vap, va_change_time)) {
         if (fuse_isxtimes(vp)) {
-            fsai->FUSEATTR(chgtime) = vap->va_change_time.tv_sec;
+            fsai->chgtime = vap->va_change_time.tv_sec;
             /* XXX: truncation */
-            fsai->FUSEATTR(chgtimensec) = (uint32_t)vap->va_change_time.tv_nsec;
+            fsai->chgtimensec = (uint32_t)vap->va_change_time.tv_nsec;
             fsai->valid |=  FATTR_CHGTIME;
-            VATTR_SET_SUPPORTED(vap, va_change_time);
-        } else {
-            fsai->FUSEATTR(mtime) = vap->va_change_time.tv_sec;
-            /* XXX: truncation */
-            fsai->FUSEATTR(mtimensec) = (uint32_t)vap->va_change_time.tv_nsec;
-            fsai->valid |=  FATTR_MTIME;
             VATTR_SET_SUPPORTED(vap, va_change_time);
         }
     }
 
     if (VATTR_IS_ACTIVE(vap, va_create_time) && fuse_isxtimes(vp)) {
-        fsai->FUSEATTR(crtime) = vap->va_create_time.tv_sec;
+        fsai->crtime = vap->va_create_time.tv_sec;
         /* XXX: truncation */
-        fsai->FUSEATTR(crtimensec) = (uint32_t)vap->va_create_time.tv_nsec;
+        fsai->crtimensec = (uint32_t)vap->va_create_time.tv_nsec;
         fsai->valid |= FATTR_CRTIME;
         VATTR_SET_SUPPORTED(vap, va_create_time);
     }
 
     if (VATTR_IS_ACTIVE(vap, va_mode)) {
-        fsai->FUSEATTR(mode) = vap->va_mode & ALLPERMS;
+        fsai->mode = vap->va_mode & ALLPERMS;
         fsai->valid |= FATTR_MODE;
     }
     VATTR_SET_SUPPORTED(vap, va_mode);
 
     if (VATTR_IS_ACTIVE(vap, va_flags)) {
-        fsai->FUSEATTR(flags) = vap->va_flags;
+        fsai->flags = vap->va_flags;
         fsai->valid |= FATTR_FLAGS;
     }
     VATTR_SET_SUPPORTED(vap, va_flags);
@@ -3089,8 +3081,6 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     /*
      * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.
      */
-
-#undef FUSEATTR
 
     if (!fsai->valid) {
         goto out;
