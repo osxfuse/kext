@@ -1883,6 +1883,12 @@ fuse_vnop_open(struct vnop_open_args *ap)
         return ENXIO;
     }
 
+#if !M_MACFUSE_ENABLE_FIFOFS
+    if (vnode_isfifo(vp)) {
+        return EPERM;
+    }
+#endif
+
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
     fvdat = VTOFUD(vp);
@@ -2929,8 +2935,6 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     struct fuse_setattr_in *fsai;
 
     int err = 0;
-    uid_t nuid;
-    gid_t ngid;
     enum vtype vtyp;
     int sizechanged = 0;
     uint64_t newsize = 0;
@@ -2964,123 +2968,9 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     fdisp_init(&fdi, sizeof(*fsai));
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
     fsai = fdi.indata;
-    fsai->valid = 0;
 
-    nuid = VATTR_IS_ACTIVE(vap, va_uid) ? vap->va_uid : (uid_t)VNOVAL;
-    ngid = VATTR_IS_ACTIVE(vap, va_gid) ? vap->va_gid : (gid_t)VNOVAL;
-
-    if (nuid != (uid_t)VNOVAL) {
-        fsai->uid = nuid;
-        fsai->valid |= FATTR_UID;
-    }
-
-    if (ngid != (gid_t)VNOVAL) {
-        fsai->gid = ngid;
-        fsai->valid |= FATTR_GID;
-    }
-
-    VATTR_SET_SUPPORTED(vap, va_uid);
-    VATTR_SET_SUPPORTED(vap, va_gid);
-
-    if (VATTR_IS_ACTIVE(vap, va_data_size)) {
-
-        struct fuse_filehandle *fufh = NULL;
-        fufh_type_t fufh_type = FUFH_WRONLY;
-        struct fuse_vnode_data *fvdat = VTOFUD(vp);
-
-        // Truncate to a new value.
-        fsai->size = vap->va_data_size;
-        sizechanged = 1;
-        newsize = vap->va_data_size;
-        fsai->valid |= FATTR_SIZE;      
-
-        fufh = &(fvdat->fufh[fufh_type]);
-
-        if (!FUFH_IS_VALID(fufh)) {
-            fufh_type = FUFH_RDWR;
-            fufh = &(fvdat->fufh[fufh_type]);
-            if (!FUFH_IS_VALID(fufh)) {
-                fufh = NULL;
-            }
-        }
-
-        if (fufh) {
-            fsai->fh = fufh->fh_id;
-            fsai->valid |= FATTR_FH;
-        }
-    }
-    VATTR_SET_SUPPORTED(vap, va_data_size);
-
-    /*
-     * Possible timestamps:
-     *
-     * Mac OS X                                          Linux  FUSE API
-     *  
-     * va_access_time    last access time                atime  atime
-     * va_backup_time    last backup time                -      -
-     * va_change_time    last metadata change time       ctime* -
-     * va_create_time    creation time                   -      -
-     * va_modify_time    last data modification time     mtime  mtime
-     *
-     */
-
-    if (VATTR_IS_ACTIVE(vap, va_access_time)) {
-        fsai->atime = vap->va_access_time.tv_sec;
-        /* XXX: truncation */
-        fsai->atimensec = (uint32_t)vap->va_access_time.tv_nsec;
-        fsai->valid |=  FATTR_ATIME;
-    }
-    VATTR_SET_SUPPORTED(vap, va_access_time);
-
-    if (VATTR_IS_ACTIVE(vap, va_modify_time)) {
-        fsai->mtime = vap->va_modify_time.tv_sec;
-        /* XXX: truncation */
-        fsai->mtimensec = (uint32_t)vap->va_modify_time.tv_nsec;
-        fsai->valid |=  FATTR_MTIME;
-    }
-    VATTR_SET_SUPPORTED(vap, va_modify_time);
-
-    if (VATTR_IS_ACTIVE(vap, va_backup_time) && fuse_isxtimes(vp)) {
-        fsai->bkuptime = vap->va_backup_time.tv_sec;
-        /* XXX: truncation */
-        fsai->bkuptimensec = (uint32_t)vap->va_backup_time.tv_nsec;
-        fsai->valid |= FATTR_BKUPTIME;
-        VATTR_SET_SUPPORTED(vap, va_backup_time);
-    }
-
-    if (VATTR_IS_ACTIVE(vap, va_change_time)) {
-        if (fuse_isxtimes(vp)) {
-            fsai->chgtime = vap->va_change_time.tv_sec;
-            /* XXX: truncation */
-            fsai->chgtimensec = (uint32_t)vap->va_change_time.tv_nsec;
-            fsai->valid |=  FATTR_CHGTIME;
-            VATTR_SET_SUPPORTED(vap, va_change_time);
-        }
-    }
-
-    if (VATTR_IS_ACTIVE(vap, va_create_time) && fuse_isxtimes(vp)) {
-        fsai->crtime = vap->va_create_time.tv_sec;
-        /* XXX: truncation */
-        fsai->crtimensec = (uint32_t)vap->va_create_time.tv_nsec;
-        fsai->valid |= FATTR_CRTIME;
-        VATTR_SET_SUPPORTED(vap, va_create_time);
-    }
-
-    if (VATTR_IS_ACTIVE(vap, va_mode)) {
-        fsai->mode = vap->va_mode & ALLPERMS;
-        fsai->valid |= FATTR_MODE;
-    }
-    VATTR_SET_SUPPORTED(vap, va_mode);
-
-    if (VATTR_IS_ACTIVE(vap, va_flags)) {
-        fsai->flags = vap->va_flags;
-        fsai->valid |= FATTR_FLAGS;
-    }
-    VATTR_SET_SUPPORTED(vap, va_flags);
-
-    /*
-     * We /are/ OK with va_acl, va_guuid, and va_uuuid passing through here.
-     */
+    sizechanged = fuse_internal_attr_vat2fsai(vnode_mount(vp), vp, vap,
+                                              fsai, &newsize);
 
     if (!fsai->valid) {
         goto out;
