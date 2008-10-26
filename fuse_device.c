@@ -128,8 +128,16 @@ static struct cdevsw fuse_device_cdevsw = {
     /* select   */ fuse_device_select,
     /* mmap     */ (d_mmap_t *)enodev,
     /* strategy */ (d_strategy_t *)enodev_strat,
+#ifdef d_getc_t
     /* getc     */ (d_getc_t *)enodev,
+#else
+    /* reserved */ (void *)enodev,
+#endif
+#ifdef d_putc_t
     /* putc     */ (d_putc_t *)enodev,
+#else
+    /* reserved */ (void *)enodev,
+#endif
     /* flags    */ D_TTY,
 };
 
