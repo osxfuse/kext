@@ -2587,7 +2587,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                         }
 #else
                         IOLog("MacFUSE: vnode reclaimed with valid fufh "
-                              "(%s type=%d, vtype=%d, open_count=%d, busy=%d, "
+                              "(type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
                               type, vnode_vtype(vp), open_count,
                               vnode_isinuse(vp, 0), aux_count);
