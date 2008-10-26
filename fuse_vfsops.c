@@ -149,7 +149,9 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = ENOTSUP;
 
+#if M_MACFUSE_ENABLE_UNSUPPORTED
     vfs_setlocklocal(mp);
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
     /** Option Processing. **/
 

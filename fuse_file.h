@@ -116,9 +116,11 @@ fuse_filehandle_preflight_status(vnode_t vp, vnode_t dvp, vfs_context_t context,
         goto out;
     }
 
+#if M_MACFUSE_ENABLE_UNSUPPORTED
     if (!icontext) {
         icontext = vfs_context_current();
     }
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
     if (!icontext) {
         goto out;
