@@ -49,7 +49,8 @@
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_access(struct vnop_access_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -106,7 +107,8 @@ fuse_vnop_access(struct vnop_access_args *ap)
         off_t               *a_offset;
     };
 */
-static int 
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_blktooff(struct vnop_blktooff_args *ap)
 {       
     vnode_t    vp        = ap->a_vp;
@@ -141,7 +143,8 @@ fuse_vnop_blktooff(struct vnop_blktooff_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -211,7 +214,8 @@ fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_close(struct vnop_close_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -319,7 +323,8 @@ skipdir:
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_create(struct vnop_create_args *ap)
 {
     vnode_t               dvp     = ap->a_dvp;
@@ -477,7 +482,8 @@ undo:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_exchange(struct vnop_exchange_args *ap)
 {
 
@@ -599,7 +605,8 @@ out:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_fsync(struct vnop_fsync_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -674,7 +681,8 @@ out:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_getattr(struct vnop_getattr_args *ap)
 {
     vnode_t            vp      = ap->a_vp;
@@ -821,7 +829,8 @@ fake:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -920,7 +929,8 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_inactive(struct vnop_inactive_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -963,7 +973,8 @@ extern int fuse_setextendedsecurity(mount_t mp, int state);
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -1028,7 +1039,6 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
     return ret;
 }
 
-
 #if M_MACFUSE_ENABLE_KQUEUE
 
 #include "fuse_knote.h"
@@ -1042,7 +1052,8 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
         vfs_context_t         a_context;
     };
  */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap)
 {
     vnode_t       vp = ap->a_vp;
@@ -1089,16 +1100,16 @@ fuse_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap)
     return 0;
 }
 
-
 /*
-    struct vnop_kqfilt_add_args {
+    struct vnop_kqfilt_remove_args {
         struct vnodeop_desc  *a_desc;
         vnode_t               a_vp;
         uintptr_t             ident;
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
 {
     fuse_trace_printf_vnop_novp();
@@ -1107,7 +1118,6 @@ fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
 }
 
 #endif /* M_MACFUSE_ENABLE_KQUEUE */
-
 
 /*
     struct vnop_link_args {
@@ -1118,7 +1128,8 @@ fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_link(struct vnop_link_args *ap)
 {
     vnode_t               vp      = ap->a_vp;
@@ -1187,18 +1198,9 @@ fuse_vnop_link(struct vnop_link_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
-/*
-    struct vnop_listxattr_args {
-        struct vnodeop_desc *a_desc;
-        vnode_t              a_vp;
-        uio_t                a_uio;
-        size_t              *a_size;
-        int                  a_options;
-        vfs_context_t        a_context;
-    };
-*/
 {
     vnode_t       vp      = ap->a_vp;
     uio_t         uio     = ap->a_uio;
@@ -1274,7 +1276,8 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_lookup(struct vnop_lookup_args *ap)
 {
     vnode_t dvp               = ap->a_dvp;
@@ -1591,7 +1594,8 @@ out:
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 {
     vnode_t               dvp     = ap->a_dvp;
@@ -1634,7 +1638,8 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_mknod(struct vnop_mknod_args *ap)
 {
     vnode_t               dvp     = ap->a_dvp;
@@ -1676,7 +1681,8 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_mmap(struct vnop_mmap_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -1772,7 +1778,8 @@ out:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
 {
     vnode_t vp = ap->a_vp;
@@ -1832,7 +1839,8 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
         daddr64_t           *a_lblkno;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_offtoblk(struct vnop_offtoblk_args *ap)
 {
     vnode_t    vp        = ap->a_vp;
@@ -1862,7 +1870,8 @@ fuse_vnop_offtoblk(struct vnop_offtoblk_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_open(struct vnop_open_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -2062,7 +2071,8 @@ out:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_pagein(struct vnop_pagein_args *ap)
 {
     vnode_t       vp        = ap->a_vp;
@@ -2111,7 +2121,8 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_pageout(struct vnop_pageout_args *ap)
 {
     vnode_t       vp        = ap->a_vp;
@@ -2152,7 +2163,8 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
 {
     vnode_t        vp        = ap->a_vp;
@@ -2227,7 +2239,8 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_read(struct vnop_read_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -2377,7 +2390,8 @@ fuse_vnop_read(struct vnop_read_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_readdir(struct vnop_readdir_args *ap)
 {
     vnode_t        vp           = ap->a_vp;
@@ -2461,7 +2475,8 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_readlink(struct vnop_readlink_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -2510,7 +2525,8 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -2632,7 +2648,8 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_remove(struct vnop_remove_args *ap)
 {
     vnode_t               dvp     = ap->a_dvp;
@@ -2689,7 +2706,8 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
 {
     vnode_t        vp      = ap->a_vp;
@@ -2766,7 +2784,8 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_rename(struct vnop_rename_args *ap)
 {
     vnode_t fdvp               = ap->a_fdvp;
@@ -2842,7 +2861,8 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
  *      vfs_context_t         a_context;
  *  };
  */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_revoke(struct vnop_revoke_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -2864,7 +2884,8 @@ fuse_vnop_revoke(struct vnop_revoke_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
 {
     vnode_t               dvp     = ap->a_dvp;
@@ -2908,7 +2929,8 @@ struct vnop_select_args {
     vfs_context_t        a_context;
 };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_select(__unused struct vnop_select_args *ap)
 {
     fuse_trace_printf_vnop_novp();
@@ -2924,7 +2946,8 @@ fuse_vnop_select(__unused struct vnop_select_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_setattr(struct vnop_setattr_args *ap)
 {
     vnode_t            vp      = ap->a_vp;
@@ -3050,7 +3073,8 @@ out:
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -3189,7 +3213,8 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         struct buf          *a_bp;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_strategy(struct vnop_strategy_args *ap)
 {
     buf_t   bp = ap->a_bp;
@@ -3217,7 +3242,8 @@ fuse_vnop_strategy(struct vnop_strategy_args *ap)
         vfs_context_t         a_context;
     };
 */
-static int  
+FUSE_VNOP_EXPORT
+int  
 fuse_vnop_symlink(struct vnop_symlink_args *ap)
 {           
     vnode_t               dvp     = ap->a_dvp; 
@@ -3268,7 +3294,8 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
         vfs_context_t        a_context;
     };
 */
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_vnop_write(struct vnop_write_args *ap)
 {
     vnode_t       vp      = ap->a_vp;
@@ -3530,7 +3557,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
 
 /* fifofs */
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_fifo_vnop_close(struct vnop_close_args *ap)
 {
     if (vnode_isinuse(ap->a_vp, 1)) {
@@ -3540,7 +3568,8 @@ fuse_fifo_vnop_close(struct vnop_close_args *ap)
     return fifo_close(ap);
 }
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_fifo_vnop_read(struct vnop_read_args *ap)
 {
     VTOFUD(ap->a_vp)->c_flag |= C_TOUCH_ACCTIME;
@@ -3548,7 +3577,8 @@ fuse_fifo_vnop_read(struct vnop_read_args *ap)
     return fifo_read(ap);
 }
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_fifo_vnop_write(struct vnop_write_args *ap)
 {
     VTOFUD(ap->a_vp)->c_flag |= (C_TOUCH_CHGTIME | C_TOUCH_MODTIME);
@@ -3562,7 +3592,8 @@ fuse_fifo_vnop_write(struct vnop_write_args *ap)
 
 /* specfs */
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_spec_vnop_close(struct vnop_close_args *ap)
 {
     if (vnode_isinuse(ap->a_vp, 1)) {
@@ -3572,7 +3603,8 @@ fuse_spec_vnop_close(struct vnop_close_args *ap)
     return spec_close(ap);
 }
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_spec_vnop_read(struct vnop_read_args *ap)
 {
     VTOFUD(ap->a_vp)->c_flag |= C_TOUCH_ACCTIME;
@@ -3580,7 +3612,8 @@ fuse_spec_vnop_read(struct vnop_read_args *ap)
     return spec_read(ap);
 }
 
-static int
+FUSE_VNOP_EXPORT
+int
 fuse_spec_vnop_write(struct vnop_write_args *ap)
 {
     VTOFUD(ap->a_vp)->c_flag |= (C_TOUCH_CHGTIME | C_TOUCH_MODTIME);
