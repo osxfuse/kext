@@ -20,7 +20,16 @@
   #define M_MACFUSE_ENABLE_EXCHANGE        1
   #define M_MACFUSE_ENABLE_KQUEUE          1
   #define M_MACFUSE_ENABLE_KUNC            0
-#endif
+#if __LP64__
+    #define M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK 1
+#endif /* __LP64__ */
+#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#define FUSE_VNOP_EXPORT __private_extern__
+#else
+#define FUSE_VNOP_EXPORT static
+#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
 /* User Control */
 
