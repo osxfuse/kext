@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 44;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -11,7 +11,6 @@
 			isa = PBXAggregateTarget;
 			buildConfigurationList = 54C6DD330B5EE623002D9FD9 /* Build configuration list for PBXAggregateTarget "All" */;
 			buildPhases = (
-				54C6DE950B5F7755002D9FD9 /* ShellScript */,
 			);
 			dependencies = (
 				54C6DD310B5EE61A002D9FD9 /* PBXTargetDependency */,
@@ -74,6 +73,8 @@
 		540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */; };
 		540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */; };
 		540966D20C33BB2700F5E227 /* fusefs.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = 540965B70C33B17400F5E227 /* fusefs.fs */; };
+		54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */; };
+		54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,7 +137,10 @@
 		541780C00B6413CA003DE6C0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
 		5434066A0B79C3AA00471672 /* fuse_knote.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_knote.c; sourceTree = "<group>"; };
 		5434066B0B79C3AA00471672 /* fuse_knote.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_knote.h; sourceTree = "<group>"; };
+		549960D00EC093D800DDFCAD /* MacFUSE.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = MacFUSE.exports; sourceTree = "<group>"; };
 		54A06B920C9DE6060045DC0D /* MacFUSE.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = MacFUSE.xcconfig; sourceTree = "<group>"; };
+		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_biglock_vnops.c; sourceTree = "<group>"; };
+		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_biglock_vnops.h; sourceTree = "<group>"; };
 		54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = /System/Library/Frameworks/DiskArbitration.framework; sourceTree = "<absolute>"; };
 		54C6DDB60B5EEB44002D9FD9 /* English */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
@@ -199,6 +203,7 @@
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
+				549960D00EC093D800DDFCAD /* MacFUSE.exports */,
 				54A06B920C9DE6060045DC0D /* MacFUSE.xcconfig */,
 				54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */,
 				540966510C33B5F500F5E227 /* common */,
@@ -272,6 +277,8 @@
 		54C6DD780B5EEB44002D9FD9 /* kernel */ = {
 			isa = PBXGroup;
 			children = (
+				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
+				54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */,
 				54C6DDD80B5EEB44002D9FD9 /* Info.plist */,
 				54C6DDB50B5EEB44002D9FD9 /* InfoPlist.strings */,
 				54C6DDB70B5EEB44002D9FD9 /* fuse.h */,
@@ -337,6 +344,7 @@
 				540966BB0C33BA3900F5E227 /* fuse_sysctl.h in Headers */,
 				540966BD0C33BA3900F5E227 /* fuse_vfsops.h in Headers */,
 				540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */,
+				54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -404,7 +412,7 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "fusefs" */;
-			compatibilityVersion = "Xcode 3.0";
+			compatibilityVersion = "Xcode 3.1";
 			hasScannedForEncodings = 1;
 			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			productRefGroup = 540966F20C33BEC900F5E227 /* Products */;
@@ -460,19 +468,6 @@
 			shellPath = /bin/sh;
 			shellScript = "/usr/bin/cpp -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\n/usr/bin/cpp -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
 		};
-		54C6DE950B5F7755002D9FD9 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Create MacFUSE Tarball\n\nPATH=/bin:/sbin:/usr/bin:/usr/sbin:/Developer/Tools:/Developer/Applications\n\nCMD_BZIP2=bzip2\nCMD_CHMOD=chmod\nCMD_CHOWN=chown\nCMD_CP=cp\nCMD_ID=id\nCMD_LN=ln\nCMD_MAKE=make\nCMD_MKDIR=mkdir\nCMD_PATCH=patch\nCMD_RM=rm\nCMD_TAR=tar\nCMD_XCODEBUILD=xcodebuild\n\n# If we are not running as root, just bail out.\nmy_uid=`$CMD_ID -u`\nif [ $my_uid != 0 ]\nthen\n    exit 0\nfi\n\nMACFUSE_CORE_VERSIONED_NAME=macfuse-core-\"$OS_VERSION\"-\"$MACFUSE_VERSION\"\n\nMACFUSE_OUT_NAME=macfuse_out-\"$OS_VERSION\"\nMACFUSE_OUT=\"/tmp/$MACFUSE_OUT_NAME\"\nMACFUSE_BUILD=\"$MACFUSE_OUT/build/\"\nMACFUSE_ROOT=\"$MACFUSE_OUT/pkgroot/\"\nMACFUSE_BUNDLE_NAME=fusefs.fs\n\nsudo $CMD_RM -rf $MACFUSE_OUT                             || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_BUILD                         || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT                          || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT/Library/Filesystems/     || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT/Library/Frameworks/      || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT/usr/local/lib/           || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT/usr/local/include/       || exit 1\nsudo $CMD_MKDIR -p $MACFUSE_ROOT/usr/local/lib/pkgconfig/ || exit 1\n\nMACFUSE_BUNDLE_DIR=\"$MACFUSE_ROOT/Library/Filesystems/$MACFUSE_BUNDLE_NAME\"\nMACFUSE_BUNDLE_SUPPORT_DIR=\"$MACFUSE_BUNDLE_DIR/Support\"\n\nsudo $CMD_CP -pRX \"$BUILT_PRODUCTS_DIR/fusefs.fs\" \"$MACFUSE_BUNDLE_DIR\"                         || exit 1\nsudo $CMD_MKDIR -p \"$MACFUSE_BUNDLE_SUPPORT_DIR\"                                                || exit 1\nsudo $CMD_CP -pRX \"$BUILT_PRODUCTS_DIR/fusefs.kext\" \"$MACFUSE_BUNDLE_SUPPORT_DIR/fusefs.kext\"   || exit 1\nsudo $CMD_CP -pRX \"$BUILT_PRODUCTS_DIR/load_fusefs\" \"$MACFUSE_BUNDLE_SUPPORT_DIR/load_fusefs\"   || exit 1\nsudo $CMD_CP -pRX \"$BUILT_PRODUCTS_DIR/mount_fusefs\" \"$MACFUSE_BUNDLE_SUPPORT_DIR/mount_fusefs\" || exit 1\n\n# Build the user-space FUSE library\nsudo $CMD_TAR -C \"$MACFUSE_BUILD\" -xzf \"$PROJECT_DIR/../libfuse/fuse-current.tar.gz\" || exit 1\nsudo $CMD_CHOWN -R root:wheel \"$MACFUSE_BUILD\"/fuse*                                 || exit 1\ncd \"$MACFUSE_BUILD\"/fuse*                                                            || exit 1\nsudo $CMD_PATCH -p1 < \"$PROJECT_DIR/../libfuse/fuse-current-macosx.patch\"            || exit 1\nsudo /bin/sh ./darwin_configure.sh \"$PROJECT_DIR\"                                    || exit 1\nsudo $CMD_MAKE -j2                                                                   || exit 1\nsudo $CMD_MAKE install DESTDIR=\"$MACFUSE_ROOT\"                                       || exit 1\nsudo $CMD_LN -s libfuse.dylib \"$MACFUSE_ROOT\"/usr/local/lib/libfuse.0.dylib          || exit 1\nsudo $CMD_RM \"$MACFUSE_ROOT\"/usr/local/lib/*ulockmgr*                                || exit 1\nsudo $CMD_RM \"$MACFUSE_ROOT\"/usr/local/include/*ulockmgr*                            || exit 1\n\n# Build MacFUSE.framework\ncd \"$PROJECT_DIR/../../sdk-objc\"                                              || exit 1\nsudo $CMD_RM -rf build/                                                       || exit 1\nsudo $CMD_XCODEBUILD -configuration Release -target \"MacFUSE-$OS_VERSION\" \"MACFUSE_BUILD_ROOT=$MACFUSE_ROOT\" \"MACFUSE_BUNDLE_VERSION_LITERAL=$MACFUSE_VERSION\" || exit 1\nsudo $CMD_CP -pRX build/Release/*.framework $MACFUSE_ROOT/Library/Frameworks/ || exit 1\n\nsudo $CMD_CHOWN -R root:wheel \"$MACFUSE_ROOT\"/*               || exit 1\nsudo $CMD_CHMOD u+s \"$MACFUSE_BUNDLE_SUPPORT_DIR/load_fusefs\" || exit 1\nsudo $CMD_CHOWN root:admin $MACFUSE_ROOT/Library/             || exit 1\nsudo $CMD_CHOWN -R root:admin $MACFUSE_ROOT/Library/Frameworks|| exit 1\nsudo $CMD_CHMOD 0775 $MACFUSE_ROOT/Library/Frameworks         || exit 1\nsudo $CMD_CHMOD 1775 $MACFUSE_ROOT/Library/                   || exit 1\nsudo $CMD_CHMOD -h 755 `find $MACFUSE_ROOT/usr/local/lib -type l`       # no exit upon error\nsudo $CMD_CHMOD -h 755 `find $MACFUSE_ROOT/Library/Frameworks/ -type l` # no exit upon error\n\ncd \"$MACFUSE_ROOT\" || exit 1\n\nsudo $CMD_RM -f /tmp/\"$MACFUSE_CORE_VERSIONED_NAME\".tar*                                    || exit 1\nsudo $CMD_RM -rf \"/tmp/$MACFUSE_CORE_VERSIONED_NAME\"                                        || exit 1\nsudo $CMD_MKDIR -p \"/tmp/$MACFUSE_CORE_VERSIONED_NAME\"                                      || exit 1\nsudo $CMD_TAR -cpf \"/tmp/$MACFUSE_CORE_VERSIONED_NAME\"/\"$MACFUSE_CORE_VERSIONED_NAME\".tar . || exit 1\ncd \"/tmp/$MACFUSE_CORE_VERSIONED_NAME\"                                                      || exit 1\nsudo $CMD_BZIP2 -9 \"$MACFUSE_CORE_VERSIONED_NAME\".tar                                       || exit 1\nsudo $CMD_RM -rf \"/tmp/$MACFUSE_OUT_NAME\"                                                   || exit 1\n\n# Create the MacFUSE Installer Package\n\ncd \"$PROJECT_DIR/../packaging/macfuse-core/\" && sudo ./make-pkg.sh \"$OS_VERSION\" \"$MACFUSE_VERSION\"";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -493,6 +488,7 @@
 				540966BA0C33BA3900F5E227 /* fuse_sysctl.c in Sources */,
 				540966BC0C33BA3900F5E227 /* fuse_vfsops.c in Sources */,
 				540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */,
+				54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -568,6 +564,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				"GCC_VERSION[sdk=macosx10.6][arch=x86_64]" = 4.2;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -595,6 +592,7 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				"MACOSX_DEPLOYMENT_TARGET[sdk=macosx10.6][arch=x86_64]" = 10.6;
 				MODULE_NAME = com.google.filesystems.fusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
@@ -604,7 +602,7 @@
 					"-D__FreeBSD__=10",
 				);
 				PRODUCT_NAME = fusefs;
-				"SDKROOT[arch=x86_64]" = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				"SDKROOT[arch=x86_64]" = macosx10.6;
 				WRAPPER_EXTENSION = kext;
 				ZERO_LINK = YES;
 			};
@@ -619,12 +617,16 @@
 					i386,
 					ppc,
 				);
+				COPY_PHASE_STRIP = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
+				EXPORTED_SYMBOLS_FILE = MacFUSE.exports;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				"GCC_VERSION[sdk=macosx10.6][arch=x86_64]" = 4.2;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -652,6 +654,7 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				"MACOSX_DEPLOYMENT_TARGET[sdk=macosx10.6][arch=x86_64]" = 10.6;
 				MODULE_NAME = com.google.filesystems.fusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
@@ -661,7 +664,9 @@
 					"-D__FreeBSD__=10",
 				);
 				PRODUCT_NAME = fusefs;
-				"SDKROOT[arch=x86_64]" = "$(DEVELOPER_SDK_DIR)/MacOSX10.6.sdk";
+				"SDKROOT[arch=x86_64]" = macosx10.6;
+				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = "non-global";
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -681,7 +686,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = macosx10.5;
 			};
 			name = Debug;
 		};
@@ -693,6 +698,7 @@
 					i386,
 					ppc,
 				);
+				COPY_PHASE_STRIP = NO;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -700,15 +706,15 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				SDKROOT = macosx10.5;
+				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Release;
 		};
 		540966220C33B4F800F5E227 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -734,7 +740,7 @@
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNKNOWN_PRAGMAS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
@@ -751,9 +757,9 @@
 		540966230C33B4F800F5E227 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -787,6 +793,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = mount_fusefs;
+				STRIP_INSTALLED_PRODUCT = YES;
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -842,8 +849,7 @@
 		54D47B910B4F614B00A8FE1C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -869,7 +875,7 @@
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				GCC_WARN_UNKNOWN_PRAGMAS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
@@ -886,9 +892,9 @@
 		54D47B920B4F614B00A8FE1C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = YES;
+				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
@@ -921,6 +927,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PREBINDING = NO;
 				PRODUCT_NAME = load_fusefs;
+				STRIP_INSTALLED_PRODUCT = YES;
 				ZERO_LINK = NO;
 			};
 			name = Release;
