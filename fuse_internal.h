@@ -508,6 +508,10 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
     t.tv_nsec = fat->mtimensec;
     VATTR_RETURN(vap, va_modify_time, t);
 
+    t.tv_sec = (typeof(t.tv_sec))fat->crtime; /* XXX: truncation */
+    t.tv_nsec = fat->crtimensec;
+    VATTR_RETURN(vap, va_create_time, t);
+
     VATTR_RETURN(vap, va_mode, fat->mode & ~S_IFMT);
     VATTR_RETURN(vap, va_nlink, fat->nlink);
     VATTR_RETURN(vap, va_uid, fat->uid);
@@ -597,6 +601,15 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(out_vap, va_change_time, in_vap->va_change_time);
     VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
 
+    /*
+     * When __DARWIN_64_BIT_INO_T is not enabled, the User library 
+     * will set va_create_time to -1. In that case, we will have
+     * to ask for it separately, if necessary.
+     */
+    if (in_vap->va_create_time.tv_sec != (int64_t)-1) {
+        VATTR_RETURN(out_vap, va_create_time, in_vap->va_create_time);
+    }
+
     if ((fvdat->modify_time.tv_sec != in_vap->va_modify_time.tv_sec) ||
         (fvdat->modify_time.tv_nsec != in_vap->va_modify_time.tv_nsec)) {
         fvdat->modify_time.tv_sec = in_vap->va_modify_time.tv_sec;
@@ -608,7 +621,11 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         }
     }
 
-    (void)fuse_internal_loadxtimes(vp, out_vap, context);
+    if (VATTR_IS_ACTIVE(out_vap, va_backup_time) ||
+        (VATTR_IS_ACTIVE(out_vap, va_create_time) &&
+         !VATTR_IS_SUPPORTED(out_vap, va_create_time))) {
+        (void)fuse_internal_loadxtimes(vp, out_vap, context);
+    }
 
     if (hint) {
         FUSE_KNOTE(vp, hint);
