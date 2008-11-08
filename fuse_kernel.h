@@ -67,9 +67,15 @@ struct fuse_attr {
 	__u64	atime;
 	__u64	mtime;
 	__u64	ctime;
+#if (__FreeBSD__ >= 10)
+	__u64	crtime;
+#endif /* __FreeBSD__ >= 10 */
 	__u32	atimensec;
 	__u32	mtimensec;
 	__u32	ctimensec;
+#if (__FreeBSD__ >= 10)
+	__u32	crtimensec;
+#endif /* __FreeBSD__ >= 10 */
 	__u32	mode;
 	__u32	nlink;
 	__u32	uid;
@@ -77,7 +83,6 @@ struct fuse_attr {
 	__u32	rdev;
 #if (__FreeBSD__ >= 10)
 	__u32	flags; /* file flags; see chflags(2) */
-	__u32	padding;
 #endif /* __FreeBSD__ >= 10 */
 };
 
