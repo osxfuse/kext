@@ -927,12 +927,12 @@ dostatfs:
     }
 
     /* fundamental file system block size; goes into f_bsize */
-    fsfo->st.frsize = fuse_round_size(fsfo->st.frsize,
-                                      FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);
+    fsfo->st.bsize = fuse_round_size(fsfo->st.bsize,
+                                     FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);
 
     /* preferred/optimal file system block size; goes into f_iosize */
-    fsfo->st.bsize  = fuse_round_size(fsfo->st.bsize,
-                                      FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+    fsfo->st.frsize  = fuse_round_size(fsfo->st.frsize,
+                                       FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
 
     /* We must have: f_iosize >= f_bsize */
     if (fsfo->st.frsize < fsfo->st.bsize) {
@@ -993,8 +993,8 @@ dostatfs:
      */
 
     VFSATTR_RETURN(attr, f_filecount, fsfo->st.files);
-    VFSATTR_RETURN(attr, f_bsize, fsfo->st.frsize);
-    VFSATTR_RETURN(attr, f_iosize, fsfo->st.bsize);
+    VFSATTR_RETURN(attr, f_bsize, fsfo->st.bsize);
+    VFSATTR_RETURN(attr, f_iosize, fsfo->st.frsize);
     VFSATTR_RETURN(attr, f_blocks, fsfo->st.blocks);
     VFSATTR_RETURN(attr, f_bfree, fsfo->st.bfree);
     VFSATTR_RETURN(attr, f_bavail, fsfo->st.bavail);
