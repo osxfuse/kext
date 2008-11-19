@@ -935,8 +935,8 @@ dostatfs:
                                       FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
 
     /* We must have: f_iosize >= f_bsize */
-    if (fsfo->st.bsize < fsfo->st.frsize) {
-        fsfo->st.bsize = fsfo->st.frsize;
+    if (fsfo->st.frsize < fsfo->st.bsize) {
+        fsfo->st.frsize = fsfo->st.bsize;
     }
 
     /*
