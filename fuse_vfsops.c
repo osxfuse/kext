@@ -486,7 +486,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
        if (fusefs_args.altflags & FUSE_MOPT_IOSIZE) {
            vfsstatfsp->f_iosize = data->iosize;
        } else {
-           data->iosize = vfsstatfsp->f_iosize;
+           data->iosize = (uint32_t)vfsstatfsp->f_iosize; /* XXX: truncation */
        }
     }
 
