@@ -919,8 +919,8 @@ showhelp()
     }
     fprintf(stderr, "\nAvailable mount options:\n");
     fprintf(stderr,
-      "    -o allow_other         allow access to others besides the user who mounted"
-      "                             the file system\n"
+      "    -o allow_other         allow access to others besides the user who mounted\n"
+      "                           the file system\n"
       "    -o allow_recursion     allow a mount point that itself resides on a MacFUSE\n"
       "                           volume (by default, such mounting is disallowed)\n"
       "    -o allow_root          allow access to root (can't be used with allow_other)\n"
