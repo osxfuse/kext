@@ -1622,6 +1622,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
                                  sizeof(fmdi), VDIR, context);
 
     if (err == 0) {
+        fuse_invalidate_attr(dvp);
         FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_LINK);
     }
 
@@ -1667,6 +1668,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
                                  sizeof(fmni), vap->va_type, context);
 
     if (err== 0) {
+        fuse_invalidate_attr(dvp);
         FUSE_KNOTE(dvp, NOTE_WRITE);
     }
 
@@ -2685,6 +2687,7 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
         FUSE_KNOTE(vp, NOTE_DELETE);
         FUSE_KNOTE(dvp, NOTE_WRITE);
         fuse_vncache_purge(vp);
+        fuse_invalidate_attr(dvp);
         /*
          * If we really want, we could...
          * if (!vnode_isinuse(vp, 0)) {
@@ -2761,6 +2764,8 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
     if (!err) {
         fuse_ticket_drop(fdi.tick);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
+        fuse_invalidate_attr(vp);
+        FUSE_KNOTE(vp, NOTE_ATTRIB);
     } else {
         if (err == ENOSYS) {
             fuse_clear_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR));
@@ -2812,7 +2817,9 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
 
     if (err == 0) {
         FUSE_KNOTE(fdvp, NOTE_WRITE);
+        fuse_invalidate_attr(fdvp);
         if (tdvp != fdvp) {
+            fuse_invalidate_attr(tdvp);
             FUSE_KNOTE(tdvp, NOTE_WRITE);
         }
     }
@@ -2912,6 +2919,7 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
     err = fuse_internal_remove(dvp, vp, cnp, FUSE_RMDIR, context);
 
     if (err == 0) {
+        fuse_invalidate_attr(dvp);
         FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_LINK);
         FUSE_KNOTE(vp, NOTE_DELETE);
     }
@@ -3176,6 +3184,8 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     if (!err) {
         fuse_ticket_drop(fdi.tick);
+        fuse_invalidate_attr(vp);
+        FUSE_KNOTE(vp, NOTE_ATTRIB);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
     } else {
         if ((err == ENOSYS) || (err == ENOTSUP)) {
@@ -3276,9 +3286,9 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
     /* XXX: Need to take vap into account. */
 
     err = fuse_internal_newentry_core(dvp, vpp, cnp, VLNK, &fdi, context);
-    fuse_invalidate_attr(dvp);
 
     if (err == 0) {
+        fuse_invalidate_attr(dvp);
         FUSE_KNOTE(dvp, NOTE_WRITE);
     }
 
@@ -3499,15 +3509,17 @@ fuse_vnop_write(struct vnop_write_args *ap)
     error = cluster_write(vp, uio, (off_t)original_size, (off_t)filesize,
                           (off_t)zero_off, (off_t)0, lflag);
         
-    if (uio_offset(uio) > original_size) {
-        /* Updating to new size. */
+    if (!error) {
+        if (uio_offset(uio) > original_size) {
+            /* Updating to new size. */
+            fvdat->filesize = uio_offset(uio);
+            ubc_setsize(vp, (off_t)fvdat->filesize);
+            FUSE_KNOTE(vp, NOTE_WRITE | NOTE_EXTEND);
+        } else {
+            fvdat->filesize = original_size;
+            FUSE_KNOTE(vp, NOTE_WRITE);
+        }
         fuse_invalidate_attr(vp);
-        fvdat->filesize = uio_offset(uio);
-        ubc_setsize(vp, (off_t)fvdat->filesize);
-        FUSE_KNOTE(vp, NOTE_WRITE | NOTE_EXTEND);
-    } else {
-        fvdat->filesize = original_size;
-        FUSE_KNOTE(vp, NOTE_WRITE);
     }
 
     /*
