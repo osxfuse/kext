@@ -161,6 +161,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
 
 out:
     FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);
+    fuse_invalidate_attr(vp);
 
     return err;
 }
