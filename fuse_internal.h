@@ -326,6 +326,13 @@ fuse_isxtimes_mp(mount_t mp)
 }
 
 static __inline__
+int
+fuse_issparse_mp(mount_t mp)
+{
+    return (fuse_get_mpdata(mp)->dataflags & FSESS_SPARSE);
+}
+
+static __inline__
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
@@ -495,6 +502,9 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      * va_data_alloc
      * va_total_alloc
      */
+    if (fuse_issparse_mp(mp)) {
+        VATTR_RETURN(vap, va_data_alloc, fat->blocks);
+    }
 
     t.tv_sec = (typeof(t.tv_sec))fat->atime; /* XXX: truncation */
     t.tv_nsec = fat->atimensec;
@@ -584,6 +594,10 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         }
     }
     VATTR_RETURN(out_vap, va_data_size, in_vap->va_data_size);
+
+    if (fuse_issparse_mp(mp)) {
+        VATTR_RETURN(out_vap, va_data_alloc, in_vap->va_data_alloc);
+    }
 
     VATTR_RETURN(out_vap, va_mode, in_vap->va_mode);
     VATTR_RETURN(out_vap, va_nlink, in_vap->va_nlink);
