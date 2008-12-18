@@ -23,7 +23,11 @@ errno_t (**fuse_vnode_operations)(void *);
 
 static struct vnodeopv_desc fuse_vnode_operation_vector_desc = {
     &fuse_vnode_operations,              // opv_desc_vector_p
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+    fuse_biglock_vnode_operation_entries // opv_desc_ops
+#else
     fuse_vnode_operation_entries         // opv_desc_ops
+#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 };
 
 #if M_MACFUSE_ENABLE_FIFOFS
@@ -93,6 +97,9 @@ struct vfs_fsentry fuse_vfs_entry = {
     MACFUSE_FS_TYPE,
 
     // Flags specifying file system capabilities
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+    VFS_TBLTHREADSAFE |
+#endif
     VFS_TBL64BITREADY | VFS_TBLNOTYPENUM,
 
     // Reserved for future use
@@ -176,6 +183,10 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     if (fusefs_args.altflags & FUSE_MOPT_NO_ALERTS) {
         mntopts |= FSESS_NO_ALERTS;
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_SPARSE) {
+        mntopts |= FSESS_SPARSE;
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_AUTO_CACHE) {
@@ -441,13 +452,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     copystr(fusefs_args.volname, data->volname, MAXPATHLEN - 1, &len);
     bzero(data->volname + len, MAXPATHLEN - len);
 
-    {
-        struct vfsioattr ioattr;
-
-        vfs_ioattr(mp, &ioattr);
-        ioattr.io_devblocksize = data->blocksize;
-        vfs_setioattr(mp, &ioattr);
-    }
+    /* previous location of vfs_setioattr() */
 
     vfs_setfsprivate(mp, data);
 
@@ -481,12 +486,13 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
        if (fusefs_args.altflags & FUSE_MOPT_BLOCKSIZE) {
            vfsstatfsp->f_bsize = data->blocksize;
        } else {
-           data->blocksize = vfsstatfsp->f_bsize;
+           //data->blocksize = vfsstatfsp->f_bsize;
        }
        if (fusefs_args.altflags & FUSE_MOPT_IOSIZE) {
            vfsstatfsp->f_iosize = data->iosize;
        } else {
-           data->iosize = (uint32_t)vfsstatfsp->f_iosize; /* XXX: truncation */
+           //data->iosize = (uint32_t)vfsstatfsp->f_iosize;
+           vfsstatfsp->f_iosize = data->iosize;
        }
     }
 
@@ -517,6 +523,12 @@ out:
         (void)vnode_put(fuse_rootvp);
         if (err) {
             goto out; /* go back and follow error path */
+        } else {
+            struct vfsioattr ioattr;
+
+            vfs_ioattr(mp, &ioattr);
+            ioattr.io_devblocksize = data->blocksize;
+            vfs_setioattr(mp, &ioattr);
         }
     }
 
@@ -934,6 +946,14 @@ dostatfs:
         fsfo = &faked;
     } else {
         fsfo = fdi.answ;
+    }
+
+    if (fsfo->st.bsize == 0) {
+        fsfo->st.bsize = FUSE_DEFAULT_IOSIZE;
+    }
+
+    if (fsfo->st.frsize == 0) {
+        fsfo->st.frsize = FUSE_DEFAULT_BLOCKSIZE;
     }
 
     /* optimal transfer block size; will go into f_iosize in the kernel */
