@@ -66,7 +66,20 @@ fuse_filehandle_xlate_from_fflags(int fflags)
     } else if (fflags & (FREAD)) {
         return FUFH_RDONLY;
     } else {
-        panic("MacFUSE: What kind of a flag is this (%x)?", fflags);
+        /*
+         * Looks like there might be a code path in Apple's
+         * IOHDIXController/AppleDiskImagesFileBackingStore
+         * that calls vnode_open() with a 0 fmode argument.
+         * Translate 0 to FREAD, which is most likely what
+         * that kext intends to do anyway. Lets hope the
+         * calls to VNOP_OPEN and VNOP_CLOSE do match up
+         * even with this fudging.
+         */
+        if (fflags == 0) {
+            return FUFH_RDONLY;
+        } else {
+            panic("MacFUSE: What kind of a flag is this (%x)?", fflags);
+        }
     }
 
     return FUFH_INVALID;
