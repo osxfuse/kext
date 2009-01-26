@@ -759,13 +759,14 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             break;
         }
 
-        if (fudge->namelen > MAXNAMLEN) {
+        if (fudge->namelen > FUSE_MAXNAMLEN) {
             err = EIO;
             break;
         }
 
 #define GENERIC_DIRSIZ(dp) \
-  ((sizeof(struct dirent) - (MAXNAMLEN + 1)) + (((dp)->d_namlen + 1 + 3) & ~3))
+  ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1)) + \
+   (((dp)->d_namlen + 1 + 3) & ~3))
 
         bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen); 
 
@@ -794,7 +795,8 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             de->d_type = DT_WHT;
         }
 
-        memcpy((char *)cookediov->base + sizeof(struct dirent) - MAXNAMLEN - 1,
+        memcpy((char *)cookediov->base +
+               sizeof(struct dirent) - FUSE_MAXNAMLEN - 1,
                (char *)buf + FUSE_NAME_OFFSET, fudge->namelen);
         ((char *)cookediov->base)[bytesavail] = '\0';
 

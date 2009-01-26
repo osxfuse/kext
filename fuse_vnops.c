@@ -1326,7 +1326,7 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         return EROFS;
     }
 
-    if (cnp->cn_namelen > MAXNAMLEN) {
+    if (cnp->cn_namelen > FUSE_MAXNAMLEN) {
         return ENAMETOOLONG;
     }
 
@@ -2190,7 +2190,7 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
             *retvalPtr = FUSE_LINK_MAX;
             break;
         case _PC_NAME_MAX:
-            *retvalPtr = MAXNAMLEN;
+            *retvalPtr = FUSE_MAXNAMLEN;
             break;
         case _PC_PATH_MAX:
             *retvalPtr = MAXPATHLEN;
@@ -2205,7 +2205,7 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
             *retvalPtr = 0;
             break;
         case _PC_NAME_CHARS_MAX:
-            *retvalPtr = 255;   // *** what's this about?
+            *retvalPtr = 255;   // chars as opposed to bytes
             break;
         case _PC_CASE_SENSITIVE:
             *retvalPtr = 1;
