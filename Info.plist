@@ -23,6 +23,8 @@
 	<string>FUSE</string>
 	<key>CFBundleVersion</key>
 	<string>MACFUSE_VERSION_LITERAL</string>
+	<key>BuildConfiguration</key>
+	<string>${CONFIGURATION}</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.kpi.bsd</key>
