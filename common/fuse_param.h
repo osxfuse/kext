@@ -21,7 +21,7 @@
   #define M_MACFUSE_ENABLE_KQUEUE          1
   #define M_MACFUSE_ENABLE_KUNC            0
 #if __LP64__
-    #define M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK 0
+    #define M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK 1
 #endif /* __LP64__ */
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
@@ -141,5 +141,7 @@
 
 #define FUSE_LINK_MAX                      LINK_MAX
 #define FUSE_UIO_BACKUP_MAX                8
+
+#define FUSE_MAXNAMLEN                     255
 
 #endif /* _FUSE_PARAM_H_ */
