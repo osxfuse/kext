@@ -19,6 +19,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>MACFUSE_VERSION_LITERAL</string>
+	<key>BuildFlavor</key>
+	<string>MACFUSE_BUILD_FLAVOR</string>
 	<key>FSPersonalities</key>
 	<dict>
 		<key>dead</key>
