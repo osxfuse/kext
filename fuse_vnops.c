@@ -197,7 +197,9 @@ fuse_vnop_blockmap(struct vnop_blockmap_args *ap)
         contiguousPhysicalBytes = (off_t)size;
     }
 
-    *runPtr = (size_t)contiguousPhysicalBytes;
+    if (runPtr != NULL) {
+        *runPtr = (size_t)contiguousPhysicalBytes;
+    }
 
     if (poffPtr != NULL) {
         *poffPtr = 0;
