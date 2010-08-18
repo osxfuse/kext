@@ -430,6 +430,10 @@ fdata_alloc(struct proc *p)
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     data->timeout_mtx    = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+	data->biglock        = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+#endif
+
     return data;
 }
 
@@ -454,6 +458,10 @@ fdata_destroy(struct fuse_data *data)
 
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     lck_mtx_free(data->timeout_mtx, fuse_lock_group);
+
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+	lck_mtx_free(data->biglock, fuse_lock_group);
+#endif
 
     while ((ftick = fuse_pop_allticks(data))) {
         fticket_destroy(ftick);
