@@ -431,7 +431,7 @@ fdata_alloc(struct proc *p)
     data->timeout_mtx    = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-	data->biglock        = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+	data->biglock        = IORecursiveLockAlloc();
 #endif
 
     return data;
@@ -460,7 +460,7 @@ fdata_destroy(struct fuse_data *data)
     lck_mtx_free(data->timeout_mtx, fuse_lock_group);
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-	lck_mtx_free(data->biglock, fuse_lock_group);
+	IORecursiveLockFree(data->biglock);
 #endif
 
     while ((ftick = fuse_pop_allticks(data))) {

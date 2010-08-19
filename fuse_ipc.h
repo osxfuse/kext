@@ -24,6 +24,10 @@
 #include <libkern/OSMalloc.h>
 #include <libkern/locks.h>
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#include <IOKit/IOlocks.h>
+#endif
+
 #include "fuse.h"
 #include "fuse_device.h"
 #include "fuse_kludges.h"
@@ -190,7 +194,7 @@ struct fuse_data {
     struct timespec           *daemon_timeout_p;
     struct timespec            init_timeout;
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-	lck_mtx_t                 *biglock;
+	IORecursiveLock           *biglock;
 #endif
 };
 
