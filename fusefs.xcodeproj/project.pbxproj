@@ -167,7 +167,7 @@
 		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_vnops.c; sourceTree = "<group>"; };
 		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_vnops.h; sourceTree = "<group>"; };
 		54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = fusefs.xcodeproj; sourceTree = "<group>"; };
-		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 30; path = Info.plist; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_kludges.h; sourceTree = "<group>"; };
 		D27513B306A6225300ADB3A4 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
