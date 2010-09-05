@@ -64,7 +64,7 @@
 #define custom_fuse_lck_mtx_lock(lock) \
 	do { \
 		log("%s: Aquiring biglock...", __FUNCTION__); \
-		IORecursiveLockLock(lock); \
+		fusefs_recursive_lock_lock(lock); \
 		/* fuse_lck_mtx_lock(lock); */ \
 		log("%s:   biglock aquired!", __FUNCTION__); \
 	} while(0)
@@ -72,12 +72,12 @@
 #define custom_fuse_lck_mtx_unlock(lock) \
 	do { \
 		log("%s: Releasing biglock...", __FUNCTION__); \
-		IORecursiveLockUnlock(lock); \
+		fusefs_recursive_lock_unlock(lock); \
 		/* fuse_lck_mtx_unlock(lock); */ \
 		log("%s:   biglock released!", __FUNCTION__); \
 	} while(0)
 
-#define fuse_lck_mtx_t IORecursiveLock
+#define fuse_lck_mtx_t fusefs_recursive_lock
 
 /*
  struct vnop_access_args {
