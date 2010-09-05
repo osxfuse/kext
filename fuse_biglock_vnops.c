@@ -879,8 +879,7 @@ int
 fuse_biglock_vnop_setxattr(struct vnop_setxattr_args *ap)
 {
 	int res;
-	struct fuse_data *data = fuse_get_mpdata(vnode_mount(ap->a_vp));
-	fuse_lck_mtx_t *biglock = data->biglock;
+	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
 	custom_fuse_lck_mtx_lock(biglock);
 	res = fuse_vnop_setxattr(ap);
 	custom_fuse_lck_mtx_unlock(biglock);
