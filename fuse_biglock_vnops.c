@@ -69,23 +69,21 @@
 #define log_leave(return_format, args...) do {} while(0)
 #endif /* _DEBUG_LOGGING */
 
-#define custom_fuse_lck_mtx_lock(lock) \
+#define fuse_biglock_lock(lock) \
 	do { \
 		log("%s: Aquiring biglock...", __FUNCTION__); \
 		fusefs_recursive_lock_lock(lock); \
-		/* fuse_lck_mtx_lock(lock); */ \
 		log("%s:   biglock aquired!", __FUNCTION__); \
 	} while(0)
 
-#define custom_fuse_lck_mtx_unlock(lock) \
+#define fuse_biglock_unlock(lock) \
 	do { \
 		log("%s: Releasing biglock...", __FUNCTION__); \
 		fusefs_recursive_lock_unlock(lock); \
-		/* fuse_lck_mtx_unlock(lock); */ \
 		log("%s:   biglock released!", __FUNCTION__); \
 	} while(0)
 
-#define fuse_lck_mtx_t fusefs_recursive_lock
+#define fuse_biglock_t fusefs_recursive_lock
 
 /*
  struct vnop_access_args {
@@ -100,10 +98,10 @@ int
 fuse_biglock_vnop_access(struct vnop_access_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_access(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -120,10 +118,10 @@ int
 fuse_biglock_vnop_blktooff(struct vnop_blktooff_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_blktooff(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -145,10 +143,10 @@ int
 fuse_biglock_vnop_blockmap(struct vnop_blockmap_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_blockmap(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -165,10 +163,10 @@ int
 fuse_biglock_vnop_close(struct vnop_close_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_close(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -187,10 +185,10 @@ int
 fuse_biglock_vnop_create(struct vnop_create_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_create(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -208,10 +206,10 @@ int
 fuse_biglock_vnop_exchange(struct vnop_exchange_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_exchange(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -240,10 +238,10 @@ int
 fuse_biglock_vnop_fsync(struct vnop_fsync_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_fsync(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -260,10 +258,10 @@ int
 fuse_biglock_vnop_getattr(struct vnop_getattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_getattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -284,10 +282,10 @@ int
 fuse_biglock_vnop_getxattr(struct vnop_getxattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_getxattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
@@ -304,10 +302,10 @@ int
 fuse_biglock_vnop_inactive(struct vnop_inactive_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_inactive(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -326,10 +324,10 @@ int
 fuse_biglock_vnop_ioctl(struct vnop_ioctl_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_ioctl(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -349,10 +347,10 @@ int
 fuse_biglock_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_kqfilt_add(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -369,10 +367,10 @@ int
 fuse_biglock_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_kqfilt_remove(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -392,10 +390,10 @@ int
 fuse_biglock_vnop_link(struct vnop_link_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_link(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -415,10 +413,10 @@ int
 fuse_biglock_vnop_listxattr(struct vnop_listxattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_listxattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
@@ -437,10 +435,10 @@ int
 fuse_biglock_vnop_lookup(struct vnop_lookup_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_lookup(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -459,10 +457,10 @@ int
 fuse_biglock_vnop_mkdir(struct vnop_mkdir_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_mkdir(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -481,10 +479,10 @@ int
 fuse_biglock_vnop_mknod(struct vnop_mknod_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_mknod(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -501,10 +499,10 @@ int
 fuse_biglock_vnop_mmap(struct vnop_mmap_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_mmap(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -520,10 +518,10 @@ int
 fuse_biglock_vnop_mnomap(struct vnop_mnomap_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_mnomap(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -540,10 +538,10 @@ int
 fuse_biglock_vnop_offtoblk(struct vnop_offtoblk_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_offtoblk(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -560,10 +558,10 @@ int
 fuse_biglock_vnop_open(struct vnop_open_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_open(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -584,10 +582,10 @@ int
 fuse_biglock_vnop_pagein(struct vnop_pagein_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_pagein(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -608,10 +606,10 @@ int
 fuse_biglock_vnop_pageout(struct vnop_pageout_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_pageout(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -629,10 +627,10 @@ int
 fuse_biglock_vnop_pathconf(struct vnop_pathconf_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_pathconf(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -650,10 +648,10 @@ int
 fuse_biglock_vnop_read(struct vnop_read_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_read(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -673,10 +671,10 @@ int
 fuse_biglock_vnop_readdir(struct vnop_readdir_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_readdir(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -693,10 +691,10 @@ int
 fuse_biglock_vnop_readlink(struct vnop_readlink_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_readlink(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -712,10 +710,10 @@ int
 fuse_biglock_vnop_reclaim(struct vnop_reclaim_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_reclaim(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -734,10 +732,10 @@ int
 fuse_biglock_vnop_remove(struct vnop_remove_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_remove(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -756,10 +754,10 @@ int
 fuse_biglock_vnop_removexattr(struct vnop_removexattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_removexattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
@@ -781,10 +779,10 @@ int
 fuse_biglock_vnop_rename(struct vnop_rename_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_rename(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -801,10 +799,10 @@ int
 fuse_biglock_vnop_revoke(struct vnop_revoke_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_revoke(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -822,10 +820,10 @@ int
 fuse_biglock_vnop_rmdir(struct vnop_rmdir_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_rmdir(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -844,10 +842,10 @@ int
 fuse_biglock_vnop_select(__unused struct vnop_select_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_select(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -864,10 +862,10 @@ int
 fuse_biglock_vnop_setattr(struct vnop_setattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_setattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -887,10 +885,10 @@ int
 fuse_biglock_vnop_setxattr(struct vnop_setxattr_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_setxattr(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
@@ -906,10 +904,10 @@ int
 fuse_biglock_vnop_strategy(struct vnop_strategy_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(buf_vnode(ap->a_bp)))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(buf_vnode(ap->a_bp)))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_strategy(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -929,10 +927,10 @@ int
 fuse_biglock_vnop_symlink(struct vnop_symlink_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_symlink(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
@@ -950,10 +948,10 @@ int
 fuse_biglock_vnop_write(struct vnop_write_args *ap)
 {
 	int res;
-	fuse_lck_mtx_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-	custom_fuse_lck_mtx_lock(biglock);
+	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
+	fuse_biglock_lock(biglock);
 	res = fuse_vnop_write(ap);
-	custom_fuse_lck_mtx_unlock(biglock);
+	fuse_biglock_unlock(biglock);
 	return res;
 }
 
