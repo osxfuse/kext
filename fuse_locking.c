@@ -528,4 +528,8 @@ void fusefs_recursive_lock_wakeup(__unused fusefs_recursive_lock *lock,
 lck_mtx_t *fuse_log_lock = NULL;
 #endif /* M_MACFUSE_USE_LOCK_LOGGING */
 
+#if M_MACFUSE_USE_HUGE_LOCK
+fusefs_recursive_lock *fuse_huge_lock = NULL;
+#endif /* M_MACFUSE_USE_HUGE_LOCK */
+
 #endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */

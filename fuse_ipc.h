@@ -194,8 +194,10 @@ struct fuse_data {
     struct timespec           *daemon_timeout_p;
     struct timespec            init_timeout;
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if !M_MACFUSE_USE_HUGE_LOCK
     fusefs_recursive_lock     *biglock;
-#endif
+#endif /* !M_MACFUSE_USE_HUGE_LOCK */
+#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 };
 
 enum {

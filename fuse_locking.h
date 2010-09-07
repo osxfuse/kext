@@ -92,6 +92,10 @@ extern void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock);
 extern lck_mtx_t *fuse_log_lock;
 #endif /* M_MACFUSE_USE_LOCK_LOGGING */
 
+#if M_MACFUSE_USE_HUGE_LOCK
+extern fusefs_recursive_lock *fuse_huge_lock;
+#endif
+
 #endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
 #endif /* _FUSE_LOCKING_H_ */
