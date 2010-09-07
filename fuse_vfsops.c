@@ -1313,15 +1313,65 @@ fuse_setextendedsecurity(mount_t mp, int state)
 }
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
+#if M_MACFUSE_USE_LOCK_LOGGING
+#define rawlog(msg, args...) IOLog(msg, ##args)
+
+#define log(fmt, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog(fmt, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+
+#define log_enter(params_format, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog("[%s:%d] Entering %s: ", __FILE__, __LINE__, __FUNCTION__); \
+		rawlog(params_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+
+#define log_leave(return_format, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog("[%s:%d] Leaving %s: ", __FILE__, __LINE__, __FUNCTION__); \
+		rawlog(return_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+#else
+#define log(fmt, args...) do {} while(0)
+#define log_enter(params_format, args...) do {} while(0)
+#define log_leave(return_format, args...) do {} while(0)
+#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+
+#define fuse_biglock_lock(lock) \
+	do { \
+		log("(%p) %s: Aquiring biglock...", lock, __FUNCTION__); \
+		fusefs_recursive_lock_lock(lock); \
+		log("(%p) %s:   biglock aquired!", lock, __FUNCTION__); \
+	} while(0)
+
+#define fuse_biglock_unlock(lock) \
+	do { \
+		log("(%p) %s: Releasing biglock...", lock, __FUNCTION__); \
+		fusefs_recursive_lock_unlock(lock); \
+		log("(%p) %s:   biglock released!", lock, __FUNCTION__); \
+	} while(0)
+
+#define fuse_biglock_t fusefs_recursive_lock
+
 static errno_t
 fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
     errno_t res;
-    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 
-    fusefs_recursive_lock_lock(biglock);
+    fuse_biglock_lock(biglock);
     res = fuse_vfsop_root(mp, vpp, context);
-    fusefs_recursive_lock_unlock(biglock);
+    fuse_biglock_unlock(biglock);
 
     return res;
 }
@@ -1330,11 +1380,11 @@ static errno_t
 fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
     errno_t res;
-    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 
-    fusefs_recursive_lock_lock(biglock);
+    fuse_biglock_lock(biglock);
     res = fuse_vfsop_getattr(mp, attr, context);
-    fusefs_recursive_lock_unlock(biglock);
+    fuse_biglock_unlock(biglock);
 
     return res;
 }
@@ -1343,11 +1393,11 @@ static errno_t
 fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context)
 {
     errno_t res;
-    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 
-    fusefs_recursive_lock_lock(biglock);
+    fuse_biglock_lock(biglock);
     res = fuse_vfsop_sync(mp, waitfor, context);
-    fusefs_recursive_lock_unlock(biglock);
+    fuse_biglock_unlock(biglock);
 
     return res;
 }
@@ -1356,11 +1406,11 @@ static errno_t
 fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 {
     errno_t res;
-    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 
-    fusefs_recursive_lock_lock(biglock);
+    fuse_biglock_lock(biglock);
     res = fuse_vfsop_setattr(mp, fsap, context);
-    fusefs_recursive_lock_unlock(biglock);
+    fuse_biglock_unlock(biglock);
 
     return res;
 }
