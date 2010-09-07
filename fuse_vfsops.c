@@ -1321,7 +1321,7 @@ fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 
     fusefs_recursive_lock_lock(biglock);
     res = fuse_vfsop_root(mp, vpp, context);
-    fusefs_recursive_lock_lock(biglock);
+    fusefs_recursive_lock_unlock(biglock);
 
     return res;
 }
@@ -1334,7 +1334,7 @@ fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t cont
 
     fusefs_recursive_lock_lock(biglock);
     res = fuse_vfsop_getattr(mp, attr, context);
-    fusefs_recursive_lock_lock(biglock);
+    fusefs_recursive_lock_unlock(biglock);
 
     return res;
 }
@@ -1347,7 +1347,7 @@ fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context)
 
     fusefs_recursive_lock_lock(biglock);
     res = fuse_vfsop_sync(mp, waitfor, context);
-    fusefs_recursive_lock_lock(biglock);
+    fusefs_recursive_lock_unlock(biglock);
 
     return res;
 }
@@ -1360,7 +1360,7 @@ fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t cont
 
     fusefs_recursive_lock_lock(biglock);
     res = fuse_vfsop_setattr(mp, fsap, context);
-    fusefs_recursive_lock_lock(biglock);
+    fusefs_recursive_lock_unlock(biglock);
 
     return res;
 }
