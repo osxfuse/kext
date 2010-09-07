@@ -40,34 +40,39 @@
 
 #include "fuse_vnops.h"
 
-/* Change this to 1 for extensive debug logging of method entry/exit. */
-#define _DEBUG_LOGGING 0
-
-#if _DEBUG_LOGGING
+#if M_MACFUSE_USE_LOCK_LOGGING
 #define rawlog(msg, args...) IOLog(msg, ##args)
 
 #define log(fmt, args...) \
 	do { \
+		lck_mtx_lock(fuse_log_lock); \
 		rawlog(fmt, ##args); \
 		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
 	} while(0)
 
 #define log_enter(params_format, args...) \
 	do { \
+		lck_mtx_lock(fuse_log_lock); \
 		rawlog("[%s:%d] Entering %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		log(params_format, ##args); \
+		rawlog(params_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
 	} while(0)
 
 #define log_leave(return_format, args...) \
 	do { \
+		lck_mtx_lock(fuse_log_lock); \
 		rawlog("[%s:%d] Leaving %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		log(return_format, ##args); \
+		rawlog(return_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
 	} while(0)
 #else
 #define log(fmt, args...) do {} while(0)
 #define log_enter(params_format, args...) do {} while(0)
 #define log_leave(return_format, args...) do {} while(0)
-#endif /* _DEBUG_LOGGING */
+#endif /* M_MACFUSE_USE_LOCK_LOGGING */
 
 #define fuse_biglock_lock(lock) \
 	do { \

@@ -38,6 +38,15 @@ fini_stuff(void)
         fuse_device_mutex = NULL;
     }
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_MACFUSE_USE_LOCK_LOGGING
+    if (fuse_huge_lock) {
+        fusefs_recursive_lock_free(fuse_huge_lock);
+        fuse_huge_lock = NULL;
+    }
+#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+
     if (fuse_lock_group) {
         lck_grp_free(fuse_lock_group);
         fuse_lock_group = NULL;
@@ -88,6 +97,17 @@ init_stuff(void)
             ret = ENOMEM;
         }
     }
+
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_MACFUSE_USE_LOCK_LOGGING
+    if (ret == KERN_SUCCESS) {
+        fuse_log_lock = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+        if (fuse_log_lock == NULL) {
+            ret = ENOMEM;
+        }
+    }
+#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     if (ret != KERN_SUCCESS) {
         fini_stuff();

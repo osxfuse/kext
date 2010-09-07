@@ -26,6 +26,7 @@
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#define M_MACFUSE_USE_LOCK_LOGGING 0
 #define FUSE_VNOP_EXPORT __private_extern__
 #else
 #define FUSE_VNOP_EXPORT static
