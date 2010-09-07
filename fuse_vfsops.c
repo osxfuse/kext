@@ -61,10 +61,38 @@ static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[] =
 #endif
 };
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+
+static errno_t
+fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context);
+
+static errno_t
+fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context);
+
+static errno_t
+fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context);
+
+static errno_t
+fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context);
+
+#endif
+
 static struct vfsops fuse_vfs_ops = {
     fuse_vfsop_mount,   // vfs_mount
     NULL,               // vfs_start
     fuse_vfsop_unmount, // vfs_unmount
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+    fuse_vfsop_biglock_root,    // vfs_root
+    NULL,                       // vfs_quotactl
+    fuse_vfsop_biglock_getattr, // vfs_getattr
+    fuse_vfsop_biglock_sync,    // vfs_sync
+    NULL,                       // vfs_vget
+    NULL,                       // vfs_fhtovp
+    NULL,                       // vfs_vptofh
+    NULL,                       // vfs_init
+    NULL,                       // vfs_sysctl
+    fuse_vfsop_biglock_setattr, // vfs_setattr
+#else
     fuse_vfsop_root,    // vfs_root
     NULL,               // vfs_quotactl
     fuse_vfsop_getattr, // vfs_getattr
@@ -75,6 +103,7 @@ static struct vfsops fuse_vfs_ops = {
     NULL,               // vfs_init
     NULL,               // vfs_sysctl
     fuse_vfsop_setattr, // vfs_setattr
+#endif
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL } // vfs_reserved[]
 };
 
@@ -1282,3 +1311,58 @@ fuse_setextendedsecurity(mount_t mp, int state)
 
     return err;
 }
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+
+static errno_t
+fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
+{
+    errno_t res;
+    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+
+    fusefs_recursive_lock_lock(biglock);
+    res = fuse_vfsop_root(mp, vpp, context);
+    fusefs_recursive_lock_lock(biglock);
+
+    return res;
+}
+
+static errno_t
+fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
+{
+    errno_t res;
+    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+
+    fusefs_recursive_lock_lock(biglock);
+    res = fuse_vfsop_getattr(mp, attr, context);
+    fusefs_recursive_lock_lock(biglock);
+
+    return res;
+}
+
+static errno_t
+fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context)
+{
+    errno_t res;
+    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+
+    fusefs_recursive_lock_lock(biglock);
+    res = fuse_vfsop_sync(mp, waitfor, context);
+    fusefs_recursive_lock_lock(biglock);
+
+    return res;
+}
+
+static errno_t
+fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
+{
+    errno_t res;
+    fusefs_recursive_lock *biglock = fuse_get_mpdata(mp)->biglock;
+
+    fusefs_recursive_lock_lock(biglock);
+    res = fuse_vfsop_setattr(mp, fsap, context);
+    fusefs_recursive_lock_lock(biglock);
+
+    return res;
+}
+
+#endif
