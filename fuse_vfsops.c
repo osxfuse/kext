@@ -1325,7 +1325,7 @@ fuse_setextendedsecurity(mount_t mp, int state)
 }
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
-#if M_MACFUSE_USE_LOCK_LOGGING
+#if M_MACFUSE_ENABLE_LOCK_LOGGING
 #define rawlog(msg, args...) IOLog(msg, ##args)
 
 #define log(fmt, args...) \
@@ -1357,9 +1357,9 @@ fuse_setextendedsecurity(mount_t mp, int state)
 #define log(fmt, args...) do {} while(0)
 #define log_enter(params_format, args...) do {} while(0)
 #define log_leave(return_format, args...) do {} while(0)
-#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_USE_HUGE_LOCK
+#if M_MACFUSE_ENABLE_HUGE_LOCK
 #define _fuse_biglock_lock_real(lock) \
 	fusefs_recursive_lock_lock(fuse_huge_lock)
 #define _fuse_biglock_unlock_real(lock) \
@@ -1391,7 +1391,7 @@ static errno_t
 fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
     errno_t res;
-#if !M_MACFUSE_USE_HUGE_LOCK
+#if !M_MACFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 #endif
 
@@ -1406,7 +1406,7 @@ static errno_t
 fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
     errno_t res;
-#if !M_MACFUSE_USE_HUGE_LOCK
+#if !M_MACFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 #endif
 
@@ -1421,7 +1421,7 @@ static errno_t
 fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context)
 {
     errno_t res;
-#if !M_MACFUSE_USE_HUGE_LOCK
+#if !M_MACFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 #endif
 
@@ -1436,7 +1436,7 @@ static errno_t
 fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 {
     errno_t res;
-#if !M_MACFUSE_USE_HUGE_LOCK
+#if !M_MACFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
 #endif
 

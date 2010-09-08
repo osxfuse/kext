@@ -44,19 +44,19 @@ fini_stuff(void)
     }
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if M_MACFUSE_USE_HUGE_LOCK
+#if M_MACFUSE_ENABLE_HUGE_LOCK
     if (fuse_huge_lock) {
         fusefs_recursive_lock_free(fuse_huge_lock);
         fuse_huge_lock = NULL;
     }
-#endif /* M_MACFUSE_USE_HUGE_LOCK */
+#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
-#if M_MACFUSE_USE_LOCK_LOGGING
+#if M_MACFUSE_ENABLE_LOCK_LOGGING
     if (fuse_log_lock) {
         lck_mtx_free(fuse_log_lock, fuse_lock_group);
         fuse_log_lock = NULL;
     }
-#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
 #endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     if (fuse_lock_group) {
@@ -111,23 +111,23 @@ init_stuff(void)
     }
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if M_MACFUSE_USE_LOCK_LOGGING
+#if M_MACFUSE_ENABLE_LOCK_LOGGING
     if (ret == KERN_SUCCESS) {
         fuse_log_lock = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
         if (fuse_log_lock == NULL) {
             ret = ENOMEM;
         }
     }
-#endif /* M_MACFUSE_USE_LOCK_LOGGING */
+#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_USE_HUGE_LOCK
+#if M_MACFUSE_ENABLE_HUGE_LOCK
     if (ret == KERN_SUCCESS) {
         fuse_huge_lock = fusefs_recursive_lock_alloc();
         if (fuse_huge_lock == NULL) {
             ret = ENOMEM;
         }
     }
-#endif /* M_MACFUSE_USE_HUGE_LOCK */
+#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 #endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     if (ret != KERN_SUCCESS) {
