@@ -388,6 +388,7 @@ fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
             }
         }
     }
+#undef DS_STORE
 
     return 0;
 }
