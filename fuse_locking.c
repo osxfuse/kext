@@ -21,6 +21,11 @@
  * under the License.
  */
 
+/*
+ * 'rebel' branch modifications:
+ *     Copyright (C) Tuxera 2010. All Rights Reserved.
+ */
+
 #include "fuse.h"
 #include "fuse_ipc.h"
 #include "fuse_node.h"

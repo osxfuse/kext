@@ -3,6 +3,11 @@
  * Amit Singh <singh@>
  */
 
+/*
+ * 'rebel' branch modifications:
+ *     Copyright (C) Tuxera 2010. All Rights Reserved.
+ */
+
 #include "fuse.h"
 #include "fuse_device.h"
 #include "fuse_internal.h"

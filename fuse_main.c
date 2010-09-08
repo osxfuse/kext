@@ -3,6 +3,11 @@
  * Amit Singh <singh@>
  */
 
+/*
+ * 'rebel' branch modifications:
+ *     Copyright (C) Tuxera 2010. All Rights Reserved.
+ */
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/conf.h>

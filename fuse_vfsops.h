@@ -3,6 +3,11 @@
  * Amit Singh <singh@>
  */
 
+/*
+ * 'rebel' branch modifications:
+ *     Copyright (C) Tuxera 2010. All Rights Reserved.
+ */
+
 #ifndef _FUSE_VFSOPS_H_
 #define _FUSE_VFSOPS_H_
 
