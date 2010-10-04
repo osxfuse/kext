@@ -779,7 +779,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_ATTRLIST
 //      | VOL_CAP_INT_NFSEXPORT
 //      | VOL_CAP_INT_READDIRATTR
-        | VOL_CAP_INT_EXCHANGEDATA
+//      | VOL_CAP_INT_EXCHANGEDATA
 //      | VOL_CAP_INT_COPYFILE
 //      | VOL_CAP_INT_ALLOCATE
 //      | VOL_CAP_INT_VOL_RENAME
@@ -795,6 +795,13 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
     if (data->dataflags & FSESS_NATIVE_XATTR) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
             VOL_CAP_INT_EXTENDED_ATTR;
+    }
+
+    /* Don't set the EXCHANGEDATA capability if it's known not to be
+     * implemented in the FUSE daemon. */
+    if (fuse_implemented(data, FSESS_NOIMPLBIT(EXCHANGE))) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_EXCHANGEDATA;
     }
 
     attr->f_capabilities.valid[VOL_CAPABILITIES_INTERFACES] = 0
