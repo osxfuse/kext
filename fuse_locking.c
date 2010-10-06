@@ -436,7 +436,7 @@ boolean_t fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
 {
     if (lock->thread == current_thread()) {
         lock->count++;
-	return true;
+        return true;
     } else {
         if (lck_mtx_try_lock(lock->mutex)) {
             assert(lock->thread == 0);
@@ -444,7 +444,7 @@ boolean_t fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
             lock->thread = current_thread();
             lock->count = 1;
             return true;
-	}
+	    }
     }
     return false;
 }
