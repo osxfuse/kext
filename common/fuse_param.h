@@ -138,13 +138,13 @@
 /* User-Kernel IPC Buffer */
 
 #define FUSE_MIN_USERKERNEL_BUFSIZE        (128  * 1024)
-#define FUSE_MAX_USERKERNEL_BUFSIZE        (4096 * 1024)
+#define FUSE_MAX_USERKERNEL_BUFSIZE        (16   * 1024 * 1024)
 
 #define FUSE_REASONABLE_XATTRSIZE          FUSE_MIN_USERKERNEL_BUFSIZE
 
 #endif /* KERNEL */
 
-#define FUSE_DEFAULT_USERKERNEL_BUFSIZE    (4096 * 1024)
+#define FUSE_DEFAULT_USERKERNEL_BUFSIZE    (16   * 1024 * 1024)
 
 #define FUSE_LINK_MAX                      LINK_MAX
 #define FUSE_UIO_BACKUP_MAX                8
