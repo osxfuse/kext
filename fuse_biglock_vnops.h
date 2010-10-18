@@ -58,19 +58,35 @@
 #define fuse_biglock_t fusefs_recursive_lock
 #endif
 
+#if M_MACFUSE_ENABLE_HUGE_LOCK
 #define fuse_biglock_lock(lock) \
 	do { \
-		log("(%p) %s: Aquiring biglock...", lock, __FUNCTION__); \
+		log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock); \
 		_fuse_biglock_lock_real(lock); \
-		log("(%p) %s:   biglock aquired!", lock, __FUNCTION__); \
+		log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock); \
 	} while(0)
 
 #define fuse_biglock_unlock(lock) \
 	do { \
-		log("(%p) %s: Releasing biglock...", lock, __FUNCTION__); \
+		log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock); \
 		_fuse_biglock_unlock_real(lock); \
-		log("(%p) %s:   biglock released!", lock, __FUNCTION__); \
+		log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock); \
 	} while(0)
+#else
+#define fuse_biglock_lock(lock) \
+	do { \
+		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
+		_fuse_biglock_lock_real(lock); \
+		log("%s:   biglock %p aquired!", __FUNCTION__, lock); \
+	} while(0)
+
+#define fuse_biglock_unlock(lock) \
+	do { \
+		log("%s: Releasing biglock %p...", __FUNCTION__, lock); \
+		_fuse_biglock_unlock_real(lock); \
+		log("%s:   biglock %p released!", __FUNCTION__, lock); \
+	} while(0)
+#endif
 
 
 /** Wrapper that surrounds a vfsop call with biglock locking. */
