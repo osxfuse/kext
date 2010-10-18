@@ -95,7 +95,7 @@
 		errno_t res; \
 		struct fuse_data *data __unused = fuse_get_mpdata((mp)); \
 		fuse_biglock_lock(data->biglock); \
-		vfsop(mp, ##args); \
+		res = vfsop(mp, ##args); \
 		fuse_biglock_unlock(data->biglock); \
 		return res; \
 	} while(0)
@@ -108,7 +108,7 @@
 		struct fuse_data *data __unused = \
 			fuse_get_mpdata(vnode_mount(vp)); \
 		fuse_biglock_lock(data->biglock); \
-		vnop(args); \
+		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
 		return res; \
 	} while(0)
@@ -126,7 +126,7 @@
 		struct fuse_vnode_data *node = VTOFUD(vp); \
 		fusefs_lock(node, FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
-		vnop(args); \
+		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
 		fusefs_unlock(node); \
 		return res; \
@@ -146,7 +146,7 @@
 		struct fuse_vnode_data *node2 = vp2 ? VTOFUD(vp2) : NULL; \
 		fusefs_lockpair(node1, node2, FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
-		vnop(args); \
+		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
 		fusefs_unlockpair(node1, node2); \
 		return res; \
@@ -169,7 +169,7 @@
 		fusefs_lockfour(node1, node2, node3, node4, \
 			FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
-		vnop(args); \
+		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
 		fusefs_unlockfour(node1, node2, node3, node4); \
 		return res; \
