@@ -57,14 +57,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_access(struct vnop_access_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_access(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_access, ap);
 }
 
 /*
@@ -79,14 +72,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_blktooff(struct vnop_blktooff_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_blktooff(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_blktooff, ap);
 }
 
 /*
@@ -106,14 +92,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_blockmap(struct vnop_blockmap_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_blockmap(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_blockmap, ap);
 }
 
 /*
@@ -128,14 +107,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_close(struct vnop_close_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_close(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_close, ap);
 }
 
 /*
@@ -152,14 +126,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_create(struct vnop_create_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_create(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_dvp, fuse_vnop_create, ap);
 }
 
 /*
@@ -175,14 +142,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_exchange(struct vnop_exchange_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_exchange(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_pair_vnop(ap->a_fvp, ap->a_tvp, fuse_vnop_exchange, ap);
 }
 
 /*
@@ -197,14 +157,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_fsync(struct vnop_fsync_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_fsync(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_fsync, ap);
 }
 
 /*
@@ -219,14 +172,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_getattr(struct vnop_getattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_getattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_getattr, ap);
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -245,14 +191,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_getxattr(struct vnop_getxattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_getxattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_getxattr, ap);
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
 
@@ -267,14 +206,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_inactive(struct vnop_inactive_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_inactive(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_inactive, ap);
 }
 
 /*
@@ -291,14 +223,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_ioctl(struct vnop_ioctl_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_ioctl(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_ioctl, ap);
 }
 
 #if M_MACFUSE_ENABLE_KQUEUE
@@ -316,14 +243,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_kqfilt_add(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_kqfilt_add, ap);
 }
 
 /*
@@ -338,14 +258,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_kqfilt_remove(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_kqfilt_remove, ap);
 }
 
 #endif /* M_MACFUSE_ENABLE_KQUEUE */
@@ -363,14 +276,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_link(struct vnop_link_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_link(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* TODO: What about a_tdvp? No need to lock that one? kpi_vfs.c does
+	 * not, but maybe we should... */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_link, ap);
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -388,14 +296,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_listxattr(struct vnop_listxattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_listxattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_listxattr, ap);
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
 
@@ -412,14 +313,11 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_lookup(struct vnop_lookup_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_lookup(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not release the node lock if ap->a_cnp->cn_flags
+	 * has the flags ISLASTCN and LOCKPARENT set, and if the flag
+	 * FSNODELOCKHELD is not set. We only have access to the ISLASTCN and
+	 * LOCKPARENT flags, so we can't do this but should we, and why? */
+	nodelocked_vnop(ap->a_dvp, fuse_vnop_lookup, ap);
 }
 
 /*
@@ -436,14 +334,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_mkdir(struct vnop_mkdir_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_mkdir(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_dvp, fuse_vnop_mkdir, ap);
 }
 
 /*
@@ -460,14 +351,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_mknod(struct vnop_mknod_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_mknod(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_dvp, fuse_vnop_mknod, ap);
 }
 
 /*
@@ -482,14 +366,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_mmap(struct vnop_mmap_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_mmap(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_mmap, ap);
 }
 
 /*
@@ -503,14 +380,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_mnomap(struct vnop_mnomap_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_mnomap(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_mnomap, ap);
 }
 
 /*
@@ -525,14 +395,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_offtoblk(struct vnop_offtoblk_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_offtoblk(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_offtoblk, ap);
 }
 
 /*
@@ -547,14 +410,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_open(struct vnop_open_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_open(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_open, ap);
 }
 
 /*
@@ -573,14 +431,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_pagein(struct vnop_pagein_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_pagein(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_pagein, ap);
 }
 
 /*
@@ -599,14 +450,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_pageout(struct vnop_pageout_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_pageout(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_pageout, ap);
 }
 
 /*
@@ -622,14 +466,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_pathconf(struct vnop_pathconf_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_pathconf(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_pathconf, ap);
 }
 
 /*
@@ -645,14 +482,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_read(struct vnop_read_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_read(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_read, ap);
 }
 
 /*
@@ -670,14 +502,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_readdir(struct vnop_readdir_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_readdir(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_readdir, ap);
 }
 
 /*
@@ -692,14 +517,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_readlink(struct vnop_readlink_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_readlink(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_readlink, ap);
 }
 
 /*
@@ -713,14 +531,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_reclaim(struct vnop_reclaim_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_reclaim(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_reclaim, ap);
 }
 
 /*
@@ -737,14 +548,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_remove(struct vnop_remove_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_remove(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_remove, ap);
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -761,14 +565,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_removexattr(struct vnop_removexattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_removexattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_removexattr, ap);
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
 
@@ -788,14 +585,12 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_rename(struct vnop_rename_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_fvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_rename(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: Do we really know that all vnodes are FUSE vnodes? I hope so,
+	 * and it seems that HFS makes similar assumptions.
+	 * Of course, how could we operate on vnodes that we don't know anything
+	 * about? */
+	nodelocked_quad_vnop(ap->a_tdvp, ap->a_fdvp, ap->a_fvp, ap->a_tvp,
+		fuse_vnop_rename, ap);
 }
 
 /*
@@ -810,14 +605,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_revoke(struct vnop_revoke_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_revoke(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	locked_vnop(ap->a_vp, fuse_vnop_revoke, ap);
 }
 
 /*
@@ -833,14 +621,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_rmdir(struct vnop_rmdir_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_rmdir(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* TODO: Shouldn't we also lock ap->a_dvp? kpi_vfs.c does not, but maybe
+	 * we should anyway... */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_rmdir, ap);
 }
 
 /*
@@ -857,14 +640,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_select(__unused struct vnop_select_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_select(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_select, ap);
 }
 
 /*
@@ -879,14 +657,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_setattr(struct vnop_setattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_setattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_setattr, ap);
 }
 
 #if M_MACFUSE_ENABLE_XATTR
@@ -904,14 +675,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_setxattr(struct vnop_setxattr_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_setxattr(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_vp, fuse_vnop_setxattr, ap);
 }
 #endif /* M_MACFUSE_ENABLE_XATTR */
 
@@ -925,14 +689,10 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_strategy(struct vnop_strategy_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(buf_vnode(ap->a_bp)))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_strategy(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* VNOP_STRATEGY in kpi_vfs.c is completely unprotected. This seems very
+	 * dangerous, but I don't want to do anything that kpi_vfs.c doesn't do
+	 * without being able to motivate why. */
+	return fuse_vnop_strategy(ap);
 }
 
 /*
@@ -950,14 +710,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_symlink(struct vnop_symlink_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_dvp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_symlink(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	nodelocked_vnop(ap->a_dvp, fuse_vnop_symlink, ap);
 }
 
 /*
@@ -973,14 +726,9 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_write(struct vnop_write_args *ap)
 {
-	int res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_biglock_t *biglock = fuse_get_mpdata(vnode_mount(ap->a_vp))->biglock;
-#endif
-	fuse_biglock_lock(biglock);
-	res = fuse_vnop_write(ap);
-	fuse_biglock_unlock(biglock);
-	return res;
+	/* Note: kpi_vfs.c does not take the node lock if vnode type is VCHR,
+	 * VFIFO or VSOCK. I'm not sure if this is relevant here. */
+	nodelocked_vnop(ap->a_vp, fuse_vnop_write, ap);
 }
 
 struct vnodeopv_entry_desc fuse_biglock_vnode_operation_entries[] = {

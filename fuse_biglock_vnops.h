@@ -72,6 +72,93 @@
 		log("(%p) %s:   biglock released!", lock, __FUNCTION__); \
 	} while(0)
 
+
+/** Wrapper that surrounds a vfsop call with biglock locking. */
+#define locked_vfsop(mp, vfsop, args...) \
+	do { \
+		errno_t res; \
+		struct fuse_data *data __unused = fuse_get_mpdata((mp)); \
+		fuse_biglock_lock(data->biglock); \
+		vfsop(mp, ##args); \
+		fuse_biglock_unlock(data->biglock); \
+		return res; \
+	} while(0)
+
+/** Wrapper that surrounds a vnop call with biglock locking. */
+#define locked_vnop(vnode, vnop, args) \
+	do { \
+		int res; \
+		vnode_t vp = (vnode); \
+		struct fuse_data *data __unused = \
+			fuse_get_mpdata(vnode_mount(vp)); \
+		fuse_biglock_lock(data->biglock); \
+		vnop(args); \
+		fuse_biglock_unlock(data->biglock); \
+		return res; \
+	} while(0)
+
+/**
+ * Wrapper that surrounds a vnop call with biglock locking and single-node
+ * locking.
+ */
+#define nodelocked_vnop(vnode, vnop, args) \
+	do { \
+		int res; \
+		vnode_t vp = (vnode); \
+		struct fuse_data *data __unused = \
+			fuse_get_mpdata(vnode_mount(vp)); \
+		struct fuse_vnode_data *node = VTOFUD(vp); \
+		fusefs_lock(node, FUSEFS_EXCLUSIVE_LOCK); \
+		fuse_biglock_lock(data->biglock); \
+		vnop(args); \
+		fuse_biglock_unlock(data->biglock); \
+		fusefs_unlock(node); \
+		return res; \
+	} while(0)
+
+/**
+ * Wrapper that surrounds a vnop call with biglock locking and dual node
+ * locking.
+ */
+#define nodelocked_pair_vnop(vnode1, vnode2, vnop, args) \
+	do { \
+		int res; \
+		vnode_t vp1 = (vnode1), vp2 = (vnode2); \
+		struct fuse_data *data __unused = \
+			fuse_get_mpdata(vnode_mount(vp1)); \
+		struct fuse_vnode_data *node1 = vp1 ? VTOFUD(vp1) : NULL; \
+		struct fuse_vnode_data *node2 = vp2 ? VTOFUD(vp2) : NULL; \
+		fusefs_lockpair(node1, node2, FUSEFS_EXCLUSIVE_LOCK); \
+		fuse_biglock_lock(data->biglock); \
+		vnop(args); \
+		fuse_biglock_unlock(data->biglock); \
+		fusefs_unlockpair(node1, node2); \
+		return res; \
+	} while(0)
+
+/**
+ * Wrapper that surrounds a vnop call with biglock locking and four-node
+ * locking.
+ */
+#define nodelocked_quad_vnop(vnode1, vnode2, vnode3, vnode4, vnop, args) \
+	do { \
+		int res; \
+		vnode_t vp1 = (vnode1), vp2 = (vnode2), vp3 = (vnode3), \
+			vp4 = (vnode4); \
+		struct fuse_data *data __unused = fuse_get_mpdata(vnode_mount(vp1)); \
+		struct fuse_vnode_data *node1 = vp1 ? VTOFUD(vp1) : NULL; \
+		struct fuse_vnode_data *node2 = vp2 ? VTOFUD(vp2) : NULL; \
+		struct fuse_vnode_data *node3 = vp3 ? VTOFUD(vp3) : NULL; \
+		struct fuse_vnode_data *node4 = vp4 ? VTOFUD(vp4) : NULL; \
+		fusefs_lockfour(node1, node2, node3, node4, \
+			FUSEFS_EXCLUSIVE_LOCK); \
+		fuse_biglock_lock(data->biglock); \
+		vnop(args); \
+		fuse_biglock_unlock(data->biglock); \
+		fusefs_unlockfour(node1, node2, node3, node4); \
+		return res; \
+	} while(0)
+
 typedef int (*fuse_biglock_vnode_op_t)(void *);
 
 /*

@@ -1417,61 +1417,25 @@ fuse_vfsop_biglock_unmount(mount_t mp, int mntflags, vfs_context_t context)
 static errno_t
 fuse_vfsop_biglock_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
-    errno_t res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
-#endif
-
-    fuse_biglock_lock(biglock);
-    res = fuse_vfsop_root(mp, vpp, context);
-    fuse_biglock_unlock(biglock);
-
-    return res;
+    locked_vfsop(mp, fuse_vfsop_root, vpp, context);
 }
 
 static errno_t
 fuse_vfsop_biglock_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
-    errno_t res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
-#endif
-
-    fuse_biglock_lock(biglock);
-    res = fuse_vfsop_getattr(mp, attr, context);
-    fuse_biglock_unlock(biglock);
-
-    return res;
+    locked_vfsop(mp, fuse_vfsop_getattr, attr, context);
 }
 
 static errno_t
 fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context)
 {
-    errno_t res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
-#endif
-
-    fuse_biglock_lock(biglock);
-    res = fuse_vfsop_sync(mp, waitfor, context);
-    fuse_biglock_unlock(biglock);
-
-    return res;
+    locked_vfsop(mp, fuse_vfsop_sync, waitfor, context);
 }
 
 static errno_t
 fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
 {
-    errno_t res;
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
-    fuse_biglock_t *biglock = fuse_get_mpdata(mp)->biglock;
-#endif
-
-    fuse_biglock_lock(biglock);
-    res = fuse_vfsop_setattr(mp, fsap, context);
-    fuse_biglock_unlock(biglock);
-
-    return res;
+    locked_vfsop(mp, fuse_vfsop_setattr, fsap, context);
 }
 
 #endif
