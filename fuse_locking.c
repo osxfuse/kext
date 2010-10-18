@@ -38,6 +38,8 @@ lck_mtx_t      *fuse_device_mutex = NULL;
 
 #if M_MACFUSE_ENABLE_TSLOCKING
 
+#include <sys/ubc.h>
+
 /*
  * Largely identical to HFS+ locking. Much of the code is from hfs_cnode.c.
  */

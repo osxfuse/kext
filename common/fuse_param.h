@@ -16,7 +16,7 @@
 #define M_MACFUSE_ENABLE_FIFOFS            0
 #define M_MACFUSE_ENABLE_INTERRUPT         1
 #define M_MACFUSE_ENABLE_SPECFS            0
-#define M_MACFUSE_ENABLE_TSLOCKING         0
+#define M_MACFUSE_ENABLE_TSLOCKING         1
 #define M_MACFUSE_ENABLE_UNSUPPORTED       1
 #define M_MACFUSE_ENABLE_XATTR             1
 
