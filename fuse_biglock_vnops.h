@@ -46,46 +46,34 @@
 #endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
-#define _fuse_biglock_lock_real(lock) \
-	fusefs_recursive_lock_lock(fuse_huge_lock)
-#define _fuse_biglock_unlock_real(lock) \
-	fusefs_recursive_lock_unlock(fuse_huge_lock)
-#define fuse_biglock_t __unused fusefs_recursive_lock
-#else
-#define _fuse_biglock_lock_real(lock) \
-	fusefs_recursive_lock_lock(lock)
-#define _fuse_biglock_unlock_real(lock) \
-	fusefs_recursive_lock_unlock(lock)
-#define fuse_biglock_t fusefs_recursive_lock
-#endif
-
-#if M_MACFUSE_ENABLE_HUGE_LOCK
-#define fuse_biglock_lock(lock) \
+#define fuse_hugelock_lock() \
 	do { \
 		log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock); \
-		_fuse_biglock_lock_real(lock); \
+		fusefs_recursive_lock_lock(fuse_huge_lock); \
 		log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock); \
 	} while(0)
 
-#define fuse_biglock_unlock(lock) \
+#define fuse_hugelock_unlock() \
 	do { \
 		log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock); \
-		_fuse_biglock_unlock_real(lock); \
+		fusefs_recursive_lock_unlock(fuse_huge_lock); \
 		log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock); \
 	} while(0)
+#define fuse_biglock_lock(lock) fuse_hugelock_lock()
+#define fuse_biglock_unlock(lock) fuse_hugelock_unlock()
 #else
 #define fuse_biglock fusefs_recursive_lock
 #define fuse_biglock_lock(lock) \
 	do { \
 		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
-		_fuse_biglock_lock_real(lock); \
+		fusefs_recursive_lock_lock(lock); \
 		log("%s:   biglock %p aquired!", __FUNCTION__, lock); \
 	} while(0)
 
 #define fuse_biglock_unlock(lock) \
 	do { \
 		log("%s: Releasing biglock %p...", __FUNCTION__, lock); \
-		_fuse_biglock_unlock_real(lock); \
+		fusefs_recursive_lock_unlock(lock); \
 		log("%s:   biglock %p released!", __FUNCTION__, lock); \
 	} while(0)
 #endif

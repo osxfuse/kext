@@ -20,6 +20,10 @@
 
 #include <fuse_mount.h>
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#include <fuse_biglock_vnops.h>
+#endif
+
 static const struct timespec kZeroTime = { 0, 0 };
 
 vfstable_t fuse_vfs_table_ref = NULL;
@@ -431,12 +435,12 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
     biglock = data->biglock;
-    fusefs_recursive_lock_lock(biglock);
+    fuse_biglock_lock(biglock);
 #endif
 
     if (data->mount_state != FM_NOTMOUNTED) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-        fusefs_recursive_lock_unlock(biglock);
+        fuse_biglock_unlock(biglock);
 #endif
         fuse_device_unlock(fdev);
         return EALREADY;
@@ -566,7 +570,7 @@ out:
             if (!(data->dataflags & FSESS_OPENED)) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
                 assert(biglock == data->biglock);
-                fusefs_recursive_lock_unlock(biglock);
+                fuse_biglock_unlock(biglock);
 #endif
                 fuse_device_close_final(fdev);
                 /* data is gone now */
@@ -597,7 +601,7 @@ out:
     data = fuse_device_get_mpdata(fdev); /* ...and again */
     if(data) {
         assert(data->biglock == biglock);
-        fusefs_recursive_lock_unlock(biglock);
+        fuse_biglock_unlock(biglock);
     }
     fuse_device_unlock(fdev);
 #endif
@@ -631,7 +635,7 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     }
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-    fusefs_recursive_lock_lock(data->biglock);
+    fuse_biglock_lock(data->biglock);
 #endif
 
     fdev = data->fdev;
@@ -668,14 +672,14 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     err = vflush(mp, fuse_rootvp, flags);
     if (err) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-        fusefs_recursive_lock_unlock(data->biglock);
+        fuse_biglock_unlock(data->biglock);
 #endif
         return err;
     }
 
     if (vnode_isinuse(fuse_rootvp, 1) && !(flags & FORCECLOSE)) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-        fusefs_recursive_lock_unlock(data->biglock);
+        fuse_biglock_unlock(data->biglock);
 #endif
         return EBUSY;
     }
@@ -716,7 +720,7 @@ alreadydead:
     OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-    fusefs_recursive_lock_unlock(data->biglock);
+    fuse_biglock_unlock(data->biglock);
 #endif
 
     if (!(data->dataflags & FSESS_OPENED)) {
@@ -1375,8 +1379,6 @@ fuse_setextendedsecurity(mount_t mp, int state)
 }
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
-#include <fuse_biglock_vnops.h>
-
 static errno_t
 fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
                  vfs_context_t context)
@@ -1384,17 +1386,13 @@ fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
     errno_t res;
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
-    log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock);
-    fusefs_recursive_lock_lock(fuse_huge_lock);
-    log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock);
+    fuse_hugelock_lock();
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_mount(mp, devvp, udata, context);
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
-    log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock);
-    fusefs_recursive_lock_unlock(fuse_huge_lock);
-    log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock);
+    fuse_hugelock_unlock();
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     return res;
@@ -1406,17 +1404,13 @@ fuse_vfsop_biglock_unmount(mount_t mp, int mntflags, vfs_context_t context)
     errno_t res;
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
-    log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock);
-    fusefs_recursive_lock_lock(fuse_huge_lock);
-    log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock);
+    fuse_hugelock_lock();
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_unmount(mp, mntflags, context);
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
-    log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock);
-    fusefs_recursive_lock_unlock(fuse_huge_lock);
-    log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock);
+    fuse_hugelock_unlock();
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     return res;
