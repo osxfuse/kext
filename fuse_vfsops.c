@@ -169,7 +169,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-	fusefs_recursive_lock     *biglock;
+    fusefs_recursive_lock     *biglock;
 #endif
 
     fuse_trace_printf_vfsop();
@@ -430,13 +430,13 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-	biglock = data->biglock;
+    biglock = data->biglock;
     fusefs_recursive_lock_lock(biglock);
 #endif
 
     if (data->mount_state != FM_NOTMOUNTED) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-		fusefs_recursive_lock_unlock(biglock);
+        fusefs_recursive_lock_unlock(biglock);
 #endif
         fuse_device_unlock(fdev);
         return EALREADY;
@@ -565,8 +565,8 @@ out:
             data->mount_state = FM_NOTMOUNTED;
             if (!(data->dataflags & FSESS_OPENED)) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-				assert(biglock == data->biglock);
-				fusefs_recursive_lock_unlock(biglock);
+                assert(biglock == data->biglock);
+                fusefs_recursive_lock_unlock(biglock);
 #endif
                 fuse_device_close_final(fdev);
                 /* data is gone now */
@@ -593,13 +593,13 @@ out:
     }
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-	fuse_device_lock(fdev);
-	data = fuse_device_get_mpdata(fdev); /* ...and again */
-	if(data) {
-		assert(data->biglock == biglock);
-		fusefs_recursive_lock_unlock(biglock);
-	}
-	fuse_device_unlock(fdev);
+    fuse_device_lock(fdev);
+    data = fuse_device_get_mpdata(fdev); /* ...and again */
+    if(data) {
+        assert(data->biglock == biglock);
+        fusefs_recursive_lock_unlock(biglock);
+    }
+    fuse_device_unlock(fdev);
 #endif
 
     return err;
