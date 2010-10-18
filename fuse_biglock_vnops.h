@@ -88,6 +88,56 @@
 	} while(0)
 #endif
 
+#define fuse_nodelock_lock(node, type) \
+	do { \
+		int err; \
+		log("%s: Locking node %p...", __FUNCTION__, node); \
+		err = fusefs_lock(node, type); \
+		if(err) \
+			return err; \
+		log("%s:   node %p locked!", __FUNCTION__, node); \
+	} while(0)
+
+#define fuse_nodelock_unlock(node) \
+	do { \
+		log("%s: Unlocking node %p...", __FUNCTION__, node); \
+		fusefs_unlock(node); \
+		log("%s:   node %p unlocked!", __FUNCTION__, node); \
+	} while(0)
+
+#define fuse_nodelock_lock_pair(node1, node2, type) \
+	do { \
+		int err; \
+		log("%s: Locking node pair (%p, %p)...", __FUNCTION__, node1, node2); \
+		err = fusefs_lockpair(node1, node2, type); \
+		if(err) \
+			return err; \
+		log("%s:   node pair (%p, %p) locked!", __FUNCTION__, node1, node2); \
+	} while(0)
+
+#define fuse_nodelock_unlock_pair(node1, node2) \
+	do { \
+		log("%s: Unlocking node pair (%p, %p)...", __FUNCTION__, node1, node2); \
+		fusefs_unlockpair(node1, node2); \
+		log("%s:   node pair (%p, %p) unlocked!", __FUNCTION__, node1, node2); \
+	} while(0)
+
+#define fuse_nodelock_lock_four(node1, node2, node3, node4, type) \
+	do { \
+		int err; \
+		log("%s: Locking node pair (%p, %p, %p, %p)...", __FUNCTION__, node1, node2, node3, node4); \
+		err = fusefs_lockfour(node1, node2, node3, node4, type); \
+		if(err) \
+			return err; \
+		log("%s:   node pair (%p, %p, %p, %p) locked!", __FUNCTION__, node1, node2, node3, node4); \
+	} while(0)
+
+#define fuse_nodelock_unlock_four(node1, node2, node3, node4) \
+	do { \
+		log("%s: Unlocking nodes (%p, %p, %p, %p)...", __FUNCTION__, node1, node2, node3, node4); \
+		fusefs_unlockfour(node1, node2, node3, node4); \
+		log("%s:   node pair (%p, %p, %p, %p) unlocked!", __FUNCTION__, node1, node2, node3, node4); \
+	} while(0)
 
 /** Wrapper that surrounds a vfsop call with biglock locking. */
 #define locked_vfsop(mp, vfsop, args...) \
@@ -124,11 +174,11 @@
 		struct fuse_data *data __unused = \
 			fuse_get_mpdata(vnode_mount(vp)); \
 		struct fuse_vnode_data *node = VTOFUD(vp); \
-		fusefs_lock(node, FUSEFS_EXCLUSIVE_LOCK); \
+		fuse_nodelock_lock(node, FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
 		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
-		fusefs_unlock(node); \
+		fuse_nodelock_unlock(node); \
 		return res; \
 	} while(0)
 
@@ -144,11 +194,11 @@
 			fuse_get_mpdata(vnode_mount(vp1)); \
 		struct fuse_vnode_data *node1 = vp1 ? VTOFUD(vp1) : NULL; \
 		struct fuse_vnode_data *node2 = vp2 ? VTOFUD(vp2) : NULL; \
-		fusefs_lockpair(node1, node2, FUSEFS_EXCLUSIVE_LOCK); \
+		fuse_nodelock_lock_pair(node1, node2, FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
 		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
-		fusefs_unlockpair(node1, node2); \
+		fuse_nodelock_unlock_pair(node1, node2); \
 		return res; \
 	} while(0)
 
@@ -166,12 +216,12 @@
 		struct fuse_vnode_data *node2 = vp2 ? VTOFUD(vp2) : NULL; \
 		struct fuse_vnode_data *node3 = vp3 ? VTOFUD(vp3) : NULL; \
 		struct fuse_vnode_data *node4 = vp4 ? VTOFUD(vp4) : NULL; \
-		fusefs_lockfour(node1, node2, node3, node4, \
+		fuse_nodelock_lock_four(node1, node2, node3, node4, \
 			FUSEFS_EXCLUSIVE_LOCK); \
 		fuse_biglock_lock(data->biglock); \
 		res = vnop(args); \
 		fuse_biglock_unlock(data->biglock); \
-		fusefs_unlockfour(node1, node2, node3, node4); \
+		fuse_nodelock_unlock_four(node1, node2, node3, node4); \
 		return res; \
 	} while(0)
 
