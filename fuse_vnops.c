@@ -2110,6 +2110,10 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
     struct fuse_vnode_data *fvdat;
     int err;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+#endif
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
@@ -2128,8 +2132,14 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
         return EIO;
     }
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     err = cluster_pagein(vp, pl, (upl_offset_t)pl_offset, f_offset, (int)size,
                          fvdat->filesize, flags);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+   fuse_biglock_lock(data->biglock);
+#endif
 
     return err;
 }
@@ -2160,6 +2170,10 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int error;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+#endif
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp) || fuse_isdirectio(vp)) {
@@ -2173,8 +2187,14 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         return ENOTSUP;
     }
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     error = cluster_pageout(vp, pl, (upl_offset_t)pl_offset, f_offset,
                             (int)size, (off_t)fvdat->filesize, flags);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+   fuse_biglock_lock(data->biglock);
+#endif
 
     return error;
 }
@@ -2336,11 +2356,19 @@ fuse_vnop_read(struct vnop_read_args *ap)
     data = fuse_get_mpdata(vnode_mount(vp));
 
     if (!fuse_isdirectio(vp)) {
+        int res;
         if (fuse_isnoubc(vp)) {
             /* In case we get here through a short cut (e.g. no open). */
             ioflag |= IO_NOCACHE;
         }
-        return cluster_read(vp, uio, fvdat->filesize, ioflag);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        res = cluster_read(vp, uio, fvdat->filesize, ioflag);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+        return res;
     }
 
     /* direct_io */
@@ -2386,8 +2414,14 @@ fuse_vnop_read(struct vnop_read_args *ap)
                 return err;
             }
 
-            if ((err = uiomove(fdi.answ, (int)min(fri->size, fdi.iosize),
-                               uio))) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
+            err = uiomove(fdi.answ, (int)min(fri->size, fdi.iosize), uio);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
+            if (err) {
                 break;
             }
 
@@ -2511,6 +2545,10 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     struct fuse_dispatcher fdi;
     int err;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+#endif
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -2534,7 +2572,13 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     }
 
     if (!err) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         err = uiomove(fdi.answ, (int)fdi.iosize, uio);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
     }
 
     fuse_ticket_drop(fdi.tick);
@@ -2993,6 +3037,10 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     int sizechanged = 0;
     uint64_t newsize = 0;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+#endif
+
     fuse_trace_printf_vnop();
 
     /*
@@ -3062,7 +3110,13 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
              * revocation and tell the caller to try again, if interested.
              */
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
 
             err = EAGAIN;
         }
@@ -3199,8 +3253,14 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     memcpy((char *)fdi.indata + sizeof(*fsxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fsxi) + namelen] = '\0';
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     err = uiomove((char *)fdi.indata + sizeof(*fsxi) + namelen + 1,
                   (int)attrsize, uio);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
     if (!err) {
         err = fdisp_wait_answ(&fdi);
     }
@@ -3529,8 +3589,15 @@ fuse_vnop_write(struct vnop_write_args *ap)
         zero_off = 0;
     }
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    fuse_biglock_unlock(data->biglock);
+#endif
     error = cluster_write(vp, uio, (off_t)original_size, (off_t)filesize,
                           (off_t)zero_off, (off_t)0, lflag);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
         
     if (!error) {
         if (uio_offset(uio) > original_size) {
