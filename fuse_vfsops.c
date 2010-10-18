@@ -1384,13 +1384,17 @@ fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
     errno_t res;
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
+    log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock);
     fusefs_recursive_lock_lock(fuse_huge_lock);
+    log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock);
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_mount(mp, devvp, udata, context);
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
+    log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock);
     fusefs_recursive_lock_unlock(fuse_huge_lock);
+    log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock);
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     return res;
@@ -1402,13 +1406,17 @@ fuse_vfsop_biglock_unmount(mount_t mp, int mntflags, vfs_context_t context)
     errno_t res;
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
+    log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock);
     fusefs_recursive_lock_lock(fuse_huge_lock);
+    log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock);
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_unmount(mp, mntflags, context);
 
 #if M_MACFUSE_ENABLE_HUGE_LOCK
+    log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock);
     fusefs_recursive_lock_unlock(fuse_huge_lock);
+    log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock);
 #endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
 
     return res;
