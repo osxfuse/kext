@@ -1530,6 +1530,10 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
                 IOLog("MacFUSE: disappearing act: recycle failed (%d)\n", err);
             }
         }
+        else {
+                IOLog("MacFUSE: Avoided 'vnode reclaim in progress' kernel "
+                        "panic. What now?\n");
+        }
     }
 }
 
