@@ -1375,67 +1375,7 @@ fuse_setextendedsecurity(mount_t mp, int state)
 }
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
-#define rawlog(msg, args...) IOLog(msg, ##args)
-
-#define log(fmt, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog(fmt, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-
-#define log_enter(params_format, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog("[%s:%d] Entering %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		rawlog(params_format, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-
-#define log_leave(return_format, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog("[%s:%d] Leaving %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		rawlog(return_format, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-#else
-#define log(fmt, args...) do {} while(0)
-#define log_enter(params_format, args...) do {} while(0)
-#define log_leave(return_format, args...) do {} while(0)
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
-
-#if M_MACFUSE_ENABLE_HUGE_LOCK
-#define _fuse_biglock_lock_real(lock) \
-	fusefs_recursive_lock_lock(fuse_huge_lock)
-#define _fuse_biglock_unlock_real(lock) \
-	fusefs_recursive_lock_unlock(fuse_huge_lock)
-#define fuse_biglock_t __unused fusefs_recursive_lock
-#else
-#define _fuse_biglock_lock_real(lock) \
-	fusefs_recursive_lock_lock(lock)
-#define _fuse_biglock_unlock_real(lock) \
-	fusefs_recursive_lock_unlock(lock)
-#define fuse_biglock_t fusefs_recursive_lock
-#endif
-
-#define fuse_biglock_lock(lock) \
-	do { \
-		log("(%p) %s: Aquiring biglock...", lock, __FUNCTION__); \
-		_fuse_biglock_lock_real(lock); \
-		log("(%p) %s:   biglock aquired!", lock, __FUNCTION__); \
-	} while(0)
-
-#define fuse_biglock_unlock(lock) \
-	do { \
-		log("(%p) %s: Releasing biglock...", lock, __FUNCTION__); \
-		_fuse_biglock_unlock_real(lock); \
-		log("(%p) %s:   biglock released!", lock, __FUNCTION__); \
-	} while(0)
+#include <fuse_biglock_vnops.h>
 
 static errno_t
 fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
