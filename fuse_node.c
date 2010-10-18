@@ -10,6 +10,10 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#include "fuse_biglock_vnops.h"
+#endif
+
 void
 FSNodeScrub(struct fuse_vnode_data *fvdat)
 {
@@ -189,12 +193,24 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
         if (vnode_vtype(vn) != vtyp) {
             IOLog("MacFUSE: vnode changed type behind us (old=%d, new=%d)\n",
                   vnode_vtype(vn), vtyp);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(mntdata->biglock);
+#endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(mntdata->biglock);
+#endif
             vnode_put(vn);
             err = EIO;
         } else if (VTOFUD(vn)->generation != generation) {
             IOLog("MacFUSE: vnode changed generation\n");
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(mntdata->biglock);
+#endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(mntdata->biglock);
+#endif
             vnode_put(vn);
             err = ESTALE;
         }

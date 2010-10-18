@@ -10,6 +10,10 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#include "fuse_biglock_vnops.h"
+#endif
+
 /*
  * Because of the vagaries of how a filehandle can be used, we try not to
  * be too smart in here (we try to be smart elsewhere). It is required that
@@ -90,7 +94,14 @@ fuse_filehandle_get(vnode_t       vp,
         }
 #endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+            fuse_biglock_unlock(data->biglock);
+#endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
         }
         return err;
     }

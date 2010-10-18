@@ -689,10 +689,16 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_strategy(struct vnop_strategy_args *ap)
 {
+#if 1
+	/* Now trying out a locked version of strategy. We need to hold a lock
+	 * as the underlying layers expect it. */
+	locked_vnop(buf_vnode(ap->a_bp), fuse_vnop_strategy, ap);
+#else
 	/* VNOP_STRATEGY in kpi_vfs.c is completely unprotected. This seems very
 	 * dangerous, but I don't want to do anything that kpi_vfs.c doesn't do
 	 * without being able to motivate why. */
 	return fuse_vnop_strategy(ap);
+#endif
 }
 
 /*

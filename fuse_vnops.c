@@ -46,6 +46,10 @@
 #include "fuse_sysctl.h"
 #include "fuse_vnops.h"
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#include "fuse_biglock_vnops.h"
+#endif
+
 /*
     struct vnop_access_args {
         struct vnodeop_desc *a_desc;
@@ -747,7 +751,13 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
             goto fake;
         }
         if (err == ENOENT) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
         }
         return err;
     }
@@ -807,7 +817,13 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
              * revocation.
              */
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
             return EIO;
         }
     }
