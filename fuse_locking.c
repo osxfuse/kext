@@ -455,7 +455,9 @@ boolean_t fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
 void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock)
 {
     assert(lock->thread == current_thread());
-	assert(lock->count > 0);
+
+    if(lock->count == 0)
+        panic("Attempted to unlock non-locked recursive lock.");
 
     if (0 == (--lock->count)) {
         lock->thread = 0;
