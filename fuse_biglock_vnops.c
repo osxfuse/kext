@@ -186,18 +186,6 @@ fuse_biglock_vnop_exchange(struct vnop_exchange_args *ap)
 }
 
 /*
- * Our vnop_fsync roughly corresponds to the FUSE_FSYNC method. The Linux
- * version of FUSE also has a FUSE_FLUSH method.
- *
- * On Linux, fsync() synchronizes a file's complete in-core state with that
- * on disk. The call is not supposed to return until the system has completed
- * that action or until an error is detected.
- *
- * Linux also has an fdatasync() call that is similar to fsync() but is not
- * required to update the metadata such as access time and modification time.
- */
-
-/*
  struct vnop_fsync_args {
  struct vnodeop_desc *a_desc;
  vnode_t              a_vp;
@@ -998,18 +986,18 @@ fuse_biglock_vnop_write(struct vnop_write_args *ap)
 struct vnodeopv_entry_desc fuse_biglock_vnode_operation_entries[] = {
     { &vnop_access_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_access        },
     { &vnop_advlock_desc,       (fuse_vnode_op_t) err_advlock             },
-	//  { &vnop_allocate_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_allocate      },
+    //  { &vnop_allocate_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_allocate      },
     { &vnop_blktooff_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_blktooff      },
     { &vnop_blockmap_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_blockmap      },
-	//  { &vnop_bwrite_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_bwrite        },
+    //  { &vnop_bwrite_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_bwrite        },
     { &vnop_close_desc,         (fuse_vnode_op_t) fuse_biglock_vnop_close         },
-	//  { &vnop_copyfile_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_copyfile      },
+    //  { &vnop_copyfile_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_copyfile      },
     { &vnop_create_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_create        },
     { &vnop_default_desc,       (fuse_vnode_op_t) vn_default_error        },
     { &vnop_exchange_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_exchange      },
     { &vnop_fsync_desc,         (fuse_vnode_op_t) fuse_biglock_vnop_fsync         },
     { &vnop_getattr_desc,       (fuse_vnode_op_t) fuse_biglock_vnop_getattr       },
-	//  { &vnop_getattrlist_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_getattrlist   },
+    //  { &vnop_getattrlist_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_getattrlist   },
 #if M_MACFUSE_ENABLE_XATTR
     { &vnop_getxattr_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_getxattr      },
 #endif /* M_MACFUSE_ENABLE_XATTR */
@@ -1035,7 +1023,7 @@ struct vnodeopv_entry_desc fuse_biglock_vnode_operation_entries[] = {
     { &vnop_pathconf_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_pathconf      },
     { &vnop_read_desc,          (fuse_vnode_op_t) fuse_biglock_vnop_read          },
     { &vnop_readdir_desc,       (fuse_vnode_op_t) fuse_biglock_vnop_readdir       },
-	//  { &vnop_readdirattr_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_readdirattr   },
+    //  { &vnop_readdirattr_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_readdirattr   },
     { &vnop_readlink_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_readlink      },
     { &vnop_reclaim_desc,       (fuse_vnode_op_t) fuse_biglock_vnop_reclaim       },
     { &vnop_remove_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_remove        },
@@ -1045,16 +1033,16 @@ struct vnodeopv_entry_desc fuse_biglock_vnode_operation_entries[] = {
     { &vnop_rename_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_rename        },
     { &vnop_revoke_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_revoke        },
     { &vnop_rmdir_desc,         (fuse_vnode_op_t) fuse_biglock_vnop_rmdir         },
-	//  { &vnop_searchfs_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_searchfs      },
+    //  { &vnop_searchfs_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_searchfs      },
     { &vnop_select_desc,        (fuse_vnode_op_t) fuse_biglock_vnop_select        },
     { &vnop_setattr_desc,       (fuse_vnode_op_t) fuse_biglock_vnop_setattr       },
-	//  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_setattrlist   },
+    //  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_biglock_vnop_setattrlist   },
 #if M_MACFUSE_ENABLE_XATTR
     { &vnop_setxattr_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_setxattr      },
 #endif /* M_MACFUSE_ENABLE_XATTR */
     { &vnop_strategy_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_strategy      },
     { &vnop_symlink_desc,       (fuse_vnode_op_t) fuse_biglock_vnop_symlink       },
-	//  { &vnop_whiteout_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_whiteout      },
+    //  { &vnop_whiteout_desc,      (fuse_vnode_op_t) fuse_biglock_vnop_whiteout      },
     { &vnop_write_desc,         (fuse_vnode_op_t) fuse_biglock_vnop_write         },
     { NULL, NULL }
 };
