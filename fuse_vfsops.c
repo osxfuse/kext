@@ -169,7 +169,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
-    fusefs_recursive_lock     *biglock;
+    fuse_biglock      *biglock;
 #endif
 
     fuse_trace_printf_vfsop();
