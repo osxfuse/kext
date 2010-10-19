@@ -669,7 +669,13 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     fuse_rootvp = data->rootvp;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     err = vflush(mp, fuse_rootvp, flags);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
     if (err) {
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
@@ -711,7 +717,13 @@ alreadydead:
 
     data->rootvp = NULLVP;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     (void)vflush(mp, NULLVP, FORCECLOSE);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     fuse_device_lock(fdev);
 
