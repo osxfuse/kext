@@ -66,14 +66,14 @@
 #define fuse_biglock_lock(lock) \
 	do { \
 		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
-		fusefs_recursive_lock_lock(lock); \
+		lck_mtx_lock(lock); \
 		log("%s:   biglock %p aquired!", __FUNCTION__, lock); \
 	} while(0)
 
 #define fuse_biglock_unlock(lock) \
 	do { \
 		log("%s: Releasing biglock %p...", __FUNCTION__, lock); \
-		fusefs_recursive_lock_unlock(lock); \
+		lck_mtx_unlock(lock); \
 		log("%s:   biglock %p released!", __FUNCTION__, lock); \
 	} while(0)
 #endif
