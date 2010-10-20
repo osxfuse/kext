@@ -1263,7 +1263,14 @@ fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
     args.waitfor = waitfor;
     args.error = 0;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(mp);
+    fuse_biglock_unlock(data->biglock);
+#endif
     vnode_iterate(mp, 0, fuse_sync_callback, (void *)&args);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     if (args.error) {
         allerror = args.error;

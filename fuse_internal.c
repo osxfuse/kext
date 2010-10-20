@@ -896,8 +896,15 @@ fuse_internal_remove(vnode_t               dvp,
      */
     if (need_invalidate && !err) {
         if (!vfs_busy(mp, LK_NOWAIT)) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            struct fuse_data *data = fuse_get_mpdata(mp);
+            fuse_biglock_unlock(data->biglock);
+#endif
             vnode_iterate(mp, 0, fuse_internal_remove_callback,
                           (void *)&target_nlink);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
             vfs_unbusy(mp);
         } else {
             IOLog("MacFUSE: skipping link count fixup upon remove\n");
