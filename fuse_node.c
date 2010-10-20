@@ -166,8 +166,14 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             params.vnfs_filesize   = size;
             params.vnfs_markroot   = markroot;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(mntdata->biglock);
+#endif
             err = vnode_create(VNCREATE_FLAVOR, (uint32_t)sizeof(params),
                                &params, &vn);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(mntdata->biglock);
+#endif
         }
 
         if (err == 0) {
