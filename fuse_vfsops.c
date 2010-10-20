@@ -713,7 +713,13 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfsop_mount(). */
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     data->rootvp = NULLVP;
 
