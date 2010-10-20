@@ -62,7 +62,7 @@
 #define fuse_biglock_lock(lock) fuse_hugelock_lock()
 #define fuse_biglock_unlock(lock) fuse_hugelock_unlock()
 #else
-#define fuse_biglock fusefs_recursive_lock
+#define fuse_biglock lck_mtx_t
 #define fuse_biglock_lock(lock) \
 	do { \
 		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
