@@ -1,4 +1,9 @@
 /*
+ * 'rebel' branch modifications:
+ *     Copyright (C) 2010 Tuxera. All Rights Reserved.
+ */
+
+/*
  * Copyright (C) 2006-2008 Google. All Rights Reserved.
  * Amit Singh <singh@>
  */
@@ -19,11 +24,6 @@
  * FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT. Please see
  * the License for the specific language governing rights and limitations
  * under the License.
- */
-
-/*
- * 'rebel' branch modifications:
- *     Copyright (C) Tuxera 2010. All Rights Reserved.
  */
 
 #include "fuse.h"
