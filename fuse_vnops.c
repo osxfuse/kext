@@ -1755,8 +1755,15 @@ retry:
     }
 
     if (!deleted) {
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+        fuse_biglock_unlock(data->biglock);
+#endif
         err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
                                                context, fufh_type);
+#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
         if (err == ENOENT) {
             deleted = 1;
             err = 0;
