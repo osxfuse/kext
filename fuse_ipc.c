@@ -1086,6 +1086,7 @@ fdisp_make_vp_canfail(struct fuse_dispatcher *fdip,
     return fdisp_make_canfail(fdip, op, vnode_mount(vp), VTOI(vp), context);
 }
 
+/* The function returns 0 in case of success and errorcode in case of error */
 int
 fdisp_wait_answ(struct fuse_dispatcher *fdip)
 {

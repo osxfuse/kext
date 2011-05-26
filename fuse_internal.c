@@ -1689,14 +1689,21 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 
 __private_extern__
 int
-fuse_internal_init_synchronous(struct fuse_ticket *ftick)
+fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
 {
     int err = 0;
     struct fuse_init_out fio;
     struct fuse_data *data = ftick->tk_data;
     struct fuse_abi_version *abi_version = DTOABI(data);
 
+    fuse_trace_printf_func();
+
     if ((err = ftick->tk_aw_ohead.error)) {
+        IOLog("OSXFUSE: user space initialization failed (%d)\n", err);
+        goto out;
+    }
+
+    if ((err = fticket_pull(ftick, uio))) {
         goto out;
     }
 
@@ -1712,7 +1719,7 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     }
 
     fuse_abi_out(fuse_init_out, DTOABI(data),
-                fticket_resp(ftick)->base, &fio);
+                 fticket_resp(ftick)->base, &fio);
 
     data->max_write = fio.max_write;
 
@@ -1729,8 +1736,6 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     }
 
 out:
-    fuse_ticket_release(ftick);
-
     if (err) {
         fdata_set_dead(data);
     }
@@ -1747,7 +1752,6 @@ __private_extern__
 int
 fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 {
-    int err = 0;
     struct fuse_init_in   *fiii;
     struct fuse_dispatcher fdi;
 
@@ -1759,22 +1763,10 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
     fiii->max_readahead = data->iosize * 16;
     fiii->flags = 0;
 
-    /* blocking FUSE_INIT up to user space */
+    fuse_insert_callback(fdi.tick, fuse_internal_init_handler);
+    fuse_insert_message(fdi.tick);
 
-    err = fdisp_wait_answ(&fdi);
-    if (err) {
-        IOLog("OSXFUSE: user-space initialization failed (%d)\n", err);
-        return err;
-    }
-
-    err = fuse_internal_init_synchronous(fdi.tick);
-    if (err) {
-        IOLog("OSXFUSE: in-kernel initialization failed (%d)\n", err);
-        return err;
-    }
-
-    /* fuse_ticket_release is called in fuse_internal_init_synchronous */
-
+    fuse_ticket_release(fdi.tick);
     return 0;
 }
 

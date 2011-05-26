@@ -519,42 +519,40 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     fuse_device_unlock(fdev);
 
-    /* Handshake with the daemon. Blocking. */
-    err = fuse_internal_send_init(data, context);
+    /* Send a handshake message to the daemon. */
+    fuse_internal_send_init(data, context);
 
+    struct vfs_attr vfs_attr;
+    VFSATTR_INIT(&vfs_attr);
+    /* Our vfs_getattr() doesn't look at most *_IS_ACTIVE()'s */
+    err = fuse_vfsop_getattr(mp, &vfs_attr, context);
     if (!err) {
-       struct vfs_attr vfs_attr;
-       VFSATTR_INIT(&vfs_attr);
-       /* Our vfs_getattr() doesn't look at most *_IS_ACTIVE()'s */
-       err = fuse_vfsop_getattr(mp, &vfs_attr, context);
-       if (!err) {
-           vfsstatfsp->f_bsize  = vfs_attr.f_bsize;
-           vfsstatfsp->f_iosize = vfs_attr.f_iosize;
-           vfsstatfsp->f_blocks = vfs_attr.f_blocks;
-           vfsstatfsp->f_bfree  = vfs_attr.f_bfree;
-           vfsstatfsp->f_bavail = vfs_attr.f_bavail;
-           vfsstatfsp->f_bused  = vfs_attr.f_bused;
-           vfsstatfsp->f_files  = vfs_attr.f_files;
-           vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
-           /* vfsstatfsp->f_fsid already handled above */
-           vfsstatfsp->f_owner  = kauth_cred_getuid(data->daemoncred);
-           vfsstatfsp->f_flags  = vfs_flags(mp);
-           /* vfsstatfsp->f_fstypename already handled above */
-           /* vfsstatfsp->f_mntonname handled elsewhere */
-           /* vfsstatfsp->f_mnfromname already handled above */
-           vfsstatfsp->f_fssubtype = data->fssubtype;
-       }
-       if (fusefs_args.altflags & FUSE_MOPT_BLOCKSIZE) {
-           vfsstatfsp->f_bsize = data->blocksize;
-       } else {
-           //data->blocksize = vfsstatfsp->f_bsize;
-       }
-       if (fusefs_args.altflags & FUSE_MOPT_IOSIZE) {
-           vfsstatfsp->f_iosize = data->iosize;
-       } else {
-           //data->iosize = (uint32_t)vfsstatfsp->f_iosize;
-           vfsstatfsp->f_iosize = data->iosize;
-       }
+        vfsstatfsp->f_bsize  = vfs_attr.f_bsize;
+        vfsstatfsp->f_iosize = vfs_attr.f_iosize;
+        vfsstatfsp->f_blocks = vfs_attr.f_blocks;
+        vfsstatfsp->f_bfree  = vfs_attr.f_bfree;
+        vfsstatfsp->f_bavail = vfs_attr.f_bavail;
+        vfsstatfsp->f_bused  = vfs_attr.f_bused;
+        vfsstatfsp->f_files  = vfs_attr.f_files;
+        vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
+        /* vfsstatfsp->f_fsid already handled above */
+        vfsstatfsp->f_owner  = kauth_cred_getuid(data->daemoncred);
+        vfsstatfsp->f_flags  = vfs_flags(mp);
+        /* vfsstatfsp->f_fstypename already handled above */
+        /* vfsstatfsp->f_mntonname handled elsewhere */
+        /* vfsstatfsp->f_mnfromname already handled above */
+        vfsstatfsp->f_fssubtype = data->fssubtype;
+    }
+    if (fusefs_args.altflags & FUSE_MOPT_BLOCKSIZE) {
+        vfsstatfsp->f_bsize = data->blocksize;
+    } else {
+        //data->blocksize = vfsstatfsp->f_bsize;
+    }
+    if (fusefs_args.altflags & FUSE_MOPT_IOSIZE) {
+        vfsstatfsp->f_iosize = data->iosize;
+    } else {
+        //data->iosize = (uint32_t)vfsstatfsp->f_iosize;
+        vfsstatfsp->f_iosize = data->iosize;
     }
 
 out:
@@ -1052,9 +1050,8 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 static errno_t
 fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
-    int err     = 0;
-    int deading = 0;
-    int faking  = 0;
+    int err = 0;
+    bool deading = false, faking = false;
 
     struct fuse_dispatcher  fdi;
     struct fuse_statfs_out  fsfo;
@@ -1068,18 +1065,22 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     }
 
     if (!(data->dataflags & FSESS_INITED)) {
-        faking = 1;
+        // coreservices process requests ATTR_VOL_CAPABILITIES on the mountpoint right before
+        // returning from mount() syscall. We need to fake the output because daemon might
+        // not be ready to response yet (and deadlock will happen).
+        faking = true;
         goto dostatfs;
     }
 
-    if ((err = fdisp_simple_vfs_getattr(&fdi, mp, context))) {
-
-         // If we cannot communicate with the daemon (most likely because
-         // it's dead), we still want to portray that we are a bonafide
-         // file system so that we can be gracefully unmounted.
+    fdisp_init(&fdi, 0);
+    fdisp_make(&fdi, FUSE_STATFS, mp, FUSE_ROOT_ID, context);
+    if ((err = fdisp_wait_answ(&fdi))) {
+        // If we cannot communicate with the daemon (most likely because
+        // it's dead), we still want to portray that we are a bonafide
+        // file system so that we can be gracefully unmounted.
 
         if (err == ENOTCONN) {
-            deading = faking = 1;
+            deading = faking = true;
             goto dostatfs;
         }
 
@@ -1087,7 +1088,7 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     }
 
 dostatfs:
-    if (faking == 1) {
+    if (faking) {
         bzero(&fsfo, sizeof(fsfo));
     } else {
         fuse_abi_out(fuse_statfs_out, DTOABI(data), fdi.answ, &fsfo);
@@ -1205,7 +1206,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_signature, OSSwapBigToHostInt16(FUSEFS_SIGNATURE));
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
-    if (faking == 0) {
+    if (!faking) {
         fuse_ticket_release(fdi.tick);
     }
 
