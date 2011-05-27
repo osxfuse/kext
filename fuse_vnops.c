@@ -1277,8 +1277,8 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     int flags                 = cnp->cn_flags;
     int wantparent            = flags & (LOCKPARENT|WANTPARENT);
     int islastcn              = flags & ISLASTCN;
-    int isdot                 = FALSE;
-    int isdotdot              = FALSE;
+    bool isdot                = false;
+    bool isdotdot             = false;
     mount_t mp                = vnode_mount(dvp);
 
     int err                   = 0;
@@ -1319,9 +1319,9 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     }
 
     if (flags & ISDOTDOT) {
-        isdotdot = TRUE;
+        isdotdot = true;
     } else if ((cnp->cn_nameptr[0] == '.') && (cnp->cn_namelen == 1)) {
-        isdot = TRUE;
+        isdot = true;
     }
 
     if (isdotdot) {
