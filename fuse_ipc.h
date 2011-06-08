@@ -30,7 +30,7 @@
 #include <libkern/locks.h>
 
 #if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#include <IOKit/IOlocks.h>
+#include <IOKit/IOLocks.h>
 #endif
 
 #include "fuse.h"
