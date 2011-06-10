@@ -166,7 +166,6 @@
 		54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_vfsops.h; sourceTree = "<group>"; };
 		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_vnops.c; sourceTree = "<group>"; };
 		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_vnops.h; sourceTree = "<group>"; };
-		54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = fusefs.xcodeproj; sourceTree = "<group>"; };
 		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 30; path = Info.plist; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_kludges.h; sourceTree = "<group>"; };
@@ -205,7 +204,6 @@
 			children = (
 				549960D00EC093D800DDFCAD /* MacFUSE.exports */,
 				54A06B920C9DE6060045DC0D /* MacFUSE.xcconfig */,
-				54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */,
 				540966510C33B5F500F5E227 /* common */,
 				54C6DD780B5EEB44002D9FD9 /* kernel */,
 				540966330C33B54F00F5E227 /* user */,
@@ -310,13 +308,6 @@
 				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
 			);
 			name = kernel;
-			sourceTree = "<group>";
-		};
-		54C6DDD60B5EEB44002D9FD9 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -424,12 +415,6 @@
 			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			productRefGroup = 540966F20C33BEC900F5E227 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 54C6DDD60B5EEB44002D9FD9 /* Products */;
-					ProjectRef = 54C6DDD50B5EEB44002D9FD9 /* fusefs.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				54C6DD290B5EE606002D9FD9 /* All */,
