@@ -36,7 +36,7 @@ lck_grp_attr_t *fuse_group_attr   = NULL;
 lck_grp_t      *fuse_lock_group   = NULL;
 lck_mtx_t      *fuse_device_mutex = NULL;
 
-#if M_MACFUSE_ENABLE_TSLOCKING
+#if M_OSXFUSE_ENABLE_TSLOCKING
 
 #include <sys/ubc.h>
 
@@ -217,13 +217,13 @@ fusefs_unlock(fusenode_t cp)
 {
     u_int32_t c_flag;
     vnode_t vp = NULLVP;
-#if M_MACFUSE_RSRC_FORK
+#if M_OSXFUSE_RSRC_FORK
     vnode_t rvp = NULLVP;
 #endif
 
     c_flag = cp->c_flag;
     cp->c_flag &= ~(C_NEED_DVNODE_PUT | C_NEED_DATA_SETSIZE);
-#if M_MACFUSE_RSRC_FORK
+#if M_OSXFUSE_RSRC_FORK
     cp->c_flag &= ~(C_NEED_RVNODE_PUT | C_NEED_RSRC_SETSIZE);
 #endif
 
@@ -231,7 +231,7 @@ fusefs_unlock(fusenode_t cp)
         vp = cp->vp;
     }
 
-#if M_MACFUSE_RSRC_FORK
+#if M_OSXFUSE_RSRC_FORK
     if (c_flag & (C_NEED_RVNODE_PUT | C_NEED_RSRC_SETSIZE)) {
         rvp = cp->c_rsrc_vp;
     }
@@ -250,7 +250,7 @@ fusefs_unlock(fusenode_t cp)
         }
     }
 
-#if M_MACFUSE_RSRC_FORK
+#if M_OSXFUSE_RSRC_FORK
     if (rvp) {
         if (c_flag & C_NEED_RSRC_SETSIZE) {
             ubc_setsize(rvp, 0);
@@ -334,7 +334,7 @@ void
 fusefs_lock_truncate(fusenode_t cp, lck_rw_type_t lck_rw_type)
 {
     if (cp->nodelockowner == current_thread()) {
-        panic("MacFUSE: fusefs_lock_truncate: cnode %p locked!", cp);
+        panic("OSXFUSE: fusefs_lock_truncate: cnode %p locked!", cp);
     }
 
     lck_rw_lock(cp->truncatelock, lck_rw_type);
@@ -358,7 +358,7 @@ fusefs_lck_rw_done(lck_rw_t *lock)
     IORWLockUnlock((IORWLock *)lock);
 }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 /* Recursive lock used to lock the vfs functions awaiting more fine-grained
  * locking. Code was taken from IOLocks.cpp to imitate how an IORecursiveLock
@@ -534,12 +534,12 @@ void fusefs_recursive_lock_wakeup(__unused fusefs_recursive_lock *lock,
 }
 #endif
 
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
+#if M_OSXFUSE_ENABLE_LOCK_LOGGING
 lck_mtx_t *fuse_log_lock = NULL;
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
+#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
 fusefs_recursive_lock *fuse_huge_lock = NULL;
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */

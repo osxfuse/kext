@@ -36,7 +36,7 @@
 #include <fsproperties.h>
 #include <CoreFoundation/CoreFoundation.h>
 
-#define PROGNAME "mount_" MACFUSE_FS_TYPE
+#define PROGNAME "mount_" OSXFUSE_FS_TYPE
 
 static int signal_idx = -1;
 static int signal_fd  = -1;
@@ -325,7 +325,7 @@ fuse_to_fssubtype(void **target, void *value, void *fallback)
         }
     }
 
-    *(uint32_t *)target = fsbundle_find_fssubtype(MACFUSE_BUNDLE_PATH,
+    *(uint32_t *)target = fsbundle_find_fssubtype(OSXFUSE_BUNDLE_PATH,
                                                   name, *(uint32_t *)target);
 
     return 0;
@@ -518,24 +518,24 @@ check_kext_status(void)
     size_t version_len_desired = 0;
     struct vfsconf vfc = { 0 };
 
-    result = getvfsbyname(MACFUSE_FS_TYPE, &vfc);
-    if (result) { /* MacFUSE is not already loaded */
+    result = getvfsbyname(OSXFUSE_FS_TYPE, &vfc);
+    if (result) { /* OSXFUSE is not already loaded */
         return ESRCH;
     }
 
-    /* some version of MacFUSE is already loaded; let us check it out */
+    /* some version of OSXFUSE is already loaded; let us check it out */
 
-    result = sysctlbyname(SYSCTL_MACFUSE_VERSION_NUMBER, version,
+    result = sysctlbyname(SYSCTL_OSXFUSE_VERSION_NUMBER, version,
                           &version_len, (void *)NULL, (size_t)0);
     if (result) {
         return result;
     }
 
     /* sysctlbyname() includes the trailing '\0' in version_len */
-    version_len_desired = strlen(MACFUSE_VERSION) + 1;
+    version_len_desired = strlen(OSXFUSE_VERSION) + 1;
 
     if ((version_len != version_len_desired) ||
-        strncmp(MACFUSE_VERSION, version, version_len)) {
+        strncmp(OSXFUSE_VERSION, version, version_len)) {
         return EINVAL;
     }
 
@@ -559,7 +559,7 @@ signal_idx_atexit_handler(void)
          * size_t oldlen = sizeof(kill_fs_old);
          * size_t newlen = sizeof(kill_fs_new);
          *
-         * (void)sysctlbyname("macfuse.control.kill_fs", (void *)&kill_fs_old,
+         * (void)sysctlbyname("osxfuse.control.kill_fs", (void *)&kill_fs_old,
          *                    &oldlen, (void *)&kill_fs_new, newlen);
          */
     }
@@ -567,7 +567,7 @@ signal_idx_atexit_handler(void)
 
 // We will be called as follows by the FUSE library:
 //
-//   mount_<MACFUSE_FS_TYPE> -o OPTIONS... <fdnam> <mountpoint>
+//   mount_<OSXFUSE_FS_TYPE> -o OPTIONS... <fdnam> <mountpoint>
 
 int
 main(int argc, char **argv)
@@ -680,14 +680,14 @@ main(int argc, char **argv)
     }
 
     if (!fdnam) {
-        errx(EX_USAGE, "missing MacFUSE device file descriptor");
+        errx(EX_USAGE, "missing OSXFUSE device file descriptor");
     }
 
     errno = 0;
     fd = (int)strtol(fdnam, NULL, 10);
     if ((errno == EINVAL) || (errno == ERANGE)) {
         errx(EX_USAGE,
-             "invalid name (%s) for MacFUSE device file descriptor", fdnam);
+             "invalid name (%s) for OSXFUSE device file descriptor", fdnam);
     }
 
     signal_fd = fd;
@@ -698,7 +698,7 @@ main(int argc, char **argv)
         struct stat sb;
 
         if (fstat(fd, &sb) == -1) {
-            err(EX_OSERR, "fstat failed for MacFUSE device file descriptor");
+            err(EX_OSERR, "fstat failed for OSXFUSE device file descriptor");
         }
         args.rdev = sb.st_rdev;
         (void)strlcpy(ndev, _PATH_DEV, sizeof(ndev));
@@ -706,17 +706,17 @@ main(int argc, char **argv)
         devname_r(sb.st_rdev, S_IFCHR, ndevbas,
                   (int)(sizeof(ndev) - strlen(_PATH_DEV)));
 
-        if (strncmp(ndevbas, MACFUSE_DEVICE_BASENAME,
-                    strlen(MACFUSE_DEVICE_BASENAME))) {
+        if (strncmp(ndevbas, OSXFUSE_DEVICE_BASENAME,
+                    strlen(OSXFUSE_DEVICE_BASENAME))) {
             errx(EX_USAGE, "mounting inappropriate device");
         }
 
         errno = 0;
-        dindex = (int)strtol(ndevbas + strlen(MACFUSE_DEVICE_BASENAME),
+        dindex = (int)strtol(ndevbas + strlen(OSXFUSE_DEVICE_BASENAME),
                              NULL, 10);
         if ((errno == EINVAL) || (errno == ERANGE) ||
-            (dindex < 0) || (dindex > MACFUSE_NDEVICES)) {
-            errx(EX_USAGE, "invalid MacFUSE device unit (#%d)\n", dindex);
+            (dindex < 0) || (dindex > OSXFUSE_NDEVICES)) {
+            errx(EX_USAGE, "invalid OSXFUSE device unit (#%d)\n", dindex);
         }
     }
 
@@ -732,17 +732,17 @@ main(int argc, char **argv)
         break;
 
     case ESRCH:
-        errx(EX_UNAVAILABLE, "the MacFUSE kernel extension is not loaded");
+        errx(EX_UNAVAILABLE, "the OSXFUSE kernel extension is not loaded");
         break;
 
     case EINVAL:
         errx(EX_UNAVAILABLE,
-             "the loaded MacFUSE kernel extension has a mismatched version");
+             "the loaded OSXFUSE kernel extension has a mismatched version");
         break;
 
     default:
         errx(EX_UNAVAILABLE,
-             "failed to query the loaded MacFUSE kernel extension (%d)",
+             "failed to query the loaded OSXFUSE kernel extension (%d)",
              result);
         break;
     }
@@ -766,17 +766,17 @@ main(int argc, char **argv)
         errx(EX_OSFILE, "cannot stat the mount point %s", mntpath);
     }
 
-    if ((strlen(statfsb.f_fstypename) == strlen(MACFUSE_FS_TYPE)) &&
-        (strcmp(statfsb.f_fstypename, MACFUSE_FS_TYPE) == 0)) {
+    if ((strlen(statfsb.f_fstypename) == strlen(OSXFUSE_FS_TYPE)) &&
+        (strcmp(statfsb.f_fstypename, OSXFUSE_FS_TYPE) == 0)) {
         if (!(altflags & FUSE_MOPT_ALLOW_RECURSION)) {
             errx(EX_USAGE,
-                 "mount point %s is itself on a MacFUSE volume", mntpath);
+                 "mount point %s is itself on a OSXFUSE volume", mntpath);
         }
     } if (strncmp(statfsb.f_fstypename, FUSE_FSTYPENAME_PREFIX,
                   strlen(FUSE_FSTYPENAME_PREFIX)) == 0) {
         if (!(altflags & FUSE_MOPT_ALLOW_RECURSION)) {
             errx(EX_USAGE,
-                 "mount point %s is itself on a MacFUSE volume", mntpath);
+                 "mount point %s is itself on a OSXFUSE volume", mntpath);
         }
     }
 
@@ -884,17 +884,17 @@ main(int argc, char **argv)
 
     if (!volname) {
         if (daemon_name) {
-            snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d (%s)",
+            snprintf(args.volname, MAXPATHLEN, "OSXFUSE Volume %d (%s)",
                      dindex, daemon_name);
         } else {
-            snprintf(args.volname, MAXPATHLEN, "MacFUSE Volume %d", dindex);
+            snprintf(args.volname, MAXPATHLEN, "OSXFUSE Volume %d", dindex);
         }
     } else {
         snprintf(args.volname, MAXPATHLEN, "%s", volname);
     }
 
     /* Finally! */
-    result = mount(MACFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
+    result = mount(OSXFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
 
     if (result < 0) {
         err(EX_OSERR, "failed to mount %s@/dev/fuse%d", mntpath, dindex);
@@ -916,13 +916,13 @@ showhelp()
 {
     if (!getenv("MOUNT_FUSEFS_CALL_BY_LIB")) {
         showversion(0);
-        fprintf(stderr, "\nThis program is not meant to be called directly. The MacFUSE library calls it.\n");
+        fprintf(stderr, "\nThis program is not meant to be called directly. The OSXFUSE library calls it.\n");
     }
     fprintf(stderr, "\nAvailable mount options:\n");
     fprintf(stderr,
       "    -o allow_other         allow access to others besides the user who mounted\n"
       "                           the file system\n"
-      "    -o allow_recursion     allow a mount point that itself resides on a MacFUSE\n"
+      "    -o allow_recursion     allow a mount point that itself resides on a OSXFUSE\n"
       "                           volume (by default, such mounting is disallowed)\n"
       "    -o allow_root          allow access to root (can't be used with allow_other)\n"
       "    -o auto_xattr          handle extended attributes entirely through ._ files\n"
@@ -945,7 +945,7 @@ showhelp()
       "    -o sparse              enable support for sparse files\n"
       "    -o volname=<name>      set the file system's volume name\n"      
       "\nAvailable negative mount options:\n"
-      "    -o noalerts            disable all graphical alerts (if any) in MacFUSE Core\n"
+      "    -o noalerts            disable all graphical alerts (if any) in OSXFUSE Core\n"
       "    -o noappledouble       ignore Apple Double (._) and .DS_Store files entirely\n"
       "    -o noapplexattr        ignore all \"com.apple.*\" extended attributes\n"
       "    -o nobrowse            mark the volume as non-browsable by the Finder\n"
@@ -962,7 +962,7 @@ showhelp()
 void
 showversion(int doexit)
 {
-    fprintf(stderr, "MacFUSE mount version %s\n", MACFUSE_VERSION);
+    fprintf(stderr, "OSXFUSE mount version %s\n", OSXFUSE_VERSION);
     if (doexit) {
         exit(EX_USAGE);
     }

@@ -10,7 +10,7 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
 #include "fuse_biglock_vnops.h"
 #endif
 
@@ -43,7 +43,7 @@ fuse_filehandle_get(vnode_t       vp,
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (FUFH_IS_VALID(fufh)) {
-        panic("MacFUSE: filehandle_get called despite valid fufh (type=%d)",
+        panic("OSXFUSE: filehandle_get called despite valid fufh (type=%d)",
               fufh_type);
         /* NOTREACHED */
     }
@@ -58,7 +58,7 @@ fuse_filehandle_get(vnode_t       vp,
         isdir = 1;
         op = FUSE_OPENDIR;
         if (fufh_type != FUFH_RDONLY) {
-            IOLog("MacFUSE: non-rdonly fufh requested for directory\n");
+            IOLog("OSXFUSE: non-rdonly fufh requested for directory\n");
             fufh_type = FUFH_RDONLY;
         }
     }
@@ -75,31 +75,31 @@ fuse_filehandle_get(vnode_t       vp,
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
         const char *vname = vnode_getname(vp);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
             /*
              * See comment in fuse_vnop_reclaim().
              */
             cache_purge(vp);
         }
-#if M_MACFUSE_ENABLE_UNSUPPORTED
-        IOLog("MacFUSE: filehandle_get: failed for %s "
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
+        IOLog("OSXFUSE: filehandle_get: failed for %s "
               "(type=%d, err=%d, caller=%p)\n",
               (vname) ? vname : "?", fufh_type, err,
                __builtin_return_address(0));
         if (vname) {
             vnode_putname(vname);
         }
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
             fuse_biglock_unlock(data->biglock);
 #endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
         }
@@ -139,7 +139,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (FUFH_IS_VALID(fufh)) {
-        panic("MacFUSE: filehandle_put called on a valid fufh (type=%d)",
+        panic("OSXFUSE: filehandle_put called on a valid fufh (type=%d)",
               fufh_type);
         /* NOTREACHED */
     }

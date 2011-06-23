@@ -29,7 +29,7 @@
 #include <libkern/OSMalloc.h>
 #include <libkern/locks.h>
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #include <IOKit/IOLocks.h>
 #endif
 
@@ -159,9 +159,9 @@ struct fuse_data {
     uint64_t                   mountaltflags; /* as-is copy of altflags    */
     uint64_t                   noimplflags;   /* not-implemented flags     */
 
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
     struct fuse_selinfo        d_rsel;
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
  
     lck_rw_t                  *rwlock;
 
@@ -178,9 +178,9 @@ struct fuse_data {
     uint32_t                   deadticket_counter;
     uint64_t                   ticketer;
 
-#if M_MACFUSE_EXPLICIT_RENAME_LOCK
+#if M_OSXFUSE_EXPLICIT_RENAME_LOCK
     lck_rw_t                  *rename_lock;
-#endif /* M_MACFUSE_EXPLICIT_RENAME_LOCK */
+#endif /* M_OSXFUSE_EXPLICIT_RENAME_LOCK */
 
     uint32_t                   fuse_libabi_major;
     uint32_t                   fuse_libabi_minor;
@@ -198,11 +198,11 @@ struct fuse_data {
     struct timespec            daemon_timeout;
     struct timespec           *daemon_timeout_p;
     struct timespec            init_timeout;
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if !M_OSXFUSE_ENABLE_HUGE_LOCK
     lck_mtx_t                 *biglock;
-#endif /* !M_MACFUSE_ENABLE_HUGE_LOCK */
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 };
 
 enum {

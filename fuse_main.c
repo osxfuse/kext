@@ -32,8 +32,8 @@ OSMallocTag  fuse_malloc_tag = NULL;
 extern struct vfs_fsentry fuse_vfs_entry;
 extern vfstable_t         fuse_vfs_table_ref;
 
-kern_return_t fusefs_start(kmod_info_t *ki, void *d);
-kern_return_t fusefs_stop(kmod_info_t *ki, void *d);
+kern_return_t osxfusefs_start(kmod_info_t *ki, void *d);
+kern_return_t osxfusefs_stop(kmod_info_t *ki, void *d);
 
 static void
 fini_stuff(void)
@@ -43,21 +43,21 @@ fini_stuff(void)
         fuse_device_mutex = NULL;
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     if (fuse_huge_lock) {
         fusefs_recursive_lock_free(fuse_huge_lock);
         fuse_huge_lock = NULL;
     }
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
+#if M_OSXFUSE_ENABLE_LOCK_LOGGING
     if (fuse_log_lock) {
         lck_mtx_free(fuse_log_lock, fuse_lock_group);
         fuse_log_lock = NULL;
     }
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     if (fuse_lock_group) {
         lck_grp_free(fuse_lock_group);
@@ -85,7 +85,7 @@ init_stuff(void)
 {
     kern_return_t ret = KERN_SUCCESS;
     
-    fuse_malloc_tag = OSMalloc_Tagalloc(MACFUSE_BUNDLE_IDENTIFIER,
+    fuse_malloc_tag = OSMalloc_Tagalloc(OSXFUSE_BUNDLE_IDENTIFIER,
                                         OSMT_DEFAULT);
     if (fuse_malloc_tag == NULL) {
         ret = KERN_FAILURE;
@@ -96,7 +96,7 @@ init_stuff(void)
     lck_attr_setdebug(fuse_lock_attr);
 
     if (ret == KERN_SUCCESS) {
-        fuse_lock_group = lck_grp_alloc_init(MACFUSE_BUNDLE_IDENTIFIER,
+        fuse_lock_group = lck_grp_alloc_init(OSXFUSE_BUNDLE_IDENTIFIER,
                                              fuse_group_attr);
         if (fuse_lock_group == NULL) {
             ret = KERN_FAILURE;
@@ -110,25 +110,25 @@ init_stuff(void)
         }
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_LOCK_LOGGING
     if (ret == KERN_SUCCESS) {
         fuse_log_lock = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
         if (fuse_log_lock == NULL) {
             ret = ENOMEM;
         }
     }
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
+#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     if (ret == KERN_SUCCESS) {
         fuse_huge_lock = fusefs_recursive_lock_alloc();
         if (fuse_huge_lock == NULL) {
             ret = ENOMEM;
         }
     }
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     if (ret != KERN_SUCCESS) {
         fini_stuff();
@@ -138,7 +138,7 @@ init_stuff(void)
 }
 
 kern_return_t
-fusefs_start(__unused kmod_info_t *ki, __unused void *d)
+osxfusefs_start(__unused kmod_info_t *ki, __unused void *d)
 {
     int ret;
 
@@ -166,8 +166,8 @@ fusefs_start(__unused kmod_info_t *ki, __unused void *d)
 
     fuse_sysctl_start();
 
-    IOLog("MacFUSE: starting (version %s, %s)\n",
-          MACFUSE_VERSION, MACFUSE_TIMESTAMP);
+    IOLog("OSXFUSE: starting (version %s, %s)\n",
+          OSXFUSE_VERSION, OSXFUSE_TIMESTAMP);
 
     return KERN_SUCCESS;
 
@@ -182,7 +182,7 @@ error:
 }
 
 kern_return_t
-fusefs_stop(__unused kmod_info_t *ki, __unused void *d)
+osxfusefs_stop(__unused kmod_info_t *ki, __unused void *d)
 {
     int ret;
 
@@ -201,8 +201,8 @@ fusefs_stop(__unused kmod_info_t *ki, __unused void *d)
 
     fuse_sysctl_stop();
 
-    IOLog("MacFUSE: stopping (version %s, %s)\n",
-          MACFUSE_VERSION, MACFUSE_TIMESTAMP);
+    IOLog("OSXFUSE: stopping (version %s, %s)\n",
+          OSXFUSE_VERSION, OSXFUSE_TIMESTAMP);
 
     return KERN_SUCCESS;
 }

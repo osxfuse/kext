@@ -15,7 +15,7 @@
 #include "fuse_node.h"
 #include "fuse_sysctl.h"
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
 #include "fuse_biglock_vnops.h"
 #endif
 
@@ -23,7 +23,7 @@ void
 FSNodeScrub(struct fuse_vnode_data *fvdat)
 {
     lck_mtx_free(fvdat->createlock, fuse_lock_group);
-#if M_MACFUSE_ENABLE_TSLOCKING
+#if M_OSXFUSE_ENABLE_TSLOCKING
     lck_rw_free(fvdat->nodelock, fuse_lock_group);
     lck_rw_free(fvdat->truncatelock, fuse_lock_group);
 #endif
@@ -128,7 +128,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fvdat->createlock = lck_mtx_alloc_init(fuse_lock_group,
                                                    fuse_lock_attr);
             fvdat->creator = current_thread();
-#if M_MACFUSE_ENABLE_TSLOCKING
+#if M_OSXFUSE_ENABLE_TSLOCKING
             fvdat->nodelock = lck_rw_alloc_init(fuse_lock_group,
                                                 fuse_lock_attr);
             fvdat->nodelockowner = NULL;
@@ -144,14 +144,14 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             params.vnfs_dvp    = dvp; /* NULLVP for the root vnode */
             params.vnfs_fsnode = hn;
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
             if ((vtyp == VBLK) || (vtyp == VCHR)) {
                 params.vnfs_vops = fuse_spec_operations;
                 params.vnfs_rdev = (dev_t)rdev;
 #else
             if (0) {
 #endif
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
             } else if (vtyp == VFIFO) {
                 params.vnfs_vops = fuse_fifo_operations;
                 params.vnfs_rdev = 0;
@@ -171,12 +171,12 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             params.vnfs_filesize   = size;
             params.vnfs_markroot   = markroot;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             err = vnode_create(VNCREATE_FLAVOR, (uint32_t)sizeof(params),
                                &params, &vn);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
         }
@@ -202,24 +202,24 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     if (err == 0) {
         if (vnode_vtype(vn) != vtyp) {
-            IOLog("MacFUSE: vnode changed type behind us (old=%d, new=%d)\n",
+            IOLog("OSXFUSE: vnode changed type behind us (old=%d, new=%d)\n",
                   vnode_vtype(vn), vtyp);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
             vnode_put(vn);
             err = EIO;
         } else if (VTOFUD(vn)->generation != generation) {
-            IOLog("MacFUSE: vnode changed generation\n");
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+            IOLog("OSXFUSE: vnode changed generation\n");
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
             vnode_put(vn);
@@ -229,7 +229,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     if (err == 0) {
         *vnPtr = vn;
-        /* Need VT_MACFUSE from xnu */
+        /* Need VT_OSXFUSE from xnu */
         vnode_settag(vn, VT_OTHER);
     }
 

@@ -50,7 +50,7 @@ fuse_filehandle_xlate_from_mmap(int fflags)
     } else if (fflags & (PROT_READ | PROT_EXEC)) {
         return FUFH_RDONLY;
     } else {
-        IOLog("MacFUSE: mmap being attempted with no region accessibility\n");
+        IOLog("OSXFUSE: mmap being attempted with no region accessibility\n");
         return FUFH_INVALID;
     }
 }
@@ -78,7 +78,7 @@ fuse_filehandle_xlate_from_fflags(int fflags)
         if (fflags == 0) {
             return FUFH_RDONLY;
         } else {
-            panic("MacFUSE: What kind of a flag is this (%x)?", fflags);
+            panic("OSXFUSE: What kind of a flag is this (%x)?", fflags);
         }
     }
 
@@ -129,11 +129,11 @@ fuse_filehandle_preflight_status(vnode_t vp, vnode_t dvp, vfs_context_t context,
         goto out;
     }
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     if (!icontext) {
         icontext = vfs_context_current();
     }
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     if (!icontext) {
         goto out;

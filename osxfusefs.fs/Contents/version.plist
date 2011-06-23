@@ -6,11 +6,11 @@
 	<key>BuildVersion</key>
 	<string>1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>MACFUSE_VERSION_LITERAL</string>
+	<string>OSXFUSE_VERSION_LITERAL</string>
 	<key>CFBundleVersion</key>
-	<string>MACFUSE_VERSION_LITERAL</string>
+	<string>OSXFUSE_VERSION_LITERAL</string>
 	<key>ProjectName</key>
-	<string>MACFUSE_FS_TYPE_LITERAL</string>
+	<string>OSXFUSE_FS_TYPE_LITERAL</string>
 	<key>SourceVersion</key>
 	<string>10000</string>
 </dict>

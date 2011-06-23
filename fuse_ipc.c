@@ -52,7 +52,7 @@ fiov_init(struct fuse_iov *fiov, size_t size)
 
     fiov->base = FUSE_OSMalloc(msize, fuse_malloc_tag);
     if (!fiov->base) {
-        panic("MacFUSE: OSMalloc failed in fiov_init");
+        panic("OSXFUSE: OSMalloc failed in fiov_init");
     }
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_iov_current);
@@ -83,7 +83,7 @@ fiov_adjust(struct fuse_iov *fiov, size_t size)
         fiov->base = FUSE_OSRealloc_nocopy(fiov->base, fiov->allocated_size,
                                            FU_AT_LEAST(size));
         if (!fiov->base) {
-            panic("MacFUSE: realloc failed");
+            panic("OSXFUSE: realloc failed");
         }
 
         fiov->allocated_size = FU_AT_LEAST(size);
@@ -135,7 +135,7 @@ fticket_alloc(struct fuse_data *data)
     ftick = (struct fuse_ticket *)FUSE_OSMalloc(sizeof(struct fuse_ticket),
                                                 fuse_malloc_tag);
     if (!ftick) {
-        panic("MacFUSE: OSMalloc failed in fticket_alloc");
+        panic("OSXFUSE: OSMalloc failed in fticket_alloc");
     }
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_tickets_current);
@@ -244,7 +244,7 @@ again:
             break; /* NOTREACHED */
 
         default:
-            IOLog("MacFUSE: invalid timeout status (%d)\n",
+            IOLog("OSXFUSE: invalid timeout status (%d)\n",
                   data->timeout_status);
             fuse_lck_mtx_unlock(data->timeout_mtx);
             goto again;
@@ -255,7 +255,7 @@ again:
          * We will "hang" while this is showing.
          */
 
-#if M_MACFUSE_ENABLE_KUNC
+#if M_OSXFUSE_ENABLE_KUNC
         kr = KUNCUserNotificationDisplayAlert(
                  FUSE_DAEMON_TIMEOUT_ALERT_TIMEOUT,   // timeout
                  0,                                   // flags (stop alert)
@@ -274,7 +274,7 @@ again:
 
         if (kr != KERN_SUCCESS) {
             /* force ejection if we couldn't show the dialog */
-            IOLog("MacFUSE: force ejecting (no response from user space %d)\n",
+            IOLog("OSXFUSE: force ejecting (no response from user space %d)\n",
                   kr);
             rf = kKUNCOtherResponse;
         }
@@ -298,7 +298,7 @@ again:
             break; /* NOTREACHED */
 
         default:
-            IOLog("MacFUSE: unknown response from alert panel (kr=%d, rf=%d)\n",
+            IOLog("OSXFUSE: unknown response from alert panel (kr=%d, rf=%d)\n",
                   kr, rf);
             data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
             fuse_lck_mtx_unlock(data->timeout_mtx);
@@ -315,7 +315,7 @@ alreadydead:
         goto out;
     }
 
-#if M_MACFUSE_ENABLE_INTERRUPT
+#if M_OSXFUSE_ENABLE_INTERRUPT
     else if (err == EINTR) {
        /*
         * XXX: Stop gap! I really need to finish interruption plumbing.
@@ -328,7 +328,7 @@ out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (!(err || fticket_answered(ftick))) {
-        IOLog("MacFUSE: requester was woken up but still no answer");
+        IOLog("OSXFUSE: requester was woken up but still no answer");
         err = ENXIO;
     }
 
@@ -348,12 +348,12 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             err = fiov_adjust_canfail(fticket_resp(ftick), len);
             if (err) {
                 fticket_set_killl(ftick);
-                IOLog("MacFUSE: failed to pull uio (error=%d)\n", err);
+                IOLog("OSXFUSE: failed to pull uio (error=%d)\n", err);
                 break;
             }
             err = uiomove(fticket_resp(ftick)->base, (int)len, uio);
             if (err) {
-                IOLog("MacFUSE: FT_A_FIOV error is %d (%p, %ld, %p)\n",
+                IOLog("OSXFUSE: FT_A_FIOV error is %d (%p, %ld, %p)\n",
                       err, fticket_resp(ftick)->base, len, uio);
             }
             break;
@@ -362,13 +362,13 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             ftick->tk_aw_bufsize = len;
             err = uiomove(ftick->tk_aw_bufdata, (int)len, uio);
             if (err) {
-                IOLog("MacFUSE: FT_A_BUF error is %d (%p, %ld, %p)\n",
+                IOLog("OSXFUSE: FT_A_BUF error is %d (%p, %ld, %p)\n",
                       err, ftick->tk_aw_bufdata, len, uio);
             }
             break;
 
         default:
-            panic("MacFUSE: unknown answer type for ticket %p", ftick);
+            panic("OSXFUSE: unknown answer type for ticket %p", ftick);
         }
     }
 
@@ -400,7 +400,7 @@ fdata_alloc(struct proc *p)
     data = (struct fuse_data *)FUSE_OSMalloc(sizeof(struct fuse_data),
                                              fuse_malloc_tag);
     if (!data) {
-        panic("MacFUSE: OSMalloc failed in fdata_alloc");
+        panic("OSXFUSE: OSMalloc failed in fdata_alloc");
     }
 
     bzero(data, sizeof(struct fuse_data));
@@ -428,18 +428,18 @@ fdata_alloc(struct proc *p)
     data->deadticket_counter = 0;
     data->ticketer           = 0;
 
-#if M_MACFUSE_EXCPLICIT_RENAME_LOCK
+#if M_OSXFUSE_EXCPLICIT_RENAME_LOCK
     data->rename_lock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
 #endif
 
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     data->timeout_mtx    = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if !M_OSXFUSE_ENABLE_HUGE_LOCK
     data->biglock        = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
-#endif /* !M_MACFUSE_ENABLE_HUGE_LOCK */
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     return data;
 }
@@ -458,7 +458,7 @@ fdata_destroy(struct fuse_data *data)
     lck_mtx_free(data->ticket_mtx, fuse_lock_group);
     data->ticket_mtx = NULL;
 
-#if M_MACFUSE_EXPLICIT_RENAME_LOCK
+#if M_OSXFUSE_EXPLICIT_RENAME_LOCK
     lck_rw_free(data->rename_lock, fuse_lock_group);
     data->rename_lock = NULL;
 #endif
@@ -466,12 +466,12 @@ fdata_destroy(struct fuse_data *data)
     data->timeout_status = FUSE_DAEMON_TIMEOUT_NONE;
     lck_mtx_free(data->timeout_mtx, fuse_lock_group);
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if !M_OSXFUSE_ENABLE_HUGE_LOCK
     lck_mtx_free(data->biglock, fuse_lock_group);
     data->biglock = NULL;
-#endif /* !M_MACFUSE_ENABLE_HUGE_LOCK */
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     while ((ftick = fuse_pop_allticks(data))) {
         fticket_destroy(ftick);
@@ -501,9 +501,9 @@ fdata_set_dead(struct fuse_data *data)
 
     data->dataflags |= FSESS_DEAD;
     fuse_wakeup_one((caddr_t)data);
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&data->d_rsel);
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(data->ms_mtx);
 
     fuse_lck_mtx_lock(data->ticket_mtx);
@@ -535,7 +535,7 @@ fuse_pop_freeticks(struct fuse_data *data)
 
     if (STAILQ_EMPTY(&data->freetickets_head) &&
         (data->freeticket_counter != 0)) {
-        panic("MacFUSE: ticket count mismatch!");
+        panic("OSXFUSE: ticket count mismatch!");
     }
 
     return ftick;
@@ -581,7 +581,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         fuse_lck_mtx_unlock(data->ticket_mtx);
         ftick = fticket_alloc(data);
         if (!ftick) {
-            panic("MacFUSE: ticket allocation failed");
+            panic("OSXFUSE: ticket allocation failed");
         }
         fuse_lck_mtx_lock(data->ticket_mtx);
         fuse_push_allticks(ftick);
@@ -589,7 +589,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         /* locked here */
         ftick = fuse_pop_freeticks(data);
         if (!ftick) {
-            panic("MacFUSE: no free ticket despite the counter's value");
+            panic("OSXFUSE: no free ticket despite the counter's value");
         }
     }
 
@@ -675,7 +675,7 @@ void
 fuse_insert_message(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_DIRTY) {
-        panic("MacFUSE: ticket reused without being refreshed");
+        panic("OSXFUSE: ticket reused without being refreshed");
     }
 
     ftick->tk_flag |= FT_DIRTY;
@@ -687,9 +687,9 @@ fuse_insert_message(struct fuse_ticket *ftick)
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push(ftick);
     fuse_wakeup_one((caddr_t)ftick->tk_data);
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&ftick->tk_data->d_rsel);
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
 }
 
@@ -697,7 +697,7 @@ void
 fuse_insert_message_head(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_DIRTY) {
-        panic("MacFUSE: ticket reused without being refreshed");
+        panic("OSXFUSE: ticket reused without being refreshed");
     }
 
     ftick->tk_flag |= FT_DIRTY;
@@ -709,9 +709,9 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push_head(ftick);
     fuse_wakeup_one((caddr_t)ftick->tk_data);
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&ftick->tk_data->d_rsel);
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
     fuse_lck_mtx_unlock(ftick->tk_data->ms_mtx);
 }
 
@@ -733,7 +733,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_FORGET:
-        panic("MacFUSE: a handler has been intalled for FUSE_FORGET");
+        panic("OSXFUSE: a handler has been intalled for FUSE_FORGET");
         break;
 
     case FUSE_GETATTR:
@@ -859,15 +859,15 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     case FUSE_GETLK:
-        panic("MacFUSE: no response body format check for FUSE_GETLK");
+        panic("OSXFUSE: no response body format check for FUSE_GETLK");
         break;
 
     case FUSE_SETLK:
-        panic("MacFUSE: no response body format check for FUSE_SETLK");
+        panic("OSXFUSE: no response body format check for FUSE_SETLK");
         break;
 
     case FUSE_SETLKW:
-        panic("MacFUSE: no response body format check for FUSE_SETLKW");
+        panic("OSXFUSE: no response body format check for FUSE_SETLKW");
         break;
 
     case FUSE_ACCESS:
@@ -900,8 +900,8 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
     default:
-        IOLog("MacFUSE: opcodes out of sync (%d)\n", opcode);
-        panic("MacFUSE: opcodes out of sync (%d)", opcode);
+        IOLog("OSXFUSE: opcodes out of sync (%d)\n", opcode);
+        panic("OSXFUSE: opcodes out of sync (%d)", opcode);
     }
 
     return err;
@@ -975,7 +975,7 @@ fdisp_make(struct fuse_dispatcher *fdip,
     }
 
     if (fdip->tick == 0) {
-        panic("MacFUSE: fuse_ticket_fetch() failed");
+        panic("OSXFUSE: fuse_ticket_fetch() failed");
     }
 
     FUSE_DIMALLOC(&fdip->tick->tk_ms_fiov, fdip->finh,
@@ -1003,7 +1003,7 @@ fdisp_make_canfail(struct fuse_dispatcher *fdip,
     }
 
     if (fdip->tick == 0) {
-        panic("MacFUSE: fuse_ticket_fetch() failed");
+        panic("OSXFUSE: fuse_ticket_fetch() failed");
     }
 
     fiov = &fdip->tick->tk_ms_fiov;

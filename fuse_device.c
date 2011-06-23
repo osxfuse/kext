@@ -38,7 +38,7 @@ struct fuse_device {
     struct fuse_data *data;
 };
 
-static struct fuse_device fuse_device_table[MACFUSE_NDEVICES];
+static struct fuse_device fuse_device_table[OSXFUSE_NDEVICES];
 
 #define FUSE_DEVICE_FROM_UNIT_FAST(u) (fuse_device_t)&(fuse_device_table[(u)])
 
@@ -50,7 +50,7 @@ fuse_device_get(dev_t dev)
 {
     int unit = minor(dev);
 
-    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
         return (fuse_device_t)0;
     }
 
@@ -100,7 +100,7 @@ fuse_device_close_final(fuse_device_t fdev)
     }
 }
 
-/* /dev/fuseN implementation */
+/* /dev/osxfuseN implementation */
 
 d_open_t   fuse_device_open;
 d_close_t  fuse_device_close;
@@ -108,13 +108,13 @@ d_read_t   fuse_device_read;
 d_write_t  fuse_device_write;
 d_ioctl_t  fuse_device_ioctl;
 
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
 
 d_select_t fuse_device_select;
 
 #else
 #define fuse_device_select (d_select_t*)enodev
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
 
 static struct cdevsw fuse_device_cdevsw = {
     /* open     */ fuse_device_open,
@@ -156,7 +156,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
     }
 
     unit = minor(dev);
-    if ((unit >= MACFUSE_NDEVICES) || (unit < 0)) {
+    if ((unit >= OSXFUSE_NDEVICES) || (unit < 0)) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
         return ENOENT;
     }
@@ -164,7 +164,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
     fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
     if (!fdev) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
-        IOLog("MacFUSE: device found with no softc\n");
+        IOLog("OSXFUSE: device found with no softc\n");
         return ENXIO;
     }
 
@@ -226,7 +226,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
     fuse_trace_printf_func();
 
     unit = minor(dev);
-    if (unit >= MACFUSE_NDEVICES) {
+    if (unit >= OSXFUSE_NDEVICES) {
         return ENOENT;
     }
 
@@ -237,7 +237,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     data = fdev->data;
     if (!data) {
-        panic("MacFUSE: no device private data in device_close");
+        panic("OSXFUSE: no device private data in device_close");
     }
 
     fdata_set_dead(data);
@@ -248,9 +248,9 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     fuse_lck_mtx_lock(data->aw_mtx);
 
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&data->d_rsel);
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
 
     if (data->mount_state == FM_MOUNTED) {
 
@@ -368,7 +368,7 @@ again:
         break;
 
     default:
-        panic("MacFUSE: unknown message type for ticket %p", ftick);
+        panic("OSXFUSE: unknown message type for ticket %p", ftick);
     }
 
     for (i = 0; buf[i]; i++) {
@@ -434,12 +434,12 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     /* begin audit */
 
     if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead.len) {
-        IOLog("MacFUSE: message body size does not match that in the header\n");
+        IOLog("OSXFUSE: message body size does not match that in the header\n");
         return EINVAL; 
     }   
 
     if (uio_resid(uio) && ohead.error) {
-        IOLog("MacFUSE: non-zero error for a message with a body\n");
+        IOLog("OSXFUSE: non-zero error for a message with a body\n");
         return EINVAL;
     }
 
@@ -489,7 +489,7 @@ fuse_devices_start(void)
         goto error;
     }
 
-    for (i = 0; i < MACFUSE_NDEVICES; i++) {
+    for (i = 0; i < OSXFUSE_NDEVICES; i++) {
 
         dev_t dev = makedev(fuse_cdev_major, i);
         fuse_device_table[i].cdev = devfs_make_node(
@@ -498,7 +498,7 @@ fuse_devices_start(void)
                                         UID_ROOT,
                                         GID_OPERATOR,
                                         0666,
-                                        MACFUSE_DEVICE_BASENAME "%d",
+                                        OSXFUSE_DEVICE_BASENAME "%d",
                                         i);
         if (fuse_device_table[i].cdev == NULL) {
             goto error;
@@ -547,7 +547,7 @@ fuse_devices_stop(void)
         return KERN_SUCCESS;
     }
 
-    for (i = 0; i < MACFUSE_NDEVICES; i++) {
+    for (i = 0; i < OSXFUSE_NDEVICES; i++) {
 
         char p_comm[MAXCOMLEN + 1] = { '?', '\0' };
 
@@ -555,7 +555,7 @@ fuse_devices_stop(void)
             fuse_interface_available = TRUE;
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
-            IOLog("MacFUSE: /dev/fuse%d is still active (pid=%d %s)\n",
+            IOLog("OSXFUSE: /dev/osxfuse%d is still active (pid=%d %s)\n",
                   i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
@@ -565,7 +565,7 @@ fuse_devices_stop(void)
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
             /* The pid can't possibly be active here. */
-            IOLog("MacFUSE: /dev/fuse%d has a lingering mount (pid=%d, %s)\n",
+            IOLog("OSXFUSE: /dev/osxfuse%d has a lingering mount (pid=%d, %s)\n",
                   i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
@@ -573,7 +573,7 @@ fuse_devices_stop(void)
 
     /* No device is in use. */
 
-    for (i = 0; i < MACFUSE_NDEVICES; i++) {
+    for (i = 0; i < OSXFUSE_NDEVICES; i++) {
         devfs_remove(fuse_device_table[i].cdev);
         lck_mtx_free(fuse_device_table[i].mtx, fuse_lock_group);
         fuse_device_table[i].cdev   = NULL;
@@ -585,7 +585,7 @@ fuse_devices_stop(void)
 
     ret = cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
     if (ret != fuse_cdev_major) {
-        IOLog("MacFUSE: fuse_cdev_major != return from cdevsw_remove()\n");
+        IOLog("OSXFUSE: fuse_cdev_major != return from cdevsw_remove()\n");
     }
 
     fuse_cdev_major = -1;
@@ -692,7 +692,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
     return ret;
 }
 
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
 
 int
 fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
@@ -704,7 +704,7 @@ fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
     fuse_trace_printf_func();
 
     unit = minor(dev);
-    if (unit >= MACFUSE_NDEVICES) {
+    if (unit >= OSXFUSE_NDEVICES) {
         return ENOENT;
     }
 
@@ -715,7 +715,7 @@ fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
 
     data = fdev->data;
     if (!data) {
-        panic("MacFUSE: no device private data in device_select");
+        panic("OSXFUSE: no device private data in device_select");
     }
 
     if (events & (POLLIN | POLLRDNORM)) {
@@ -735,7 +735,7 @@ fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
     return revents;
 }
 
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
 
 int
 fuse_device_kill(int unit, struct proc *p)
@@ -743,7 +743,7 @@ fuse_device_kill(int unit, struct proc *p)
     int error = ENOENT;
     struct fuse_device *fdev;
 
-    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
         return EINVAL;
     }
 
@@ -796,7 +796,7 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
 
     int unit = unit_flags;
 
-    if ((unit < 0) || (unit >= MACFUSE_NDEVICES)) {
+    if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
         return EINVAL;
     }
 

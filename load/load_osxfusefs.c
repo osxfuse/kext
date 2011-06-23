@@ -47,15 +47,15 @@ main(__unused int argc, __unused const char *argv[])
     size_t version_len_desired = 0;
     struct vfsconf vfc = { 0 };
 
-    result = getvfsbyname(MACFUSE_FS_TYPE, &vfc);
-    if (result) { /* MacFUSE is not already loaded */
+    result = getvfsbyname(OSXFUSE_FS_TYPE, &vfc);
+    if (result) { /* OSXFUSE is not already loaded */
         result = -1;
         goto need_loading;
     }
 
-    /* some version of MacFUSE is already loaded; let us check it out */
+    /* some version of OSXFUSE is already loaded; let us check it out */
 
-    result = sysctlbyname(SYSCTL_MACFUSE_VERSION_NUMBER, version,
+    result = sysctlbyname(SYSCTL_OSXFUSE_VERSION_NUMBER, version,
                           &version_len, NULL, (size_t)0);
     if (result) {
         if (errno == ENOENT) {
@@ -67,10 +67,10 @@ main(__unused int argc, __unused const char *argv[])
     }
 
     /* sysctlbyname() includes the trailing '\0' in version_len */
-    version_len_desired = strlen(MACFUSE_VERSION) + 1;
+    version_len_desired = strlen(OSXFUSE_VERSION) + 1;
 
     if ((version_len == version_len_desired) &&
-        !strncmp(MACFUSE_VERSION, version, version_len)) {
+        !strncmp(OSXFUSE_VERSION, version, version_len)) {
         /* what's currently loaded is good */
         result = 0;
         goto out;
@@ -82,7 +82,7 @@ need_unloading:
     pid = fork();
     if (pid == 0) {
         result = execl(SYSTEM_KEXTUNLOAD, SYSTEM_KEXTUNLOAD, "-b",
-                       MACFUSE_BUNDLE_IDENTIFIER, NULL);
+                       OSXFUSE_BUNDLE_IDENTIFIER, NULL);
         /* We can only get here if the exec failed */
         goto out;
     }
@@ -110,7 +110,7 @@ need_unloading:
 need_loading:
     pid = fork();
     if (pid == 0) {
-        result = execl(SYSTEM_KEXTLOAD, SYSTEM_KEXTLOAD, MACFUSE_KEXT, NULL);
+        result = execl(SYSTEM_KEXTLOAD, SYSTEM_KEXTLOAD, OSXFUSE_KEXT, NULL);
         /* We can only get here if the exec failed */
         goto out;
     }
@@ -138,7 +138,7 @@ need_loading:
         admin_gid = g->gr_gid;
 
         /* if this fails, we don't care */
-        (void)sysctlbyname(SYSCTL_MACFUSE_TUNABLES_ADMIN, NULL, NULL,
+        (void)sysctlbyname(SYSCTL_OSXFUSE_TUNABLES_ADMIN, NULL, NULL,
                           &admin_gid, sizeof(admin_gid));
     }
     

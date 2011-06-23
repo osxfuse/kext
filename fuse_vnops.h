@@ -10,11 +10,11 @@
 
 typedef int (*fuse_vnode_op_t)(void *);
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 typedef int (*fuse_fifo_op_t)(void *);
 #endif
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 typedef int (*fuse_spec_op_t)(void *);
 #endif
 
@@ -50,7 +50,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_getattr(struct vnop_getattr_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_getnamedstream(struct vnop_getnamedstream_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_vnop_getxattr(struct vnop_getxattr_args *ap);
 #endif
 
@@ -58,7 +58,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_inactive(struct vnop_inactive_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_ioctl(struct vnop_ioctl_args *ap);
 
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
 FUSE_VNOP_EXPORT int fuse_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap);
@@ -66,7 +66,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap)
 
 FUSE_VNOP_EXPORT int fuse_vnop_link(struct vnop_link_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_vnop_listxattr(struct vnop_listxattr_args *ap);
 #endif
 
@@ -106,7 +106,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_remove(struct vnop_remove_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_readnamedstream(struct vnop_readnamedstream_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_vnop_removexattr(struct vnop_removexattr_args *ap);
 #endif
 
@@ -126,7 +126,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_setattr(struct vnop_setattr_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_setattrlist (struct vnop_setattrlist_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_vnop_setxattr(struct vnop_setxattr_args *ap);
 #endif
 
@@ -139,7 +139,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_symlink(struct vnop_symlink_args *ap);
 FUSE_VNOP_EXPORT int fuse_vnop_write(struct vnop_write_args *ap);
 
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 
 /* fifofs */
 
@@ -181,9 +181,9 @@ int     fifo_write(struct vnop_write_args *);
 #define fifo_strategy (int (*)(struct vnop_strategy_args *))err_strategy
 #define fifo_symlink  (int (*)(struct vnop_symlink_args *))err_symlink
 
-#endif /* M_MACFUSE_ENABLE_FIFOFS */
+#endif /* M_OSXFUSE_ENABLE_FIFOFS */
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 
 /* specfs */
 
@@ -227,6 +227,6 @@ int     spec_write(struct vnop_write_args *);
 #define spec_setattr  (int (*)(struct vnop_setattr_args *))spec_ebadf
 #define spec_symlink  (int (*)(struct vnop_symlink_args *))err_symlink
 
-#endif /* M_MACFUSE_ENABLE_SPECFS */
+#endif /* M_OSXFUSE_ENABLE_SPECFS */
 
 #endif /* _FUSE_VNOPS_H_ */

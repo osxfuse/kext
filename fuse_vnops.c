@@ -46,7 +46,7 @@
 #include "fuse_sysctl.h"
 #include "fuse_vnops.h"
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
 #include "fuse_biglock_vnops.h"
 #endif
 
@@ -262,7 +262,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (!FUFH_IS_VALID(fufh)) {
-        IOLog("MacFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
+        IOLog("OSXFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
               fufh_type, fufh->open_count, vnode_vtype(vp), fflag);
         return 0;
     }
@@ -362,7 +362,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("MacFUSE: fuse_vnop_create(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_create(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -498,7 +498,7 @@ int
 fuse_vnop_exchange(struct vnop_exchange_args *ap)
 {
 
-#if M_MACFUSE_ENABLE_EXCHANGE
+#if M_OSXFUSE_ENABLE_EXCHANGE
 
     vnode_t       fvp     = ap->a_fvp;
     vnode_t       tvp     = ap->a_tvp;
@@ -539,7 +539,7 @@ fuse_vnop_exchange(struct vnop_exchange_args *ap)
     }
 
     if (fuse_isdeadfs_fs(fvp)) {
-        panic("MacFUSE: fuse_vnop_exchange(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_exchange(): called on a dead file system");
     }
 
     fname = vnode_getname(fvp);
@@ -586,13 +586,13 @@ out:
 
     return err;
 
-#else /* !M_MACFUSE_ENABLE_EXCHANGE */
+#else /* !M_OSXFUSE_ENABLE_EXCHANGE */
 
     (void)ap;
 
     return ENOTSUP;
 
-#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
 
 }
 
@@ -751,11 +751,11 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
             goto fake;
         }
         if (err == ENOENT) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
         }
@@ -774,7 +774,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     fuse_internal_attr_loadvap(vp, vap, context);
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
+#if M_OSXFUSE_EXPERIMENTAL_JUNK
     if (vap != VTOVA(vp)) {
         memcpy(vap, VTOVA(vp), sizeof(*vap));
     }
@@ -817,11 +817,11 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
              * revocation.
              */
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
             return EIO;
@@ -840,7 +840,7 @@ fake:
     return 0;
 }
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 /*
     struct vnop_getxattr_args {
         struct vnodeop_desc *a_desc;
@@ -943,7 +943,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 
     return err;
 }
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
 
 /*
     struct vnop_inactive_args {
@@ -1062,7 +1062,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
     return ret;
 }
 
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
 
 #include "fuse_knote.h"
 
@@ -1140,7 +1140,7 @@ fuse_vnop_kqfilt_remove(__unused struct vnop_kqfilt_remove_args *ap)
     return ENOTSUP;
 }
 
-#endif /* M_MACFUSE_ENABLE_KQUEUE */
+#endif /* M_OSXFUSE_ENABLE_KQUEUE */
 
 /*
     struct vnop_link_args {
@@ -1171,7 +1171,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("MacFUSE: fuse_vnop_link(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_link(): called on a dead file system");
     }
 
     if (vnode_mount(tdvp) != vnode_mount(vp)) {
@@ -1210,7 +1210,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     return err;
 }
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 /*
     struct vnop_listxattr_args {
         struct vnodeop_desc *a_desc;
@@ -1288,7 +1288,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
 
     return err;
 }
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
 
 /*
     struct vnop_lookup_args {
@@ -1634,7 +1634,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("MacFUSE: fuse_vnop_mkdir(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_mkdir(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -1679,7 +1679,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("MacFUSE: fuse_vnop_mknod(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_mknod(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -1725,7 +1725,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("MacFUSE: fuse_vnop_mmap(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_mmap(): called on a dead file system");
     }
 
     if (fuse_isdirectio(vp)) {
@@ -1755,13 +1755,13 @@ retry:
     }
 
     if (!deleted) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
         fuse_biglock_unlock(data->biglock);
 #endif
         err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
                                                context, fufh_type);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
         if (err == ENOENT) {
@@ -1786,13 +1786,13 @@ retry:
          */
         if (!retried && (err == EACCES) &&
             ((fufh_type == FUFH_RDWR) || (fufh_type == FUFH_WRONLY))) {
-            IOLog("MacFUSE: filehandle_get retrying (type=%d, err=%d)\n",
+            IOLog("OSXFUSE: filehandle_get retrying (type=%d, err=%d)\n",
                   fufh_type, err);
             fufh_type = FUFH_RDONLY;
             retried = 1;
             goto retry;
         } else {
-            IOLog("MacFUSE: filehandle_get failed in mmap (type=%d, err=%d)\n",
+            IOLog("OSXFUSE: filehandle_get failed in mmap (type=%d, err=%d)\n",
                   fufh_type, err);
         }
         return EPERM;
@@ -1924,7 +1924,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
         return ENXIO;
     }
 
-#if !M_MACFUSE_ENABLE_FIFOFS
+#if !M_OSXFUSE_ENABLE_FIFOFS
     if (vnode_isfifo(vp)) {
         return EPERM;
     }
@@ -2017,7 +2017,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
     error = fuse_filehandle_get(vp, context, fufh_type, mode);
     if (error) {
-        IOLog("MacFUSE: filehandle_get failed in open (type=%d, err=%d)\n",
+        IOLog("OSXFUSE: filehandle_get failed in open (type=%d, err=%d)\n",
               fufh_type, error);
         if (error == ENOENT) {
             cache_purge(vp);
@@ -2117,7 +2117,7 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
     struct fuse_vnode_data *fvdat;
     int err;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 #endif
 
@@ -2139,12 +2139,12 @@ fuse_vnop_pagein(struct vnop_pagein_args *ap)
         return EIO;
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     err = cluster_pagein(vp, pl, (upl_offset_t)pl_offset, f_offset, (int)size,
                          fvdat->filesize, flags);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
    fuse_biglock_lock(data->biglock);
 #endif
 
@@ -2177,7 +2177,7 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int error;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 #endif
 
@@ -2194,12 +2194,12 @@ fuse_vnop_pageout(struct vnop_pageout_args *ap)
         return ENOTSUP;
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     error = cluster_pageout(vp, pl, (upl_offset_t)pl_offset, f_offset,
                             (int)size, (off_t)fvdat->filesize, flags);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
    fuse_biglock_lock(data->biglock);
 #endif
 
@@ -2368,11 +2368,11 @@ fuse_vnop_read(struct vnop_read_args *ap)
             /* In case we get here through a short cut (e.g. no open). */
             ioflag |= IO_NOCACHE;
         }
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         res = cluster_read(vp, uio, fvdat->filesize, ioflag);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
         return res;
@@ -2421,11 +2421,11 @@ fuse_vnop_read(struct vnop_read_args *ap)
                 return err;
             }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
             err = uiomove(fdi.answ, (int)min(fri->size, fdi.iosize), uio);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
             if (err) {
@@ -2505,7 +2505,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     if (!FUFH_IS_VALID(fufh)) {
         err = fuse_filehandle_get(vp, context, FUFH_RDONLY, 0 /* mode */);
         if (err) {
-            IOLog("MacFUSE: filehandle_get failed in readdir (err=%d)\n", err);
+            IOLog("OSXFUSE: filehandle_get failed in readdir (err=%d)\n", err);
             return err;
         }
         freefufh = 1;
@@ -2552,7 +2552,7 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     struct fuse_dispatcher fdi;
     int err;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 #endif
 
@@ -2579,11 +2579,11 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
     }
 
     if (!err) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         err = uiomove(fdi.answ, (int)fdi.iosize, uio);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
     }
@@ -2617,7 +2617,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
     fuse_trace_printf_vnop();
 
     if (!fvdat) {
-        panic("MacFUSE: no vnode data during recycling");
+        panic("OSXFUSE: no vnode data during recycling");
     }
 
     /*
@@ -2667,9 +2667,9 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                      */
 
                     if (open_count != aux_count) {
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
                         const char *vname = vnode_getname(vp);
-                        IOLog("MacFUSE: vnode reclaimed with valid fufh "
+                        IOLog("OSXFUSE: vnode reclaimed with valid fufh "
                               "(%s type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
                               (vname) ? vname : "?", type, vnode_vtype(vp),
@@ -2678,12 +2678,12 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                             vnode_putname(vname);
                         }
 #else
-                        IOLog("MacFUSE: vnode reclaimed with valid fufh "
+                        IOLog("OSXFUSE: vnode reclaimed with valid fufh "
                               "(type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
                               type, vnode_vtype(vp), open_count,
                               vnode_isinuse(vp, 0), aux_count);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
                     } /* if counts did not match (both=1 for match currently) */
                     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_zombies);
                 } /* !deadfs */
@@ -2739,7 +2739,7 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("MacFUSE: fuse_vnop_remove(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_remove(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -2773,7 +2773,7 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     return err;
 }
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 /*
     struct vnop_removexattr_args {
         struct vnodeop_desc *a_desc;
@@ -2849,7 +2849,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
 
     return err;
 }
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
 
 /*
     struct vnop_rename_args {
@@ -2880,7 +2880,7 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(fdvp)) {
-        panic("MacFUSE: fuse_vnop_rename(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_rename(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(fdvp, context, ENOENT);
@@ -2979,7 +2979,7 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("MacFUSE: fuse_vnop_rmdir(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_rmdir(): called on a dead file system");
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -3044,7 +3044,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     int sizechanged = 0;
     uint64_t newsize = 0;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 #endif
 
@@ -3117,11 +3117,11 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
              * revocation and tell the caller to try again, if interested.
              */
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
 
@@ -3154,7 +3154,7 @@ out:
     return err;
 }
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 /*
     struct vnop_setxattr_args {
         struct vnodeop_desc *a_desc;
@@ -3243,7 +3243,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     fdisp_init(&fdi, sizeof(*fsxi) + namelen + 1 + attrsize);
     err = fdisp_make_vp_canfail(&fdi, FUSE_SETXATTR, vp, ap->a_context);
     if (err) {
-        IOLog("MacFUSE: setxattr failed for too large attribute (%lu)\n",
+        IOLog("OSXFUSE: setxattr failed for too large attribute (%lu)\n",
               attrsize);
         return ERANGE;
     }
@@ -3260,12 +3260,12 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     memcpy((char *)fdi.indata + sizeof(*fsxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fsxi) + namelen] = '\0';
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     err = uiomove((char *)fdi.indata + sizeof(*fsxi) + namelen + 1,
                   (int)attrsize, uio);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
     if (!err) {
@@ -3305,7 +3305,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     return err;
 }
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
 
 /*
     struct vnop_strategy_args {
@@ -3360,7 +3360,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("MacFUSE: fuse_vnop_symlink(): called on a dead file system");
+        panic("OSXFUSE: fuse_vnop_symlink(): called on a dead file system");
     }
             
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -3561,7 +3561,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
         return EFBIG;
     }
 
-#if M_MACFUSE_EXPERIMENTAL_JUNK
+#if M_OSXFUSE_EXPERIMENTAL_JUNK
     if (original_resid == 0) {
         return 0;
     }
@@ -3596,13 +3596,13 @@ fuse_vnop_write(struct vnop_write_args *ap)
         zero_off = 0;
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
     fuse_biglock_unlock(data->biglock);
 #endif
     error = cluster_write(vp, uio, (off_t)original_size, (off_t)filesize,
                           (off_t)zero_off, (off_t)0, lflag);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
         
@@ -3662,7 +3662,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
     return error;
 }
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 
 /* fifofs */
 
@@ -3695,9 +3695,9 @@ fuse_fifo_vnop_write(struct vnop_write_args *ap)
     return fifo_write(ap);
 }
 
-#endif /* M_MACFUSE_ENABLE_FIFOFS */
+#endif /* M_OSXFUSE_ENABLE_FIFOFS */
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 
 /* specfs */
 
@@ -3730,7 +3730,7 @@ fuse_spec_vnop_write(struct vnop_write_args *ap)
     return spec_write(ap);
 }
 
-#endif /* M_MACFUSE_ENABLE_SPECFS */
+#endif /* M_OSXFUSE_ENABLE_SPECFS */
 
 struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_access_desc,        (fuse_vnode_op_t) fuse_vnop_access        },
@@ -3747,20 +3747,20 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_fsync_desc,         (fuse_vnode_op_t) fuse_vnop_fsync         },
     { &vnop_getattr_desc,       (fuse_vnode_op_t) fuse_vnop_getattr       },
 //  { &vnop_getattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_getattrlist   },
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
     { &vnop_getxattr_desc,      (fuse_vnode_op_t) fuse_vnop_getxattr      },
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
     { &vnop_inactive_desc,      (fuse_vnode_op_t) fuse_vnop_inactive      },
     { &vnop_ioctl_desc,         (fuse_vnode_op_t) fuse_vnop_ioctl         },
     { &vnop_link_desc,          (fuse_vnode_op_t) fuse_vnop_link          },
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
     { &vnop_listxattr_desc,     (fuse_vnode_op_t) fuse_vnop_listxattr     },
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
     { &vnop_lookup_desc,        (fuse_vnode_op_t) fuse_vnop_lookup        },
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
     { &vnop_kqfilt_add_desc,    (fuse_vnode_op_t) fuse_vnop_kqfilt_add    },
     { &vnop_kqfilt_remove_desc, (fuse_vnode_op_t) fuse_vnop_kqfilt_remove },
-#endif /* M_MACFUSE_ENABLE_KQUEUE */
+#endif /* M_OSXFUSE_ENABLE_KQUEUE */
     { &vnop_mkdir_desc,         (fuse_vnode_op_t) fuse_vnop_mkdir         },
     { &vnop_mknod_desc,         (fuse_vnode_op_t) fuse_vnop_mknod         },
     { &vnop_mmap_desc,          (fuse_vnode_op_t) fuse_vnop_mmap          },
@@ -3776,9 +3776,9 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_readlink_desc,      (fuse_vnode_op_t) fuse_vnop_readlink      },
     { &vnop_reclaim_desc,       (fuse_vnode_op_t) fuse_vnop_reclaim       },
     { &vnop_remove_desc,        (fuse_vnode_op_t) fuse_vnop_remove        },
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
     { &vnop_removexattr_desc,   (fuse_vnode_op_t) fuse_vnop_removexattr   },
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
     { &vnop_rename_desc,        (fuse_vnode_op_t) fuse_vnop_rename        },
     { &vnop_revoke_desc,        (fuse_vnode_op_t) fuse_vnop_revoke        },
     { &vnop_rmdir_desc,         (fuse_vnode_op_t) fuse_vnop_rmdir         },
@@ -3786,9 +3786,9 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_select_desc,        (fuse_vnode_op_t) fuse_vnop_select        },
     { &vnop_setattr_desc,       (fuse_vnode_op_t) fuse_vnop_setattr       },
 //  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_setattrlist   }, 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
     { &vnop_setxattr_desc,      (fuse_vnode_op_t) fuse_vnop_setxattr      },
-#endif /* M_MACFUSE_ENABLE_XATTR */
+#endif /* M_OSXFUSE_ENABLE_XATTR */
     { &vnop_strategy_desc,      (fuse_vnode_op_t) fuse_vnop_strategy      },
     { &vnop_symlink_desc,       (fuse_vnode_op_t) fuse_vnop_symlink       },
 //  { &vnop_whiteout_desc,      (fuse_vnode_op_t) fuse_vnop_whiteout      },
@@ -3796,7 +3796,7 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { NULL, NULL }
 };
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 
 /* fifofs */
 
@@ -3813,7 +3813,7 @@ struct vnodeopv_entry_desc fuse_fifo_operation_entries[] = {
     { &vnop_getattr_desc,       (fuse_fifo_op_t)fuse_vnop_getattr       },
     { &vnop_inactive_desc,      (fuse_fifo_op_t)fuse_vnop_inactive      },    
     { &vnop_ioctl_desc,         (fuse_fifo_op_t)fifo_ioctl              },
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
     { &vnop_kqfilt_add_desc,    (fuse_fifo_op_t)fuse_vnop_kqfilt_add    },
     { &vnop_kqfilt_remove_desc, (fuse_fifo_op_t)fuse_vnop_kqfilt_remove },
 #endif
@@ -3842,9 +3842,9 @@ struct vnodeopv_entry_desc fuse_fifo_operation_entries[] = {
     { &vnop_write_desc,         (fuse_fifo_op_t)fuse_fifo_vnop_write    },
     { (struct vnodeop_desc*)NULL, (fuse_fifo_op_t)NULL                  }
 };
-#endif /* M_MACFUSE_ENABLE_FIFOFS */
+#endif /* M_OSXFUSE_ENABLE_FIFOFS */
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 
 /* specfs */
 
@@ -3884,4 +3884,4 @@ struct vnodeopv_entry_desc fuse_spec_operation_entries[] = {
     { &vnop_write_desc,    (fuse_spec_op_t)fuse_spec_vnop_write }, // custom
     { (struct vnodeop_desc*)NULL, (fuse_spec_op_t)NULL          },
 };
-#endif /* M_MACFUSE_ENABLE_SPECFS */
+#endif /* M_OSXFUSE_ENABLE_SPECFS */

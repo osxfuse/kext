@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/vnode.h>
 
-#if M_MACFUSE_ENABLE_DSELECT
+#if M_OSXFUSE_ENABLE_DSELECT
 
 /*
  * # 10.5        10.6-32        10.6-64
@@ -40,9 +40,9 @@ struct fuse_selinfo {
 #define POLLRDBAND      0x0080          /* OOB/Urgent readable data */
 #define POLLWRBAND      0x0100          /* OOB/Urgent data can be written */
 
-#endif /* M_MACFUSE_ENABLE_DSELECT */
+#endif /* M_OSXFUSE_ENABLE_DSELECT */
 
-#if M_MACFUSE_ENABLE_EXCHANGE
+#if M_OSXFUSE_ENABLE_EXCHANGE
 
 /* The shop of horrors. */
 
@@ -93,6 +93,6 @@ struct fuse_kludge_vnode_10 {
 
 extern void fuse_kludge_exchange(vnode_t v1, vnode_t v2);
 
-#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
 
 #endif /* _FUSE_KLUDGES_H_ */

@@ -6,7 +6,7 @@
 #include "fuse_kludges.h"
 #include <libkern/version.h>
 
-#if M_MACFUSE_ENABLE_EXCHANGE
+#if M_OSXFUSE_ENABLE_EXCHANGE
 
 extern void
 fuse_kludge_exchange(vnode_t v1, vnode_t v2)
@@ -34,4 +34,4 @@ fuse_kludge_exchange(vnode_t v1, vnode_t v2)
     }
 }
 
-#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+#endif /* M_OSXFUSE_ENABLE_EXCHANGE */

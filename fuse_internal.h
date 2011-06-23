@@ -28,7 +28,7 @@
 #include "fuse_locking.h"
 #include "fuse_node.h"
 
-#if M_MACFUSE_ENABLE_KUNC
+#if M_OSXFUSE_ENABLE_KUNC
 #include <UserNotification/KUNCUserNotifications.h>
 #else
 enum {
@@ -65,10 +65,10 @@ struct fuse_ticket;
 
 /* miscellaneous */
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
 extern const char *vnode_getname(vnode_t vp);
 extern void  vnode_putname(const char *name);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
 static __inline__
 int
@@ -666,7 +666,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     fuse_internal_attr_fat2vat(vp, &(fuse_out)->attr, VTOVA(vp));    \
 } while (0)
 
-#if M_MACFUSE_ENABLE_EXCHANGE
+#if M_OSXFUSE_ENABLE_EXCHANGE
 
 /* exchange */
 
@@ -680,7 +680,7 @@ fuse_internal_exchange(vnode_t       fvp,
                        int           options,
                        vfs_context_t context);
 
-#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
                        
 /* fsync */
 

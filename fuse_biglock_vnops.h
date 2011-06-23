@@ -9,9 +9,9 @@
 #include <fuse_param.h>
 #include "fuse_locking.h"
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
+#if M_OSXFUSE_ENABLE_LOCK_LOGGING
 #define rawlog(msg, args...) IOLog(msg, ##args)
 
 #define log(fmt, args...) \
@@ -43,9 +43,9 @@
 #define log(fmt, args...) do {} while(0)
 #define log_enter(params_format, args...) do {} while(0)
 #define log_leave(return_format, args...) do {} while(0)
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
+#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
 #define fuse_hugelock_lock() \
 	do { \
 		log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock); \
@@ -249,7 +249,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_getattr(struct vnop_getattr_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_biglock_vnop_getnamedstream(struct vnop_getnamedstream_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_getxattr(struct vnop_getxattr_args *ap);
 #endif
 
@@ -257,7 +257,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_inactive(struct vnop_inactive_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_ioctl(struct vnop_ioctl_args *ap);
 
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_kqfilt_add(struct vnop_kqfilt_add_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_kqfilt_remove(struct vnop_kqfilt_remove_args *ap);
@@ -265,7 +265,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_kqfilt_remove(struct vnop_kqfilt_remove_a
 
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_link(struct vnop_link_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_listxattr(struct vnop_listxattr_args *ap);
 #endif
 
@@ -305,7 +305,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_remove(struct vnop_remove_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_biglock_vnop_readnamedstream(struct vnop_readnamedstream_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_removexattr(struct vnop_removexattr_args *ap);
 #endif
 
@@ -325,7 +325,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_setattr(struct vnop_setattr_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_biglock_vnop_setattrlist (struct vnop_setattrlist_args *ap);
 
-#if M_MACFUSE_ENABLE_XATTR
+#if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_setxattr(struct vnop_setxattr_args *ap);
 #endif
 
@@ -337,6 +337,6 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_symlink(struct vnop_symlink_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_write(struct vnop_write_args *ap);
 
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
 #endif /* _FUSE_BIGLOCK_VNOPS_H_ */

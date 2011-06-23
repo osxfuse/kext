@@ -28,7 +28,7 @@
 #include <sys/vnode.h>
 #include <kern/assert.h>
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
 #define LCK_MTX_ASSERT lck_mtx_assert
 #else
 #define LCK_MTX_ASSERT(gHashMutex, LCK_MTX_ASSERT_OWNED) do { } while (0)

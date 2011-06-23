@@ -42,7 +42,7 @@
 #include "fuse_sysctl.h"
 #include "fuse_kludges.h"
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
 #include "fuse_biglock_vnops.h"
 #endif
 
@@ -162,29 +162,29 @@ fuse_internal_access(vnode_t                   vp,
 
         const char *vname = NULL;
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
         vname = vnode_getname(vp);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
-        IOLog("MacFUSE: disappearing vnode %p (name=%s type=%d action=%x)\n",
+        IOLog("OSXFUSE: disappearing vnode %p (name=%s type=%d action=%x)\n",
               vp, (vname) ? vname : "?", vnode_vtype(vp), action);
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
         if (vname) {
             vnode_putname(vname);
         }
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
         /*
          * On 10.4, I think I can get Finder to lock because of /.Trashes/<uid>
          * unless I use REVOKE_NONE here.
          */
          
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
     }
@@ -192,7 +192,7 @@ fuse_internal_access(vnode_t                   vp,
     return err;
 }
 
-#if M_MACFUSE_ENABLE_EXCHANGE
+#if M_OSXFUSE_ENABLE_EXCHANGE
 
 /* exchange */
 
@@ -291,7 +291,7 @@ fuse_internal_exchange(vnode_t       fvp,
     return err;
 }
 
-#endif /* M_MACFUSE_ENABLE_EXCHANGE */
+#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
 
 /* fsync */
 
@@ -307,7 +307,7 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
         } else if (fticket_opcode(ftick) == FUSE_FSYNCDIR) {
             fuse_clear_implemented(ftick->tk_data, FSESS_NOIMPLBIT(FSYNCDIR));
         } else {
-            IOLog("MacFUSE: unexpected opcode in sync handling\n");
+            IOLog("OSXFUSE: unexpected opcode in sync handling\n");
         }
     }
 
@@ -890,7 +890,7 @@ fuse_internal_remove(vnode_t               dvp,
     fuse_invalidate_attr(vp);
 
     /*
-     * XXX: M_MACFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
+     * XXX: M_OSXFUSE_INVALIDATE_CACHED_VATTRS_UPON_UNLINK
      *
      * Consider the case where vap->va_nlink > 1 for the entity being
      * removed. In our world, other in-memory vnodes that share a link
@@ -901,18 +901,18 @@ fuse_internal_remove(vnode_t               dvp,
      */
     if (need_invalidate && !err) {
         if (!vfs_busy(mp, LK_NOWAIT)) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             struct fuse_data *data = fuse_get_mpdata(mp);
             fuse_biglock_unlock(data->biglock);
 #endif
             vnode_iterate(mp, 0, fuse_internal_remove_callback,
                           (void *)&target_nlink);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
             vfs_unbusy(mp);
         } else {
-            IOLog("MacFUSE: skipping link count fixup upon remove\n");
+            IOLog("OSXFUSE: skipping link count fixup upon remove\n");
         }
     }
 
@@ -1084,11 +1084,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
              return EIO;
          }
 
-         IOLog("MacFUSE: strategy failed to get fh "
+         IOLog("OSXFUSE: strategy failed to get fh "
                "(vtype=%d, fufh_type=%d, err=%d)\n", vtype, fufh_type, err);
 
          if (!vfs_issynchronous(mp)) {
-             IOLog("MacFUSE: asynchronous write failed!\n");
+             IOLog("OSXFUSE: asynchronous write failed!\n");
          }
 
          buf_seterror(bp, EIO);
@@ -1097,7 +1097,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (!fufh) {
-        panic("MacFUSE: tried everything but still no fufh");
+        panic("OSXFUSE: tried everything but still no fufh");
         /* NOTREACHED */
     }
 
@@ -1105,11 +1105,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 #define B_ERROR 0x00080000 /* I/O error occurred. */
 
     if (bflags & B_INVAL) {
-        IOLog("MacFUSE: buffer does not contain valid information\n");
+        IOLog("OSXFUSE: buffer does not contain valid information\n");
     } 
 
     if (bflags & B_ERROR) {
-        IOLog("MacFUSE: an I/O error has occured\n");
+        IOLog("OSXFUSE: an I/O error has occured\n");
     }
 
     if (buf_count(bp) == 0) {
@@ -1142,7 +1142,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         }
 
         if (buf_map(bp, &bufdat)) {
-            IOLog("MacFUSE: failed to map buffer in strategy\n");
+            IOLog("OSXFUSE: failed to map buffer in strategy\n");
             return EFAULT;
         } else {
             mapped = TRUE;
@@ -1214,7 +1214,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         off_t diff;
 
         if (buf_map(bp, &bufdat)) {
-            IOLog("MacFUSE: failed to map buffer in strategy\n");
+            IOLog("OSXFUSE: failed to map buffer in strategy\n");
             return EFAULT;
         } else {
             mapped = TRUE;
@@ -1307,7 +1307,7 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
     struct fuse_data *data;
 
     if (!vp || vtype == VCHR || vtype == VBLK) {
-        panic("MacFUSE: buf_strategy: b_vp == NULL || vtype == VCHR | VBLK\n");
+        panic("OSXFUSE: buf_strategy: b_vp == NULL || vtype == VCHR | VBLK\n");
     }
 
     bflags = buf_flags(bp);
@@ -1525,7 +1525,7 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
     if (how != REVOKE_NONE) {
         err = fuse_internal_revoke(vp, REVOKEALL, context, how);
         if (err) {
-            IOLog("MacFUSE: disappearing act: revoke failed (%d)\n", err);
+            IOLog("OSXFUSE: disappearing act: revoke failed (%d)\n", err);
         }
 
 #if __LP64__
@@ -1541,12 +1541,12 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 #endif
             err = vnode_recycle(vp);
             if (err) {
-                IOLog("MacFUSE: disappearing act: recycle failed (%d)\n", err);
+                IOLog("OSXFUSE: disappearing act: recycle failed (%d)\n", err);
             }
 #if __LP64__
         }
         else {
-                IOLog("MacFUSE: Avoided 'vnode reclaim in progress' kernel "
+                IOLog("OSXFUSE: Avoided 'vnode reclaim in progress' kernel "
                         "panic. What now?\n");
         }
 #endif
@@ -1569,9 +1569,9 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
 
     fiio = fticket_resp(ftick)->base;
 
-    if ((fiio->major < MACFUSE_MIN_USER_VERSION_MAJOR) ||
-        (fiio->minor < MACFUSE_MIN_USER_VERSION_MINOR)){
-        IOLog("MacFUSE: user-space library has too low a version\n");
+    if ((fiio->major < OSXFUSE_MIN_USER_VERSION_MAJOR) ||
+        (fiio->minor < OSXFUSE_MIN_USER_VERSION_MINOR)){
+        IOLog("OSXFUSE: user-space library has too low a version\n");
         err = EPROTONOSUPPORT;
         goto out;
     }
@@ -1579,8 +1579,8 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     data->fuse_libabi_major = fiio->major;
     data->fuse_libabi_minor = fiio->minor;
 
-    if (fuse_libabi_geq(data, MACFUSE_MIN_USER_VERSION_MAJOR,
-                              MACFUSE_MIN_USER_VERSION_MINOR)) {
+    if (fuse_libabi_geq(data, OSXFUSE_MIN_USER_VERSION_MAJOR,
+                              OSXFUSE_MIN_USER_VERSION_MINOR)) {
         if (fticket_resp(ftick)->len == sizeof(struct fuse_init_out)) {
             data->max_write = fiio->max_write;
         } else {
@@ -1638,13 +1638,13 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
 
     err = fdisp_wait_answ(&fdi);
     if (err) {
-        IOLog("MacFUSE: user-space initialization failed (%d)\n", err);
+        IOLog("OSXFUSE: user-space initialization failed (%d)\n", err);
         return err;
     }
 
     err = fuse_internal_init_synchronous(fdi.tick);
     if (err) {
-        IOLog("MacFUSE: in-kernel initialization failed (%d)\n", err);
+        IOLog("OSXFUSE: in-kernel initialization failed (%d)\n", err);
         return err;
     }
 
@@ -1659,31 +1659,31 @@ fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
     const char *vname = NULL;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     vname = vnode_getname(vp);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     if (vname) {
-        IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d %s\n",
+        IOLog("OSXFUSE: vp=%p ino=%lld parent=%lld inuse=%d %s\n",
               vp, fvdat->nodeid, fvdat->parent_nodeid,
               vnode_isinuse(vp, 0), vname);
     } else {
         if (fvdat->nodeid == FUSE_ROOT_ID) {
-            IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d /\n",
+            IOLog("OSXFUSE: vp=%p ino=%lld parent=%lld inuse=%d /\n",
                   vp, fvdat->nodeid, fvdat->parent_nodeid,
                   vnode_isinuse(vp, 0));
         } else {
-            IOLog("MacFUSE: vp=%p ino=%lld parent=%lld inuse=%d\n",
+            IOLog("OSXFUSE: vp=%p ino=%lld parent=%lld inuse=%d\n",
                   vp, fvdat->nodeid, fvdat->parent_nodeid,
                   vnode_isinuse(vp, 0));
         }
     }
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     if (vname) {
         vnode_putname(vname);
     }
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
  
     return VNODE_RETURNED;
 }
@@ -1702,25 +1702,25 @@ fuse_preflight_log(vnode_t vp, fufh_type_t fufh_type, int err, char *message)
 {
     const char *vname = NULL;
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     vname = vnode_getname(vp);
 #else
     (void)vname;
     (void)vp;
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     if (vname) {
-        IOLog("MacFUSE: file handle preflight "
+        IOLog("OSXFUSE: file handle preflight "
               "(caller=%s, type=%d, err=%d, name=%s)\n",
               message, fufh_type, err, vname);
     } else {
-        IOLog("MacFUSE: file handle preflight "
+        IOLog("OSXFUSE: file handle preflight "
               "(caller=%s, type=%d, err=%d)\n", message, fufh_type, err);
     }
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     if (vname) {
         vnode_putname(vname);
     }
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 }

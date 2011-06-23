@@ -20,7 +20,7 @@
 
 #include <fuse_mount.h>
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #include <fuse_biglock_vnops.h>
 #endif
 
@@ -32,45 +32,45 @@ errno_t (**fuse_vnode_operations)(void *);
 
 static struct vnodeopv_desc fuse_vnode_operation_vector_desc = {
     &fuse_vnode_operations,              // opv_desc_vector_p
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
     fuse_biglock_vnode_operation_entries // opv_desc_ops
 #else
     fuse_vnode_operation_entries         // opv_desc_ops
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 };
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 errno_t (**fuse_fifo_operations)(void *);
 
 static struct vnodeopv_desc fuse_fifo_operation_vector_desc = {
     &fuse_fifo_operations,      // opv_desc_vector_p
     fuse_fifo_operation_entries // opv_desc_ops
 };
-#endif /* M_MACFUSE_ENABLE_FIFOFS */
+#endif /* M_OSXFUSE_ENABLE_FIFOFS */
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 errno_t (**fuse_spec_operations)(void *);
 
 static struct vnodeopv_desc fuse_spec_operation_vector_desc = {
     &fuse_spec_operations,      // opv_desc_vector_p
     fuse_spec_operation_entries // opv_desc_ops
 };
-#endif /* M_MACFUSE_ENABLE_SPECFS */
+#endif /* M_OSXFUSE_ENABLE_SPECFS */
 
 static struct vnodeopv_desc *fuse_vnode_operation_vector_desc_list[] =
 {
     &fuse_vnode_operation_vector_desc,
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
     &fuse_fifo_operation_vector_desc,
 #endif
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
     &fuse_spec_operation_vector_desc,
 #endif
 };
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 static errno_t
 fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
@@ -94,7 +94,7 @@ fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t cont
 #endif
 
 static struct vfsops fuse_vfs_ops = {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
     fuse_vfsop_biglock_mount,   // vfs_mount
     NULL,                       // vfs_start
     fuse_vfsop_biglock_unmount, // vfs_unmount
@@ -142,10 +142,10 @@ struct vfs_fsentry fuse_vfs_entry = {
     0,
 
     // File system type name
-    MACFUSE_FS_TYPE,
+    OSXFUSE_FS_TYPE,
 
     // Flags specifying file system capabilities
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
     VFS_TBLTHREADSAFE |
 #endif
     VFS_TBL64BITREADY | VFS_TBLNOTYPENUM,
@@ -172,7 +172,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock      *biglock;
 #endif
 
@@ -208,9 +208,9 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     err = ENOTSUP;
 
-#if M_MACFUSE_ENABLE_UNSUPPORTED
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
     vfs_setlocklocal(mp);
-#endif /* M_MACFUSE_ENABLE_UNSUPPORTED */
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     /** Option Processing. **/
 
@@ -273,7 +273,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
                                      &is_member) == 0) && is_member) {
             mntopts |= FSESS_ALLOW_ROOT;
         } else {
-            IOLog("MacFUSE: caller not a member of MacFUSE admin group (%d)\n",
+            IOLog("OSXFUSE: caller not a member of OSXFUSE admin group (%d)\n",
                   fuse_admin_group);
             return EPERM;
         }
@@ -422,7 +422,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     drandom = fuse_device_get_random(fdev);
     if (fusefs_args.random != drandom) {
         fuse_device_unlock(fdev);
-        IOLog("MacFUSE: failing mount because of mismatched random\n");
+        IOLog("OSXFUSE: failing mount because of mismatched random\n");
         return EINVAL; 
     }
 
@@ -433,13 +433,13 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         return ENXIO;
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     biglock = data->biglock;
     fuse_biglock_lock(biglock);
 #endif
 
     if (data->mount_state != FM_NOTMOUNTED) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(biglock);
 #endif
         fuse_device_unlock(fdev);
@@ -463,7 +463,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     if (!data->daemoncred) {
-        panic("MacFUSE: daemon found but identity unknown");
+        panic("OSXFUSE: daemon found but identity unknown");
     }
 
     if (fuse_vfs_context_issuser(context) &&
@@ -568,7 +568,7 @@ out:
         if (data) {
             data->mount_state = FM_NOTMOUNTED;
             if (!(data->dataflags & FSESS_OPENED)) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
                 assert(biglock == data->biglock);
                 fuse_biglock_unlock(biglock);
 #endif
@@ -596,7 +596,7 @@ out:
         }
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_device_lock(fdev);
     data = fuse_device_get_mpdata(fdev); /* ...and again */
     if(data) {
@@ -631,10 +631,10 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("MacFUSE: no mount private data in vfs_unmount");
+        panic("OSXFUSE: no mount private data in vfs_unmount");
     }
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -658,33 +658,33 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
          * quite pure to do that though.
          *
          *    flags |= FORCECLOSE;
-         *    IOLog("MacFUSE: forcing unmount on a dead file system\n");
+         *    IOLog("OSXFUSE: forcing unmount on a dead file system\n");
          */
 
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
-        IOLog("MacFUSE: forcing unmount on not-yet-alive file system\n");
+        IOLog("OSXFUSE: forcing unmount on not-yet-alive file system\n");
         fdata_set_dead(data);
     }
 
     fuse_rootvp = data->rootvp;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     err = vflush(mp, fuse_rootvp, flags);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
     if (err) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         return err;
     }
 
     if (vnode_isinuse(fuse_rootvp, 1) && !(flags & FORCECLOSE)) {
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         return EBUSY;
@@ -713,21 +713,21 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfsop_mount(). */
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
     data->rootvp = NULLVP;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     (void)vflush(mp, NULLVP, FORCECLOSE);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -737,7 +737,7 @@ alreadydead:
     data->mount_state = FM_NOTMOUNTED;
     OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
 
@@ -753,7 +753,7 @@ alreadydead:
     fuse_device_unlock(fdev);
 
     if (daemonpid && needsignal) {
-        proc_signal(daemonpid, MACFUSE_POSTUNMOUNT_SIGNAL);
+        proc_signal(daemonpid, OSXFUSE_POSTUNMOUNT_SIGNAL);
     }
 
     return 0;
@@ -799,7 +799,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 
     struct fuse_data *data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("MacFUSE: no private data for mount point?");
+        panic("OSXFUSE: no private data for mount point?");
     }
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] = 0
@@ -807,7 +807,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_SYMBOLICLINKS
 
         /*
-         * Note that we don't really have hard links in a MacFUSE file system
+         * Note that we don't really have hard links in a OSXFUSE file system
          * unless the user file system daemon provides persistent/consistent
          * inode numbers. Maybe instead of returning the "wrong" answer here
          * we should just deny knowledge of this capability in the valid bits
@@ -1031,7 +1031,7 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 
     data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("MacFUSE: no private data for mount point?");
+        panic("OSXFUSE: no private data for mount point?");
     }
 
     if (!(data->dataflags & FSESS_INITED)) {
@@ -1085,7 +1085,7 @@ dostatfs:
     /*
      * TBD: Possibility:
      *
-     * For actual I/O to MacFUSE's "virtual" storage device, we use
+     * For actual I/O to OSXFUSE's "virtual" storage device, we use
      * data->blocksize and data->iosize. These are really meant to be
      * constant across the lifetime of a single mount. If necessary, we
      * can experiment by updating the mount point's stat with the frsize
@@ -1269,12 +1269,12 @@ fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
     args.waitfor = waitfor;
     args.error = 0;
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(mp);
     fuse_biglock_unlock(data->biglock);
 #endif
     vnode_iterate(mp, 0, fuse_sync_callback, (void *)&args);
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -1402,7 +1402,7 @@ fuse_setextendedsecurity(mount_t mp, int state)
 
     return err;
 }
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 static errno_t
 fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
@@ -1410,15 +1410,15 @@ fuse_vfsop_biglock_mount(mount_t mp, vnode_t devvp, user_addr_t udata,
 {
     errno_t res;
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_hugelock_lock();
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_mount(mp, devvp, udata, context);
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_hugelock_unlock();
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
     return res;
 }
@@ -1428,15 +1428,15 @@ fuse_vfsop_biglock_unmount(mount_t mp, int mntflags, vfs_context_t context)
 {
     errno_t res;
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_hugelock_lock();
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
     res = fuse_vfsop_unmount(mp, mntflags, context);
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_hugelock_unlock();
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
     return res;
 }

@@ -44,10 +44,10 @@ enum {
 
 /* File system type name. */
 
-#define FUSE_FSTYPENAME_PREFIX MACFUSE_FS_TYPE "_"
+#define FUSE_FSTYPENAME_PREFIX OSXFUSE_FS_TYPE "_"
 
 /* Courtesy of the Finder, this is 1 less than what you think it should be. */
-#define FUSE_FSTYPENAME_MAXLEN (MFSTYPENAMELEN - sizeof(MACFUSE_FS_TYPE) - 2)
+#define FUSE_FSTYPENAME_MAXLEN (MFSTYPENAMELEN - sizeof(OSXFUSE_FS_TYPE) - 2)
 
 /* mount-time flags */
 #define FUSE_MOPT_IGNORE                 0x0000000000000000ULL
@@ -101,7 +101,7 @@ enum {
 
 /* The object. */
 
-#define FUSE_UNOTIFICATIONS_OBJECT MACFUSE_BUNDLE_IDENTIFIER ".unotifications"
+#define FUSE_UNOTIFICATIONS_OBJECT OSXFUSE_BUNDLE_IDENTIFIER ".unotifications"
 
 /* The notifications themselves. */
 

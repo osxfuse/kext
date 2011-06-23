@@ -84,7 +84,7 @@ extern lck_mtx_t      *fuse_device_mutex;
 
 #endif /* FUSE_TRACE_LK */
 
-#if M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 typedef struct _fusefs_recursive_lock fusefs_recursive_lock;
 
@@ -93,14 +93,14 @@ extern void fusefs_recursive_lock_free(fusefs_recursive_lock* lock);
 extern void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock);
 extern void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock);
 
-#if M_MACFUSE_ENABLE_LOCK_LOGGING
+#if M_OSXFUSE_ENABLE_LOCK_LOGGING
 extern lck_mtx_t *fuse_log_lock;
-#endif /* M_MACFUSE_ENABLE_LOCK_LOGGING */
+#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
 
-#if M_MACFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_HUGE_LOCK
 extern fusefs_recursive_lock *fuse_huge_lock;
-#endif /* M_MACFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
-#endif /* M_MACFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
 #endif /* _FUSE_LOCKING_H_ */

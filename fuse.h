@@ -3,8 +3,8 @@
  * Amit Singh <singh@>
  */
 
-#ifndef _MACFUSE_H_
-#define _MACFUSE_H_
+#ifndef _FUSE_H_
+#define _FUSE_H_
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -141,7 +141,7 @@ FUSE_OSMalloc(size_t size, OSMallocTag tag)
     void *addr = OSMalloc((uint32_t)size, tag);
 
     if (!addr) {
-        panic("MacFUSE: memory allocation failed (size=%lu)", size);
+        panic("OSXFUSE: memory allocation failed (size=%lu)", size);
     }
 
     FUSE_OSAddAtomic((UInt32)size, (SInt32 *)&fuse_memory_allocated);
@@ -174,7 +174,7 @@ FUSE_OSRealloc_nocopy(void *oldptr, size_t oldsize, size_t newsize)
     
     data = FUSE_OSMalloc(newsize, fuse_malloc_tag);
     if (!data) {
-        panic("MacFUSE: OSMalloc failed in realloc");
+        panic("OSXFUSE: OSMalloc failed in realloc");
     }
     
     FUSE_OSFree(oldptr, oldsize, fuse_malloc_tag);
@@ -206,4 +206,4 @@ typedef enum fuse_op_waitfor {
     FUSE_OP_FOREGROUNDED = 1,
 } fuse_op_waitfor_t;
 
-#endif /* _MACFUSE_H_ */
+#endif /* _FUSE_H_ */

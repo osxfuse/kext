@@ -13,13 +13,13 @@
 
 extern errno_t (**fuse_vnode_operations)(void *);
 
-#if M_MACFUSE_ENABLE_FIFOFS
+#if M_OSXFUSE_ENABLE_FIFOFS
 extern errno_t (**fuse_fifo_operations)(void *);
-#endif /* M_MACFUSE_ENABLE_FIFOFS */
+#endif /* M_OSXFUSE_ENABLE_FIFOFS */
 
-#if M_MACFUSE_ENABLE_SPECFS
+#if M_OSXFUSE_ENABLE_SPECFS
 extern errno_t (**fuse_spec_operations)(void *);
-#endif /* M_MACFUSE_ENABLE_SPECFS */
+#endif /* M_OSXFUSE_ENABLE_SPECFS */
 
 enum {
     kFSNodeMagic    = 'FUSE',
@@ -89,7 +89,7 @@ struct fuse_vnode_data {
     lck_mtx_t *createlock;
     void      *creator;
 
-#if M_MACFUSE_ENABLE_TSLOCKING
+#if M_OSXFUSE_ENABLE_TSLOCKING
     /*
      * The nodelock must be held when data in the FUSE node is accessed or
      * modified. Typically, we would take this lock at the beginning of a
@@ -107,9 +107,9 @@ struct fuse_vnode_data {
 
     /** miscellaneous **/
 
-#if M_MACFUSE_ENABLE_KQUEUE
+#if M_OSXFUSE_ENABLE_KQUEUE
     struct klist c_knotes;
-#endif /* M_MACFUSE_ENABLE_KQUEUE */
+#endif /* M_OSXFUSE_ENABLE_KQUEUE */
 };
 typedef struct fuse_vnode_data * fusenode_t;
 
@@ -175,7 +175,7 @@ void
 fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("MacFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
+    IOLog("OSXFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
 #endif
     return cache_enter(dvp, vp, cnp);
 }
@@ -185,7 +185,7 @@ void
 fuse_vncache_purge(vnode_t vp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("MacFUSE: cache purge vp=%p\n", vp);
+    IOLog("OSXFUSE: cache purge vp=%p\n", vp);
 #endif
     return cache_purge(vp);
 }
@@ -196,7 +196,7 @@ fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 {
     int ret = cache_lookup(dvp, vpp, cnp);
 #if FUSE_TRACE_VNCACHE
-    IOLog("MacFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
+    IOLog("OSXFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
           ret, dvp, *vpp, cnp->cn_nameptr);
 #endif
     return ret;
