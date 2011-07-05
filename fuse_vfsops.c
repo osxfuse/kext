@@ -317,10 +317,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfs_getnewfsid(mp);
     }
 
-    if (fusefs_args.altflags & FUSE_MOPT_KILL_ON_UNMOUNT) {
-        mntopts |= FSESS_KILL_ON_UNMOUNT;
-    }
-
     if (fusefs_args.altflags & FUSE_MOPT_NO_LOCALCACHES) {
         mntopts |= FSESS_NO_ATTRCACHE;
         mntopts |= FSESS_NO_READAHEAD;
@@ -591,8 +587,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 {
     int   err        = 0;
     int   flags      = 0;
-    int   needsignal = 0;
-    pid_t daemonpid  = 0;
 
     fuse_device_t          fdev;
     struct fuse_data      *data;
@@ -667,9 +661,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         return EBUSY;
     }
 
-    needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
-    daemonpid = data->daemonpid;
-
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
@@ -724,10 +715,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     }
 
     fuse_device_unlock(fdev);
-
-    if (daemonpid && needsignal) {
-        proc_signal(daemonpid, OSXFUSE_POSTUNMOUNT_SIGNAL);
-    }
 
     return 0;
 }
