@@ -845,7 +845,7 @@ main(int argc, char **argv)
 
     result = ioctl(fd, FUSEDEVIOCGETRANDOM, &drandom);
     if (result) {
-        errx(EX_UNAVAILABLE, "failed to negotiate with /dev/fuse%d", dindex);
+        errx(EX_UNAVAILABLE, "failed to negotiate with /dev/osxfuse%d", dindex);
     }
 
     args.altflags       = altflags;
@@ -865,9 +865,9 @@ main(int argc, char **argv)
 
     if (!fsname) {
         if (daemon_name) {
-            snprintf(args.fsname, MAXPATHLEN, "%s@fuse%d", daemon_name, dindex);
+            snprintf(args.fsname, MAXPATHLEN, "%s@osxfuse%d", daemon_name, dindex);
         } else {
-            snprintf(args.fsname, MAXPATHLEN, "instance@fuse%d", dindex);
+            snprintf(args.fsname, MAXPATHLEN, "instance@osxfuse%d", dindex);
         }
     } else {
         snprintf(args.fsname, MAXPATHLEN, "%s", fsname);
@@ -897,7 +897,7 @@ main(int argc, char **argv)
     result = mount(OSXFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
 
     if (result < 0) {
-        err(EX_OSERR, "failed to mount %s@/dev/fuse%d", mntpath, dindex);
+        err(EX_OSERR, "failed to mount %s@/dev/osxfuse%d", mntpath, dindex);
     } else {
         char *udata_keys[]   = { kFUSEMountPathKey };
         char *udata_values[] = { mntpath };
