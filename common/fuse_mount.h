@@ -32,7 +32,7 @@ struct fuse_mount_args {
     uint32_t init_timeout;        // timeout in seconds for daemon handshake
     uint32_t iosize;              // maximum size for reading or writing
     uint32_t random;              // random "secret" from device
-    uint32_t rdev;                // dev_t for the /dev/fuseN in question
+    uint32_t rdev;                // dev_t for the /dev/osxfuseN in question
 };
 typedef struct fuse_mount_args fuse_mount_args;
 
@@ -96,27 +96,5 @@ enum {
 #define FUSE_MINOR_MASK                 0x00FFFFFFUL
 #define FUSE_CUSTOM_FSID_DEVICE_MAJOR   255
 #define FUSE_CUSTOM_FSID_VAL1           0x55464553
-
-/* Notifications... */
-
-/* The object. */
-
-#define FUSE_UNOTIFICATIONS_OBJECT OSXFUSE_BUNDLE_IDENTIFIER ".unotifications"
-
-/* The notifications themselves. */
-
-#define FUSE_UNOTIFICATIONS_NOTIFY_INITED           \
-    FUSE_UNOTIFICATIONS_OBJECT ".inited"
-
-#define FUSE_UNOTIFICATIONS_NOTIFY_INITTIMEDOUT     \
-    FUSE_UNOTIFICATIONS_OBJECT ".inittimedout"
-
-#define FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED          \
-    FUSE_UNOTIFICATIONS_OBJECT ".mounted"
-
-/* User data keys. */
-
-#define kFUSEDevicePathKey "kFUSEDevicePath"
-#define kFUSEMountPathKey  "kFUSEMountPath"
 
 #endif /* _FUSE_MOUNT_H_ */

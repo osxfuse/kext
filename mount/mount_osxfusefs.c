@@ -443,70 +443,110 @@ fuse_process_mvals(void)
     }
 }
 
-static int
-post_notification(char   *name,
-                  char   *udata_keys[],
-                  char   *udata_values[],
-                  CFIndex nf_num)
+/* OSXFUSE notifications */
+
+enum osxfuse_notification {
+    NOTIFICATION_INIT_COMPLETED,
+    NOTIFICATION_INIT_TIMED_OUT,
+    NOTIFICATION_MOUNT
+};
+typedef enum osxfuse_notification osxfuse_notification_t;
+
+const char * const osxfuse_notification_names[] = {
+    "kOSXFUSEInitCompleted", // NOTIFICATION_INIT_COMPLETED
+    "kOSXFUSEInitTimedOut",  // NOTIFICATION_INIT_TIMED_OUT
+    "kOSXFUSEMount"          // NOTIFICATION_MOUNT
+};
+
+const char * const osxfuse_notification_object = OSXFUSE_IDENTIFIER;
+
+#ifdef MACFUSE_MODE
+#define OSXFUSE_MACFUSE_MODE_ENV "OSXFUSE_MACFUSE_MODE"
+
+#define MACFUSE_NOTIFICATION_OBJECT \
+"com.google.filesystems.fusefs.unotifications"
+
+const char * const macfuse_notification_names[] = {
+    MACFUSE_NOTIFICATION_OBJECT ".inited",       // NOTIFICATION_INIT_COMPLETED
+    MACFUSE_NOTIFICATION_OBJECT ".inittimedout", // NOTIFICATION_INIT_TIMED_OUT
+    MACFUSE_NOTIFICATION_OBJECT ".mounted"       // NOTIFICATION_MOUNT
+};
+
+const char * const macfuse_notification_object = MACFUSE_NOTIFICATION_OBJECT;
+#endif /* MACFUSE_MODE */
+
+/* User info keys */
+
+#define kFUSEDevicePathKey "kFUSEDevicePath"
+#define kFUSEMountPathKey  "kFUSEMountPath"
+
+static void
+post_notification(const osxfuse_notification_t  notification,
+                  const char                   *dict[][2],
+                  const int                     dict_count)
 {
-    CFIndex i;
-    CFStringRef nf_name   = NULL;
-    CFStringRef nf_object = NULL;
-    CFMutableDictionaryRef nf_udata  = NULL;
+    CFNotificationCenterRef notification_center =
+            CFNotificationCenterGetDistributedCenter();
 
-    CFNotificationCenterRef distributedCenter;
-    CFStringEncoding encoding = kCFStringEncodingUTF8;
+    CFStringRef            name      = NULL;
+    CFStringRef            object    = NULL;
+    CFMutableDictionaryRef user_info = NULL;
 
-    distributedCenter = CFNotificationCenterGetDistributedCenter();
+#ifdef MACFUSE_MODE
+    char *env_value = getenv(OSXFUSE_MACFUSE_MODE_ENV);
+    if (env_value != NULL && strcmp(env_value, "1") == 0) {
+        name   = CFStringCreateWithCString(kCFAllocatorDefault,
+                                           macfuse_notification_names[notification],
+                                           kCFStringEncodingUTF8);
+        object = CFStringCreateWithCString(kCFAllocatorDefault,
+                                           macfuse_notification_object,
+                                           kCFStringEncodingUTF8);
+    } else {
+#endif
+        name   = CFStringCreateWithCString(kCFAllocatorDefault,
+                                           osxfuse_notification_names[notification],
+                                           kCFStringEncodingUTF8);
+        object = CFStringCreateWithCString(kCFAllocatorDefault,
+                                           osxfuse_notification_object,
+                                           kCFStringEncodingUTF8);
+#ifdef MACFUSE_MODE
+    }
+#endif
 
-    if (!distributedCenter) {
-        return -1;
+    if (!name || !object) goto out;
+    if (dict_count == 0)  goto post;
+
+    user_info = CFDictionaryCreateMutable(kCFAllocatorDefault, dict_count,
+                                          &kCFCopyStringDictionaryKeyCallBacks,
+                                          &kCFTypeDictionaryValueCallBacks);
+
+    CFStringRef key;
+    CFStringRef value;
+    int         i;
+    for (i = 0; i < dict_count; i++) {
+        key   = CFStringCreateWithCString(kCFAllocatorDefault, dict[i][0],
+                                          kCFStringEncodingUTF8);
+        value = CFStringCreateWithCString(kCFAllocatorDefault, dict[i][1],
+                                          kCFStringEncodingUTF8);
+
+        if (!key || !value) {
+            if (key)   CFRelease(key);
+            if (value) CFRelease(value);
+            goto out;
+        }
+
+        CFDictionarySetValue(user_info, key, value);
+        CFRelease(key); key = NULL;
+        CFRelease(value); value = NULL;
     }
 
-    nf_name = CFStringCreateWithCString(kCFAllocatorDefault, name, encoding);
-      
-    nf_object = CFStringCreateWithCString(kCFAllocatorDefault,
-                                          FUSE_UNOTIFICATIONS_OBJECT,
-                                          encoding);
- 
-    nf_udata = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                         nf_num,
-                                         &kCFCopyStringDictionaryKeyCallBacks,
-                                         &kCFTypeDictionaryValueCallBacks);
-
-    if (!nf_name || !nf_object || !nf_udata) {
-        goto out;
-    }
-
-    for (i = 0; i < nf_num; i++) {
-        CFStringRef a_key = CFStringCreateWithCString(kCFAllocatorDefault,
-                                                      udata_keys[i],
-                                                      kCFStringEncodingUTF8);
-        CFStringRef a_value = CFStringCreateWithCString(kCFAllocatorDefault,
-                                                        udata_values[i],
-                                                        kCFStringEncodingUTF8);
-        CFDictionarySetValue(nf_udata, a_key, a_value);
-        CFRelease(a_key);
-        CFRelease(a_value);
-    }
-
-    CFNotificationCenterPostNotification(distributedCenter,
-                                         nf_name, nf_object, nf_udata, false);
-
+post:
+    CFNotificationCenterPostNotification(notification_center, name, object,
+                                         user_info, false);
 out:
-    if (nf_name) {
-        CFRelease(nf_name);
-    }
-
-    if (nf_object) {
-        CFRelease(nf_object);
-    }
-
-    if (nf_udata) {
-        CFRelease(nf_udata);
-    }
-
-    return 0;
+    if (name)      CFRelease(name);
+    if (object)    CFRelease(object);
+    if (user_info) CFRelease(user_info);
 }
 
 static int
@@ -899,11 +939,8 @@ main(int argc, char **argv)
     if (result < 0) {
         err(EX_OSERR, "failed to mount %s@/dev/osxfuse%d", mntpath, dindex);
     } else {
-        char *udata_keys[]   = { kFUSEMountPathKey };
-        char *udata_values[] = { mntpath };
-           
-        post_notification(FUSE_UNOTIFICATIONS_NOTIFY_MOUNTED,
-                          udata_keys, udata_values, 1);
+        const char *dict[][2] = { { kFUSEMountPathKey, mntpath } };
+        post_notification(NOTIFICATION_MOUNT, dict, 1);
     }
 
     signal_idx = -1;
