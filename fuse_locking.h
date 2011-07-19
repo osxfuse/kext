@@ -104,7 +104,7 @@ extern fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_maxcount(UInt32);
 extern void fusefs_recursive_lock_free(fusefs_recursive_lock *lock);
 extern void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock);
 extern void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock);
-extern boolean_t fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock);
+extern bool fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock);
 
 #if M_OSXFUSE_ENABLE_LOCK_LOGGING
 

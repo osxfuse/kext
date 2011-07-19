@@ -12,6 +12,8 @@
 #include "fuse_knote.h"
 #include "fuse_nodehash.h"
 
+#include <stdbool.h>
+
 extern errno_t (**fuse_vnode_operations)(void *);
 
 #if M_OSXFUSE_ENABLE_FIFOFS
@@ -56,7 +58,7 @@ struct fuse_vnode_data {
 
     /** check **/
     uint32_t   fMagic;
-    boolean_t  fInitialised;
+    bool       fInitialised;
 
     /** self **/
     vnode_t    vp;
