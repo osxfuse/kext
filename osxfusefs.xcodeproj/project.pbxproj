@@ -580,7 +580,7 @@
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				"MACOSX_DEPLOYMENT_TARGET[sdk=macosx10.6][arch=x86_64]" = 10.6;
-				MODULE_NAME = com.github.osxfuse.osxfusefs;
+				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
 				MODULE_START = osxfusefs_start;
 				MODULE_STOP = osxfusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
@@ -637,7 +637,7 @@
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				"MACOSX_DEPLOYMENT_TARGET[sdk=macosx10.6][arch=x86_64]" = 10.6;
-				MODULE_NAME = com.github.osxfuse.osxfusefs;
+				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
 				MODULE_START = osxfusefs_start;
 				MODULE_STOP = osxfusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
