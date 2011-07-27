@@ -416,7 +416,8 @@ again_locked:
 int
 fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 {
-    int err = 0, found = 0;
+    int err = 0;
+    bool found = false;
 
     struct fuse_device    *fdev;
     struct fuse_data      *data;
@@ -435,9 +436,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return EINVAL;
     }
 
-    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header),
-                       uio))
-        != 0) {
+    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header), uio))) {
         return err;
     }
 
@@ -463,7 +462,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 
     TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
         if (ftick->tk_unique == ohead.unique) {
-            found = 1;
+            found = true;
             fuse_aw_remove(ftick);
             break;
         }
