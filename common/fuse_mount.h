@@ -28,7 +28,7 @@ struct fuse_mount_args {
     uint32_t blocksize;           // fictitious block size of our "storage"
     uint32_t daemon_timeout;      // timeout in seconds for upcalls to daemon
     uint32_t fsid;                // optional custom value for part of fsid[0]
-    uint32_t fssubtype;           // file system sub type id (type is "fusefs")
+    uint32_t fssubtype;           // file system sub type id (type is "osxfusefs")
     uint32_t init_timeout;        // timeout in seconds for daemon handshake
     uint32_t iosize;              // maximum size for reading or writing
     uint32_t random;              // random "secret" from device

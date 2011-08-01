@@ -22,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/errno.h>
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -36,6 +37,11 @@
 #include <fuse_param.h>
 #include <fuse_version.h>
 
+#ifdef MACFUSE_MODE
+#define OSXFUSE_MACFUSE_MODE_ENV  "OSXFUSE_MACFUSE_MODE"
+#define OSXFUSE_KEXT_MACFUSE_MODE "osxfuse.control.macfuse_mode"
+#endif
+
 int
 main(__unused int argc, __unused const char *argv[])
 {
@@ -46,7 +52,7 @@ main(__unused int argc, __unused const char *argv[])
     size_t version_len = MAXHOSTNAMELEN;
     size_t version_len_desired = 0;
     struct vfsconf vfc = { 0 };
-
+    
     result = getvfsbyname(OSXFUSE_FS_TYPE, &vfc);
     if (result) { /* OSXFUSE is not already loaded */
         result = -1;
@@ -143,5 +149,17 @@ need_loading:
     }
     
 out:
+#ifdef MACFUSE_MODE
+    {
+        char *env_value;
+        env_value = getenv(OSXFUSE_MACFUSE_MODE_ENV);
+        if (env_value != NULL && strcmp(env_value, "1") == 0) {
+            int32_t enabled = 1;
+            size_t  length = 4;
+            sysctlbyname(OSXFUSE_KEXT_MACFUSE_MODE, NULL, 0, &enabled, length);
+        }
+    }
+#endif
+    
     _exit(result);
 }
