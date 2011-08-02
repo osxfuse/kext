@@ -19,6 +19,7 @@
 
 #include <fuse_ioctl.h>
 
+#include <stdbool.h>
 #include <sys/ubc.h>
 
 #if M_OSXFUSE_ENABLE_KUNC
@@ -127,28 +128,26 @@ fuse_isautocache_mp(mount_t mp)
     return (fuse_get_mpdata(mp)->dataflags & FSESS_AUTO_CACHE);
 }
 
-#define fuse_isdeadfs_nop(vp) 0
-
 static __inline__
-int
+bool
 fuse_isdeadfs_mp(mount_t mp)
 {
-    return (fuse_get_mpdata(mp)->dataflags & FSESS_DEAD);
+    return fdata_dead_get(fuse_get_mpdata(mp));
 }
 
 static __inline__
-int
+bool
 fuse_isdeadfs(vnode_t vp)
 {
     if (VTOFUD(vp)->flag & FN_REVOKED) {
-        return 1;
+        return true;
     }
 
     return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
 static __inline__
-int
+bool
 fuse_isdeadfs_fs(vnode_t vp)
 {
     return fuse_isdeadfs_mp(vnode_mount(vp));
