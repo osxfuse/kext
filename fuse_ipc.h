@@ -186,12 +186,6 @@ struct fuse_data {
 #endif
 };
 
-enum {
-    FUSE_DAEMON_TIMEOUT_NONE       = 0,
-    FUSE_DAEMON_TIMEOUT_PROCESSING = 1,
-    FUSE_DAEMON_TIMEOUT_DEAD       = 2,
-};
-
 /* Not-Implemented Bits */
 #define FSESS_NOIMPLBIT(MSG)      (1ULL << FUSE_##MSG)
 
