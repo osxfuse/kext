@@ -1183,11 +1183,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
             respsize = fdi.tick->tk_aw_bufsize;
 
-            if (respsize < 0) { /* Cannot really happen... */
-                err = EIO;
-                goto out;
-            }
-
             buf_setresid(bp, (uint32_t)(buf_resid(bp) - respsize));
             bufdat += respsize;
             offset += respsize;
