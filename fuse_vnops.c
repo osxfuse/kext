@@ -833,8 +833,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 fake:
     bzero(vap, sizeof(*vap));
     VATTR_RETURN(vap, va_type, vnode_vtype(vp));
-    VATTR_RETURN(vap, va_uid, data->daemoncred->cr_uid);
-    VATTR_RETURN(vap, va_gid, data->daemoncred->cr_gid);
+    VATTR_RETURN(vap, va_uid, kauth_cred_getuid(data->daemoncred));
+    VATTR_RETURN(vap, va_gid, kauth_cred_getgid(data->daemoncred));
     VATTR_RETURN(vap, va_mode, S_IRWXU);
 
     return 0;

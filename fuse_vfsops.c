@@ -467,7 +467,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     if (fuse_vfs_context_issuser(context) &&
-        vfs_context_ucred(context)->cr_uid != data->daemoncred->cr_uid) {
+        kauth_cred_getuid(vfs_context_ucred(context)) != kauth_cred_getuid(data->daemoncred)) {
         fuse_device_unlock(fdev);
         err = EPERM;
         goto out;
@@ -536,7 +536,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
            vfsstatfsp->f_files  = vfs_attr.f_files;
            vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
            /* vfsstatfsp->f_fsid already handled above */
-           vfsstatfsp->f_owner  = data->daemoncred->cr_uid;
+           vfsstatfsp->f_owner  = kauth_cred_getuid(data->daemoncred);
            vfsstatfsp->f_flags  = vfs_flags(mp);
            /* vfsstatfsp->f_fstypename already handled above */
            /* vfsstatfsp->f_mntonname handled elsewhere */

@@ -922,8 +922,8 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
 
     if (context) {
         ihead->pid = vfs_context_pid(context);
-        ihead->uid = vfs_context_ucred(context)->cr_uid;
-        ihead->gid = vfs_context_ucred(context)->cr_gid;
+        ihead->uid = kauth_cred_getuid(vfs_context_ucred(context));
+        ihead->gid = kauth_cred_getgid(vfs_context_ucred(context));
     } else {
         /* XXX: could use more thought */
         ihead->pid = proc_pid((proc_t)current_proc());
