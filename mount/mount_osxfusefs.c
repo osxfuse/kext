@@ -915,8 +915,8 @@ main(int argc, char **argv)
 
     if (fstypename) {
         if (strlen(fstypename) > FUSE_FSTYPENAME_MAXLEN) {
-            errx(EX_USAGE, "fstypename can be at most %d characters",
-                 FUSE_FSTYPENAME_MAXLEN);
+            errx(EX_USAGE, "fstypename can be at most %lu characters",
+                 (long unsigned int) FUSE_FSTYPENAME_MAXLEN);
         } else {
             snprintf(args.fstypename, MFSTYPENAMELEN, "%s", fstypename);
         }
