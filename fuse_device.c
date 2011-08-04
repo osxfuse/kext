@@ -330,15 +330,13 @@ again_locked:
             fuse_lck_mtx_unlock(data->ms_mtx);
             return EAGAIN;
         }
+
         err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
         if (err != 0) {
             fuse_lck_mtx_unlock(data->ms_mtx);
             return (fdata_dead_get(data) ? ENODEV : err);
         }
-        ftick = fuse_ms_pop(data);
-    }
 
-    if (!ftick) {
         goto again_locked;
     }
 
