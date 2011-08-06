@@ -102,6 +102,23 @@ fuse_device_close_final(fuse_device_t fdev)
     }
 }
 
+/* Must be called under data->aw_mtx mutex */
+static __inline__
+void
+fuse_reject_answers(struct fuse_data *data)
+{
+    struct fuse_ticket *ftick;
+
+    while ((ftick = fuse_aw_pop(data))) {
+        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+        fticket_set_answered(ftick);
+        ftick->tk_aw_errno = ENOTCONN;
+        fuse_wakeup(ftick);
+        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+        fuse_ticket_release(ftick);
+    }
+}
+
 /* /dev/osxfuseN implementation */
 
 d_open_t   fuse_device_open;
@@ -256,17 +273,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
         /* Uh-oh, the device is closing but we're still mounted. */
 
-        struct fuse_ticket *ftick;
-
-        while ((ftick = fuse_aw_pop(data))) {
-            fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-            fticket_set_answered(ftick);
-            ftick->tk_aw_errno = ENOTCONN;
-            fuse_wakeup(ftick);
-            fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-            fuse_ticket_release(ftick);
-        }
-
+        fuse_reject_answers(data);
         fuse_lck_mtx_unlock(data->aw_mtx);
 
         /* Left mpdata for unmount to destroy. */
@@ -767,31 +774,22 @@ fuse_device_kill(int unit, struct proc *p)
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
-    if (fdev->data) {
+    struct fuse_data *data = fdev->data;
+    if (data) {
         error = EPERM;
         if (p) {
             kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                (fuse_match_cred(data->daemoncred, request_cred) == 0)) {
 
                 /* The following can block. */
-                fdata_set_dead(fdev->data);
+                fdata_set_dead(data);
+
+                fuse_lck_mtx_lock(data->aw_mtx);
+                fuse_reject_answers(data);
+                fuse_lck_mtx_unlock(data->aw_mtx);
 
                 error = 0;
-
-                fuse_lck_mtx_lock(fdev->data->aw_mtx);
-                {
-                    struct fuse_ticket *ftick;
-                    while ((ftick = fuse_aw_pop(fdev->data))) {
-                        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-                        fticket_set_answered(ftick);
-                        ftick->tk_aw_errno = ENOTCONN;
-                        fuse_wakeup(ftick);
-                        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-                        fuse_ticket_release(ftick);
-                    }
-                }
-                fuse_lck_mtx_unlock(fdev->data->aw_mtx);
             }
             kauth_cred_unref(&request_cred);
         }
