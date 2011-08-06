@@ -272,13 +272,8 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         /* Left mpdata for unmount to destroy. */
 
     } else {
-
         /* We're not mounted. Can destroy mpdata. */
-
-        fdev->data   = NULL;
-        fdev->pid    = -1;
-        fdev->random = 0;
-        fdata_destroy(data);
+        fuse_device_close_final(fdev);
     }
 
     FUSE_DEVICE_LOCAL_UNLOCK(fdev);
