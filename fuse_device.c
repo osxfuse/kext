@@ -109,6 +109,7 @@ fuse_reject_answers(struct fuse_data *data)
 {
     struct fuse_ticket *ftick;
 
+    fuse_lck_mtx_lock(data->aw_mtx);
     while ((ftick = fuse_aw_pop(data))) {
         fuse_lck_mtx_lock(ftick->tk_aw_mtx);
         fticket_set_answered(ftick);
@@ -117,6 +118,7 @@ fuse_reject_answers(struct fuse_data *data)
         fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
         fuse_ticket_release(ftick);
     }
+    fuse_lck_mtx_unlock(data->aw_mtx);
 }
 
 /* /dev/osxfuseN implementation */
@@ -263,22 +265,13 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     data->dataflags &= ~FSESS_OPENED;
 
-    fuse_lck_mtx_lock(data->aw_mtx);
+    fuse_reject_answers(data);
 
 #if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&data->d_rsel);
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
-    if (data->mount_state == FM_MOUNTED) {
-
-        /* Uh-oh, the device is closing but we're still mounted. */
-
-        fuse_reject_answers(data);
-        fuse_lck_mtx_unlock(data->aw_mtx);
-
-        /* Left mpdata for unmount to destroy. */
-
-    } else {
+    if (data->mount_state != FM_MOUNTED) {
         /* We're not mounted. Can destroy mpdata. */
         fuse_device_close_final(fdev);
     }
@@ -785,10 +778,7 @@ fuse_device_kill(int unit, struct proc *p)
                 /* The following can block. */
                 fdata_set_dead(data);
 
-                fuse_lck_mtx_lock(data->aw_mtx);
                 fuse_reject_answers(data);
-                fuse_lck_mtx_unlock(data->aw_mtx);
-
                 error = 0;
             }
             kauth_cred_unref(&request_cred);
