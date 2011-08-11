@@ -493,7 +493,7 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__osxfuse_version_api_minor,
     &sysctl__osxfuse_version_number,
     &sysctl__osxfuse_version_string,
-    (struct sysctl_oid *)0
+    NULL
 };
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
@@ -531,7 +531,7 @@ static struct sysctl_oid *fuse_sysctl_list_macfuse[] =
     &sysctl__macfuse_version_api_minor,
     &sysctl__macfuse_version_number,
     &sysctl__macfuse_version_string,
-    (struct sysctl_oid *)0
+    NULL
 };
 
 static void

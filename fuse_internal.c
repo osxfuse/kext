@@ -1214,7 +1214,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             if (vtype == VDIR) {
                 op = FUSE_READDIR;
             }
-            fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
+            fdisp_make_vp(&fdi, op, vp, NULL);
 
             fri = fdi.indata;
             fri->fh = fufh->fh_id;
@@ -1295,7 +1295,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fdi.iosize = sizeof(*fwi);
             op = FUSE_WRITE;
 
-            fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
+            fdisp_make_vp(&fdi, op, vp, NULL);
 
             /* Take the size of the write buffer into account */
             fdi.finh->len += (typeof(fdi.finh->len))chunksize;
@@ -1530,7 +1530,7 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
     fdi.tick = ftick;
 
-    fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0,
+    fuse_internal_forget_send(ftick->tk_data->mp, NULL,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
     fuse_ticket_release(fdi.tick);
@@ -1592,8 +1592,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     struct fuse_interrupt_in *fii;
 
     fdisp_init(&fdi, sizeof(*fii));
-    fdisp_make(&fdi, FUSE_INTERRUPT, ftick->tk_data->mp, (uint64_t)0,
-               (vfs_context_t)0);
+    fdisp_make(&fdi, FUSE_INTERRUPT, ftick->tk_data->mp, (uint64_t)0, NULL);
 
     fii = fdi.indata;
     fii->unique = ftick->tk_unique;

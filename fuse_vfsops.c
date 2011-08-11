@@ -167,7 +167,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     size_t len;
 
-    fuse_device_t      fdev = FUSE_DEVICE_NULL;
+    fuse_device_t      fdev = NULL;
     struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
