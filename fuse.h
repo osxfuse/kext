@@ -108,8 +108,6 @@ extern int32_t  fuse_vnodes_current;
         }                                                                 \
     }
 
-#define E_NONE 0
-
 #define fuse_round_page_32(x) \
     (((uint32_t)(x) + 0x1000 - 1) & ~(0x1000 - 1))
 

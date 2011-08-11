@@ -3527,7 +3527,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
     offset = original_offset;
 
     if (original_resid == 0) {
-        return E_NONE;
+        return 0;
     }
 
     if (original_offset < 0) {
