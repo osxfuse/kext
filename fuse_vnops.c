@@ -318,7 +318,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     struct fuse_dispatcher *fdip = &fdi;
 
     int err;
-    int gone_good_old = 0;
+    bool gone_good_old = false;
 
     struct fuse_data *data = NULL;
 
@@ -376,7 +376,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     goto bringup;
 
 good_old:
-    gone_good_old = 1;
+    gone_good_old = true;
     fmni.mode = mode; /* fvdat->flags; */
     fmni.rdev = 0;
     fuse_internal_newentry_makerequest(vnode_mount(dvp), parent_nodeid, cnp,

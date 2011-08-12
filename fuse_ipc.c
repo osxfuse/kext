@@ -655,13 +655,13 @@ fuse_ticket_fetch(struct fuse_data *data)
 void
 fuse_ticket_drop(struct fuse_ticket *ftick)
 {
-    int die = 0;
+    bool die = false;
 
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||
         (ftick->tk_flag & FT_KILLL)) {
-        die = 1;
+        die = true;
     } else {
         fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
         fticket_refresh(ftick);
