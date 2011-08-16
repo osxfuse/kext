@@ -130,11 +130,11 @@ fusefs_isordered(fusenode_t cp1, fusenode_t cp2)
         return 0;
     }
 
-    if (cp1 == NULL || cp2 == (fusenode_t )0xffffffff) {
+    if (cp1 == NULL || cp2 == (fusenode_t)0xffffffff) {
         return 1;
     }
 
-    if (cp2 == NULL || cp1 == (fusenode_t )0xffffffff) {
+    if (cp2 == NULL || cp1 == (fusenode_t)0xffffffff) {
         return 0;
     }
 
@@ -181,8 +181,8 @@ fusefs_lockfour(fusenode_t cp1, fusenode_t cp2, fusenode_t cp3, fusenode_t cp4,
         b[0] = cp4; b[1] = cp3;
     }
 
-    a[2] = (fusenode_t )0xffffffff;  /* sentinel value */
-    b[2] = (fusenode_t )0xffffffff;  /* sentinel value */
+    a[2] = (fusenode_t)0xffffffff;  /* sentinel value */
+    b[2] = (fusenode_t)0xffffffff;  /* sentinel value */
 
     /*
      * Build the lock list, skipping over duplicates

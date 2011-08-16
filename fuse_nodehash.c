@@ -881,7 +881,7 @@ HNodeScrubDone(HNodeRef hnode)
      * just add it blindly.
      */
 
-    assert(!hnode->waiting );
+    assert(!hnode->waiting);
     FUSE_OSFree(hnode, sizeof(*hnode) + gFSNodeSize, gOSMallocTag);
 }
 
