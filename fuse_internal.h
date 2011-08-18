@@ -21,7 +21,6 @@
 #include <sys/uio.h>
 #include <sys/vnode.h>
 #include <sys/xattr.h>
-#include <AvailabilityMacros.h>
 
 #include <fuse_ioctl.h>
 #include "fuse_ipc.h"
@@ -71,55 +70,15 @@ extern const char *vnode_getname(vnode_t vp);
 extern void  vnode_putname(const char *name);
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED < 1070
-static __inline__
-uid_t
-kauth_cred_getruid(kauth_cred_t _cred)
-{
-    return _cred->cr_ruid;
-}
-
-static __inline__
-uid_t
-kauth_cred_getsvuid(kauth_cred_t _cred)
-{
-    return _cred->cr_svuid;
-}
-
-static __inline__
-gid_t
-kauth_cred_getrgid(kauth_cred_t _cred)
-{
-    return _cred->cr_rgid;
-}
-
-static __inline__
-gid_t
-kauth_cred_getsvgid(kauth_cred_t _cred)
-{
-    return _cred->cr_svgid;
-}
-#endif /* MAC_OS_X_VERSION_MIN_REQUIRED < 1070 */
-
 static __inline__
 int
 fuse_match_cred(kauth_cred_t daemoncred, kauth_cred_t requestcred)
 {
-    uid_t daemon_uid = kauth_cred_getuid(daemoncred);
-    gid_t daemon_gid = kauth_cred_getgid(daemoncred);
-    
-    if ((daemon_uid == kauth_cred_getuid(requestcred))      &&
-        (daemon_uid == kauth_cred_getruid(requestcred))     &&
-        
-        // THINK_ABOUT_THIS_LATER
-        // (daemon_uid == kauth_cred_getsvuid(requestcred)) &&
-        
-        (daemon_gid == kauth_cred_getgid(requestcred))      &&
-        (daemon_gid == kauth_cred_getrgid(requestcred))     &&  
-        (daemon_gid == kauth_cred_getsvgid(requestcred))) {
+    if ((kauth_cred_getuid(daemoncred) == kauth_cred_getuid(requestcred)) &&
+        (kauth_cred_getgid(daemoncred) == kauth_cred_getgid(requestcred))) {
         return 0;
-    }   
-    
+    }
+
     return EPERM;
 }
 
