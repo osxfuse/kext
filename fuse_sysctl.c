@@ -3,24 +3,21 @@
  * Amit Singh <singh@>
  */
 
-#include <sys/systm.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <kern/thread.h>
-#include <kern/locks.h>
-#include <mach/kern_return.h>
-
-#include "fuse.h"
-#include "fuse_device.h"
 #include "fuse_sysctl.h"
-#include <fuse_param.h>
-#include <fuse_version.h>
 
-lck_grp_t *osxfuse_lock_group  = NULL;
-lck_rw_t  *osxfuse_sysctl_lock = NULL;
+#include "fuse_device.h"
+
+#include <sys/sysctl.h>
+
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
+static lck_grp_t *osxfuse_lock_group  = NULL;
+static lck_mtx_t *osxfuse_sysctl_lock = NULL;
 
 static thread_t osxfuse_sysctl_macfuse_thread;
 static void osxfuse_thread_macfuse_mode(void *, wait_result_t);
+
+#endif
 
 /* NB: none of these are bigger than unsigned 32-bit. */
 
@@ -37,7 +34,9 @@ int32_t  fuse_iov_current            = 0;                                  // r
 uint32_t fuse_iov_permanent_bufsize  = FUSE_DEFAULT_IOV_PERMANENT_BUFSIZE; // rw
 int32_t  fuse_kill                   = -1;                                 // w
 int32_t  fuse_print_vnodes           = -1;                                 // w
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 int32_t  fuse_macfuse_mode           = 0;                                  // rw
+#endif
 uint32_t fuse_lookup_cache_hits      = 0;                                  // r
 uint32_t fuse_lookup_cache_misses    = 0;                                  // r
 uint32_t fuse_lookup_cache_overrides = 0;                                  // r
@@ -64,6 +63,7 @@ SYSCTL_NODE(_osxfuse, OID_AUTO, tunables, CTLFLAG_RW, 0,
 SYSCTL_NODE(_osxfuse, OID_AUTO, version, CTLFLAG_RW, 0,
             "OSXFUSE Version Information");
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 SYSCTL_DECL(_macfuse);
 SYSCTL_NODE(, OID_AUTO, macfuse, CTLFLAG_RW, 0,
             "MacFUSE Sysctl Interface");
@@ -77,6 +77,7 @@ SYSCTL_NODE(_macfuse, OID_AUTO, tunables, CTLFLAG_RW, 0,
             "MacFUSE Tunables");
 SYSCTL_NODE(_macfuse, OID_AUTO, version, CTLFLAG_RW, 0,
             "MacFUSE Version Information");
+#endif
 
 /* fuse.control */
 
@@ -143,22 +144,24 @@ sysctl_osxfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS
     return error;
 }
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
 int
 sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
 {
     int error = 0;
     (void)oidp;
-    
+
     if (arg1) {
         error = SYSCTL_OUT(req, arg1, sizeof(uint32_t));
     } else {
         error = SYSCTL_OUT(req, &arg2, sizeof(uint32_t));
     }
-    
+
     if (error || !req->newptr) {
         return error;
     }
-    
+
     if (!arg1) {
         error = EPERM;
     } else {
@@ -170,9 +173,9 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
             } else {
                 fuse_macfuse_mode = 0;
             }
-            
-            lck_rw_lock_exclusive(osxfuse_sysctl_lock);
-            
+
+            lck_mtx_lock(osxfuse_sysctl_lock);
+
             kern_return_t kr;
             kr = kernel_thread_start(osxfuse_thread_macfuse_mode, &fuse_macfuse_mode, &osxfuse_sysctl_macfuse_thread);
             if (kr != KERN_SUCCESS) {
@@ -180,9 +183,11 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
             }
         }
     }
-    
+
     return error;
 }
+
+#endif
 
 int
 sysctl_osxfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS
@@ -252,53 +257,57 @@ SYSCTL_PROC(_osxfuse_control,   // our parent
             "I",                // our data type (integer)
             "OSXFUSE Controls: Print Vnodes for the Given File System");
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
 SYSCTL_PROC(_osxfuse_control,   // our parent
             OID_AUTO,           // automatically assign object ID
             macfuse_mode,       // our name
-            
+
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_RW),
-            
+
             &fuse_macfuse_mode, // location of our data
             0,                  // argument passed to our handler
-            
+
             // our handler function
             sysctl_osxfuse_control_macfuse_mode_handler,
-            
+
             "I",                // our data type (integer)
             "OSXFUSE Controls: Enable/Disable MacFUSE compatibility mode");
 
 SYSCTL_PROC(_macfuse_control, // our parent
             OID_AUTO,         // automatically assign object ID
             kill,             // our name
-            
+
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_WR | CTLFLAG_ANYBODY | CTLFLAG_LOCKED),
-            
+
             &fuse_kill,       // location of our data
             0,                // argument passed to our handler
-            
+
             // our handler function
             sysctl_osxfuse_control_kill_handler,
-            
+
             "I",              // our data type (integer)
             "MacFUSE Controls: Kill the Given File System");
 
 SYSCTL_PROC(_macfuse_control,   // our parent
             OID_AUTO,           // automatically assign object ID
             print_vnodes,       // our name
-            
+
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_WR | CTLFLAG_LOCKED),
-            
+
             &fuse_print_vnodes, // location of our data
             0,                  // argument passed to our handler
-            
+
             // our handler function
             sysctl_osxfuse_control_print_vnodes_handler,
-            
+
             "I",                // our data type (integer)
             "MacFUSE Controls: Print Vnodes for the Given File System");
+
+#endif
 
 /* fuse.counters */
 SYSCTL_INT(_osxfuse_counters, OID_AUTO, filehandle_reuse, CTLFLAG_RD,
@@ -314,6 +323,8 @@ SYSCTL_INT(_osxfuse_counters, OID_AUTO, lookup_cache_overrides,
 SYSCTL_INT(_osxfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
            &fuse_realloc_count, 0, "");
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
 SYSCTL_INT(_macfuse_counters, OID_AUTO, filehandle_reuse, CTLFLAG_RD,
            &fuse_fh_reuse_count, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, filehandle_upcalls, CTLFLAG_RD,
@@ -326,6 +337,8 @@ SYSCTL_INT(_macfuse_counters, OID_AUTO, lookup_cache_overrides,
            CTLFLAG_RD, &fuse_lookup_cache_overrides, 0, "");
 SYSCTL_INT(_macfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
            &fuse_realloc_count, 0, "");
+
+#endif
 
 /* fuse.resourceusage */
 SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, filehandles, CTLFLAG_RD,
@@ -343,6 +356,8 @@ SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, mounts, CTLFLAG_RD,
 SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
            &fuse_vnodes_current, 0, "");
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, filehandles, CTLFLAG_RD,
            &fuse_fh_current, 0, "");
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, filehandles_zombies, CTLFLAG_RD,
@@ -358,6 +373,7 @@ SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, mounts, CTLFLAG_RD,
 SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
            &fuse_vnodes_current, 0, "");
 
+#endif
 
 /* fuse.tunables */
 SYSCTL_INT(_osxfuse_tunables, OID_AUTO, admin_group, CTLFLAG_RW,
@@ -378,9 +394,11 @@ SYSCTL_PROC(_osxfuse_tunables,          // our parent
             (CTLTYPE_INT | CTLFLAG_WR), // type flag/access flag
             &fuse_userkernel_bufsize,   // location of our data
             0,                          // argument passed to our handler
-            sysctl_osxfuse_tunables_userkernel_bufsize_handler,    
+            sysctl_osxfuse_tunables_userkernel_bufsize_handler,
             "I",                        // our data type (integer)
             "OSXFUSE Tunables");        // our description
+
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 
 SYSCTL_INT(_macfuse_tunables, OID_AUTO, admin_group, CTLFLAG_RW,
            &fuse_admin_group, 0, "");
@@ -400,9 +418,11 @@ SYSCTL_PROC(_macfuse_tunables,          // our parent
             (CTLTYPE_INT | CTLFLAG_WR), // type flag/access flag
             &fuse_userkernel_bufsize,   // location of our data
             0,                          // argument passed to our handler
-            sysctl_osxfuse_tunables_userkernel_bufsize_handler,    
+            sysctl_osxfuse_tunables_userkernel_bufsize_handler,
             "I",                        // our data type (integer)
             "MacFUSE Tunables");        // our description
+
+#endif
 
 /* fuse.version */
 SYSCTL_INT(_osxfuse_version, OID_AUTO, api_major, CTLFLAG_RD,
@@ -414,6 +434,8 @@ SYSCTL_STRING(_osxfuse_version, OID_AUTO, number, CTLFLAG_RD,
 SYSCTL_STRING(_osxfuse_version, OID_AUTO, string, CTLFLAG_RD,
               OSXFUSE_VERSION ", " OSXFUSE_TIMESTAMP, 0, "");
 
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+
 SYSCTL_INT(_macfuse_version, OID_AUTO, api_major, CTLFLAG_RD,
            &fuse_api_major, 0, "");
 SYSCTL_INT(_macfuse_version, OID_AUTO, api_minor, CTLFLAG_RD,
@@ -422,6 +444,8 @@ SYSCTL_STRING(_macfuse_version, OID_AUTO, number, CTLFLAG_RD,
               OSXFUSE_VERSION, 0, "");
 SYSCTL_STRING(_macfuse_version, OID_AUTO, string, CTLFLAG_RD,
               OSXFUSE_VERSION ", " OSXFUSE_TIMESTAMP, 0, "");
+
+#endif
 
 static struct sysctl_oid *fuse_sysctl_list[] =
 {
@@ -432,7 +456,9 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__osxfuse_version,
     &sysctl__osxfuse_control_kill,
     &sysctl__osxfuse_control_print_vnodes,
+#if OSXFUSE_ENABLE_MACFUSE_MODE
     &sysctl__osxfuse_control_macfuse_mode,
+#endif
     &sysctl__osxfuse_counters_filehandle_reuse,
     &sysctl__osxfuse_counters_filehandle_upcalls,
     &sysctl__osxfuse_counters_lookup_cache_hits,
@@ -459,6 +485,8 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__osxfuse_version_string,
     (struct sysctl_oid *)0
 };
+
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 
 static struct sysctl_oid *fuse_sysctl_list_macfuse[] =
 {
@@ -500,7 +528,7 @@ static void
 fuse_sysctl_macfuse_start(void)
 {
     int i;
-    
+
     sysctl_register_oid(&sysctl__macfuse);
     for (i = 0; fuse_sysctl_list_macfuse[i]; i++) {
         sysctl_register_oid(fuse_sysctl_list_macfuse[i]);
@@ -511,7 +539,7 @@ static void
 fuse_sysctl_macfuse_stop(void)
 {
     int i;
-    
+
     for (i = 0; fuse_sysctl_list_macfuse[i]; i++) {
         sysctl_unregister_oid(fuse_sysctl_list_macfuse[i]);
     }
@@ -519,26 +547,35 @@ fuse_sysctl_macfuse_stop(void)
 }
 
 static void
-osxfuse_thread_macfuse_mode(void * parameter, __unused wait_result_t wait_result) {
-    int enabled = *((int *) parameter);
-    if (enabled) {
+osxfuse_thread_macfuse_mode(void * parameter, __unused wait_result_t wait_result)
+{
+    if (parameter == NULL) {
+        IOLog("OSXFUSE: failed to change state of MacFUSE mode\n");
+        goto out;
+    }
+
+    int enable = *((int *) parameter);
+    if (enable) {
         fuse_sysctl_macfuse_start();
     } else {
         fuse_sysctl_macfuse_stop();
     }
-    
-    lck_rw_unlock_exclusive(osxfuse_sysctl_lock);
 
+out:
+    lck_mtx_unlock(osxfuse_sysctl_lock);
     thread_terminate(current_thread());
 }
 
+#endif
+
 void
 fuse_sysctl_start(void)
-{        
-    osxfuse_lock_group  = lck_grp_alloc_init("osxfuse", NULL);
-    osxfuse_sysctl_lock = lck_rw_alloc_init(osxfuse_lock_group, NULL);
-    
+{
     int i;
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+    osxfuse_lock_group  = lck_grp_alloc_init("osxfuse", NULL);
+    osxfuse_sysctl_lock = lck_mtx_alloc_init(osxfuse_lock_group, NULL);
+#endif
 
     sysctl_register_oid(&sysctl__osxfuse);
     for (i = 0; fuse_sysctl_list[i]; i++) {
@@ -548,7 +585,7 @@ fuse_sysctl_start(void)
 
 void
 fuse_sysctl_stop(void)
-{    
+{
     int i;
 
     for (i = 0; fuse_sysctl_list[i]; i++) {
@@ -556,15 +593,17 @@ fuse_sysctl_stop(void)
     }
     sysctl_unregister_oid(&sysctl__osxfuse);
 
-    lck_rw_lock_exclusive(osxfuse_sysctl_lock);
-    
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+    lck_mtx_lock(osxfuse_sysctl_lock);
+
     thread_deallocate(osxfuse_sysctl_macfuse_thread);
     if (fuse_macfuse_mode) {
         fuse_sysctl_macfuse_stop();
     }
-    
-    lck_rw_unlock_exclusive(osxfuse_sysctl_lock);
-    
-    lck_rw_free(osxfuse_sysctl_lock, osxfuse_lock_group);
+
+    lck_mtx_unlock(osxfuse_sysctl_lock);
+
+    lck_mtx_free(osxfuse_sysctl_lock, osxfuse_lock_group);
     lck_grp_free(osxfuse_lock_group);
+#endif
 }

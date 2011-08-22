@@ -11,8 +11,15 @@
 #ifndef _FUSE_LOCKING_H_
 #define _FUSE_LOCKING_H_
 
+#include "fuse.h"
+
 #include "fuse_node.h"
-#include <IOKit/IOLocks.h>
+
+#include <libkern/locks.h>
+
+#ifdef FUSE_TRACE_LK
+#  include <sys/vm.h>
+#endif
 
 enum fusefslocktype {
     FUSEFS_SHARED_LOCK    = 1,
@@ -89,16 +96,96 @@ extern lck_mtx_t      *fuse_device_mutex;
 typedef struct _fusefs_recursive_lock fusefs_recursive_lock;
 
 extern fusefs_recursive_lock* fusefs_recursive_lock_alloc(void);
-extern void fusefs_recursive_lock_free(fusefs_recursive_lock* lock);
+extern fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_maxcount(UInt32);
+extern void fusefs_recursive_lock_free(fusefs_recursive_lock *lock);
 extern void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock);
 extern void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock);
+extern boolean_t fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock);
 
 #if M_OSXFUSE_ENABLE_LOCK_LOGGING
+
 extern lck_mtx_t *fuse_log_lock;
+
+#define rawlog(msg, args...) IOLog(msg, ##args)
+
+#define log(fmt, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog(fmt, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+
+#define log_enter(params_format, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog("[%s:%d] Entering %s: ", __FILE__, __LINE__, __FUNCTION__); \
+		rawlog(params_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+
+#define log_leave(return_format, args...) \
+	do { \
+		lck_mtx_lock(fuse_log_lock); \
+		rawlog("[%s:%d] Leaving %s: ", __FILE__, __LINE__, __FUNCTION__); \
+		rawlog(return_format, ##args); \
+		rawlog("\n"); \
+		lck_mtx_unlock(fuse_log_lock); \
+	} while(0)
+#else /* !M_OSXFUSE_ENABLE_LOCK_LOGGING */
+#define log(fmt, args...) do {} while(0)
+#define log_enter(params_format, args...) do {} while(0)
+#define log_leave(return_format, args...) do {} while(0)
 #endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
 
 #if M_OSXFUSE_ENABLE_HUGE_LOCK
+
 extern fusefs_recursive_lock *fuse_huge_lock;
+
+#define fuse_hugelock_lock() \
+	do { \
+		log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock); \
+		fusefs_recursive_lock_lock(fuse_huge_lock); \
+		log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock); \
+	} while(0)
+
+#define fuse_hugelock_unlock() \
+	do { \
+		log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock); \
+		fusefs_recursive_lock_unlock(fuse_huge_lock); \
+		log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock); \
+	} while(0)
+
+#define fuse_hugelock_have_lock() fusefs_recursive_lock_have_lock(fuse_huge_lock)
+
+#define fuse_biglock_lock(lock) fuse_hugelock_lock()
+#define fuse_biglock_unlock(lock) fuse_hugelock_unlock()
+#define fuse_biglock_have_lock(lock) fuse_hugelock_have_lock()
+
+#else /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+
+typedef fusefs_recursive_lock fuse_biglock_t;
+
+#define fuse_biglock_alloc() fusefs_recursive_lock_alloc_with_maxcount(1)
+#define fuse_biglock_free(lock) fusefs_recursive_lock_free(lock)
+
+#define fuse_biglock_lock(lock) \
+	do { \
+		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
+		fusefs_recursive_lock_lock(lock); \
+		log("%s:   biglock %p aquired!", __FUNCTION__, lock); \
+	} while(0)
+
+#define fuse_biglock_unlock(lock) \
+	do { \
+		log("%s: Releasing biglock %p...", __FUNCTION__, lock); \
+		fusefs_recursive_lock_unlock(lock); \
+		log("%s:   biglock %p released!", __FUNCTION__, lock); \
+	} while(0)
+
+#define fuse_biglock_have_lock(lock) fusefs_recursive_lock_have_lock(lock)
+
 #endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */

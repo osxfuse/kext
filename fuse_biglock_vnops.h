@@ -6,77 +6,14 @@
 #ifndef _FUSE_BIGLOCK_VNOPS_H_
 #define _FUSE_BIGLOCK_VNOPS_H_
 
-#include <fuse_param.h>
-#include "fuse_locking.h"
+#include "fuse.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-
-#if M_OSXFUSE_ENABLE_LOCK_LOGGING
-#define rawlog(msg, args...) IOLog(msg, ##args)
-
-#define log(fmt, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog(fmt, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-
-#define log_enter(params_format, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog("[%s:%d] Entering %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		rawlog(params_format, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-
-#define log_leave(return_format, args...) \
-	do { \
-		lck_mtx_lock(fuse_log_lock); \
-		rawlog("[%s:%d] Leaving %s: ", __FILE__, __LINE__, __FUNCTION__); \
-		rawlog(return_format, ##args); \
-		rawlog("\n"); \
-		lck_mtx_unlock(fuse_log_lock); \
-	} while(0)
-#else
-#define log(fmt, args...) do {} while(0)
-#define log_enter(params_format, args...) do {} while(0)
-#define log_leave(return_format, args...) do {} while(0)
-#endif /* M_OSXFUSE_ENABLE_LOCK_LOGGING */
-
-#if M_OSXFUSE_ENABLE_HUGE_LOCK
-#define fuse_hugelock_lock() \
-	do { \
-		log("%s: Aquiring huge lock %p...", __FUNCTION__, fuse_huge_lock); \
-		fusefs_recursive_lock_lock(fuse_huge_lock); \
-		log("%s:   huge lock %p aquired!", __FUNCTION__, fuse_huge_lock); \
-	} while(0)
-
-#define fuse_hugelock_unlock() \
-	do { \
-		log("%s: Releasing huge lock %p...", __FUNCTION__, fuse_huge_lock); \
-		fusefs_recursive_lock_unlock(fuse_huge_lock); \
-		log("%s:   huge lock %p released!", __FUNCTION__, fuse_huge_lock); \
-	} while(0)
-#define fuse_biglock_lock(lock) fuse_hugelock_lock()
-#define fuse_biglock_unlock(lock) fuse_hugelock_unlock()
-#else
-#define fuse_biglock lck_mtx_t
-#define fuse_biglock_lock(lock) \
-	do { \
-		log("%s: Aquiring biglock %p...", __FUNCTION__, lock); \
-		lck_mtx_lock(lock); \
-		log("%s:   biglock %p aquired!", __FUNCTION__, lock); \
-	} while(0)
-
-#define fuse_biglock_unlock(lock) \
-	do { \
-		log("%s: Releasing biglock %p...", __FUNCTION__, lock); \
-		lck_mtx_unlock(lock); \
-		log("%s:   biglock %p released!", __FUNCTION__, lock); \
-	} while(0)
+#  include "fuse_ipc.h"
+#  include "fuse_locking.h"
 #endif
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 #define fuse_nodelock_lock(node, type) \
 	do { \
@@ -214,8 +151,6 @@
 		fuse_nodelock_unlock_four(node1, node2, node3, node4); \
 		return res; \
 	} while(0)
-
-typedef int (*fuse_biglock_vnode_op_t)(void *);
 
 /*
  * VNOPs

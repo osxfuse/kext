@@ -6,15 +6,14 @@
 #ifndef _FUSE_DEVICE_H_
 #define _FUSE_DEVICE_H_
 
-#include <sys/conf.h>
-#include <miscfs/devfs/devfs.h>
+#include "fuse.h"
 
 struct fuse_data;
 
 /* softc */
 
 struct fuse_device;
-typedef struct fuse_device * fuse_device_t;
+typedef struct fuse_device *fuse_device_t;
 
 #define FUSE_DEVICE_NULL (fuse_device_t)0
 

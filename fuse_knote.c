@@ -3,13 +3,11 @@
  * Amit Singh <singh@>
  */
 
-#include <fuse_param.h>
+#include "fuse_knote.h"
+
+#include "fuse_node.h"
 
 #if M_OSXFUSE_ENABLE_KQUEUE
-
-#include "fuse.h"
-#include "fuse_knote.h"
-#include "fuse_node.h"
 
 struct filterops fuseread_filtops =
     { 1, NULL, filt_fusedetach, filt_fuseread };
@@ -24,7 +22,7 @@ void
 filt_fusedetach(struct knote *kn)
 {
     struct vnode *vp;
-        
+
     vp = (struct vnode *)kn->kn_hook;
     if (vnode_getwithvid(vp, kn->kn_hookid)) {
         return;
@@ -57,7 +55,7 @@ filt_fuseread(struct knote *kn, long hint)
 
     if (hint == NOTE_REVOKE) {
         /*
-         * filesystem is gone, so set the EOF flag and schedule 
+         * filesystem is gone, so set the EOF flag and schedule
          * the knote for deletion.
          */
         kn->kn_flags |= (EV_EOF | EV_ONESHOT);
@@ -87,13 +85,13 @@ filt_fusewrite(struct knote *kn, long hint)
     if (hint == 0)  {
         if ((vnode_getwithvid((vnode_t)kn->kn_hook, kn->kn_hookid) != 0)) {
             hint = NOTE_REVOKE;
-        } else 
+        } else
             vnode_put((vnode_t)kn->kn_hook);
     }
 
     if (hint == NOTE_REVOKE) {
         /*
-         * filesystem is gone, so set the EOF flag and schedule 
+         * filesystem is gone, so set the EOF flag and schedule
          * the knote for deletion.
          */
         kn->kn_data = 0;
@@ -121,11 +119,11 @@ filt_fusevnode(struct knote *kn, long hint)
         kn->kn_fflags |= (int)hint;
     }
 
-    if ((hint == NOTE_REVOKE)) {
+    if (hint == NOTE_REVOKE) {
         kn->kn_flags |= (EV_EOF | EV_ONESHOT);
         return 1;
     }
-        
+
     return (kn->kn_fflags != 0);
 }
 

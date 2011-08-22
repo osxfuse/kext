@@ -4,6 +4,7 @@
  */
 
 #include "fuse_kludges.h"
+
 #include <libkern/version.h>
 
 #if M_OSXFUSE_ENABLE_EXCHANGE

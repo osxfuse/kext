@@ -26,10 +26,14 @@
  * under the License.
  */
 
-#include "fuse.h"
+#include "fuse_locking.h"
+
 #include "fuse_ipc.h"
 #include "fuse_node.h"
-#include "fuse_locking.h"
+
+#if M_OSXFUSE_ENABLE_TSLOCKING
+#  include <sys/ubc.h>
+#endif
 
 lck_attr_t     *fuse_lock_attr    = NULL;
 lck_grp_attr_t *fuse_group_attr   = NULL;
@@ -37,8 +41,6 @@ lck_grp_t      *fuse_lock_group   = NULL;
 lck_mtx_t      *fuse_device_mutex = NULL;
 
 #if M_OSXFUSE_ENABLE_TSLOCKING
-
-#include <sys/ubc.h>
 
 /*
  * Largely identical to HFS+ locking. Much of the code is from hfs_cnode.c.
@@ -369,10 +371,11 @@ struct _fusefs_recursive_lock {
     lck_grp_t *group;
     thread_t thread;
     UInt32 count;
+    UInt32 maxcount;
 };
 
-static fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_lock_group(
-        lck_grp_t *lock_group)
+static fusefs_recursive_lock* fusefs_recursive_lock_alloc_internal(
+        lck_grp_t *lock_group, UInt32 maxcount)
 {
     struct _fusefs_recursive_lock *lock;
 
@@ -389,6 +392,7 @@ static fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_lock_group(
         lock->group = lock_group;
         lock->thread = 0;
         lock->count = 0;
+        lock->maxcount = maxcount;
     } else {
         FUSE_OSFree(lock, sizeof(struct _fusefs_recursive_lock),
             fuse_malloc_tag);
@@ -401,10 +405,15 @@ static fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_lock_group(
 
 fusefs_recursive_lock* fusefs_recursive_lock_alloc(void)
 {
-    return fusefs_recursive_lock_alloc_with_lock_group(fuse_lock_group);
+    return fusefs_recursive_lock_alloc_internal(fuse_lock_group, 0);
 }
 
-void fusefs_recursive_lock_free(fusefs_recursive_lock* lock)
+fusefs_recursive_lock* fusefs_recursive_lock_alloc_with_maxcount(UInt32 maxcount)
+{
+    return fusefs_recursive_lock_alloc_internal(fuse_lock_group, maxcount);
+}
+
+void fusefs_recursive_lock_free(fusefs_recursive_lock *lock)
 {
     lck_mtx_free(lock->mutex, lock->group);
     FUSE_OSFree(lock, sizeof(fusefs_recursive_lock), fuse_malloc_tag);
@@ -412,7 +421,7 @@ void fusefs_recursive_lock_free(fusefs_recursive_lock* lock)
 
 /* Currently not exported in header as we don't use it anywhere. */
 #if 0
-lck_mtx_t* fusefs_recursive_lock_get_mach_lock(fusefs_recursive_lock* lock)
+lck_mtx_t* fusefs_recursive_lock_get_mach_lock(fusefs_recursive_lock *lock)
 {
     return lock->mutex;
 }
@@ -420,9 +429,12 @@ lck_mtx_t* fusefs_recursive_lock_get_mach_lock(fusefs_recursive_lock* lock)
 
 void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock)
 {
-    if (lock->thread == current_thread())
+    if (lock->thread == current_thread()) {
+        if (lock->maxcount > 0 && lock->count >= lock->maxcount) {
+            panic("OSXFUSE: Attempted to lock max-locked recursive lock.");
+        }
         lock->count++;
-    else {
+    } else {
         lck_mtx_lock(lock->mutex);
         assert(lock->thread == 0);
         assert(lock->count == 0);
@@ -437,6 +449,9 @@ void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock)
 boolean_t fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
 {
     if (lock->thread == current_thread()) {
+        if (lock->maxcount > 0 && lock->count >= lock->maxcount) {
+            return false;
+        }
         lock->count++;
         return true;
     } else {
@@ -457,7 +472,7 @@ void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock)
     assert(lock->thread == current_thread());
 
     if(lock->count == 0)
-        panic("Attempted to unlock non-locked recursive lock.");
+        panic("OSXFUSE: Attempted to unlock non-locked recursive lock.");
 
     if (0 == (--lock->count)) {
         lock->thread = 0;
@@ -465,13 +480,10 @@ void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock)
     }
 }
 
-/* Currently not exported in header as we don't use it anywhere. */
-#if 0
 boolean_t fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock)
 {
     return lock->thread == current_thread();
 }
-#endif
 
 /* Currently not exported in header as we don't use it anywhere. */
 #if 0

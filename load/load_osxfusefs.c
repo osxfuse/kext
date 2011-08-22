@@ -37,7 +37,7 @@
 #include <fuse_param.h>
 #include <fuse_version.h>
 
-#ifdef MACFUSE_MODE
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 #define OSXFUSE_MACFUSE_MODE_ENV  "OSXFUSE_MACFUSE_MODE"
 #define OSXFUSE_KEXT_MACFUSE_MODE "osxfuse.control.macfuse_mode"
 #endif
@@ -52,7 +52,7 @@ main(__unused int argc, __unused const char *argv[])
     size_t version_len = MAXHOSTNAMELEN;
     size_t version_len_desired = 0;
     struct vfsconf vfc = { 0 };
-    
+
     result = getvfsbyname(OSXFUSE_FS_TYPE, &vfc);
     if (result) { /* OSXFUSE is not already loaded */
         result = -1;
@@ -120,12 +120,12 @@ need_loading:
         /* We can only get here if the exec failed */
         goto out;
     }
-    
+
     if (pid == -1) {
         result = errno;
         goto out;
     }
-    
+
     /* Success! */
     if ((wait4(pid, (int *)&status, 0, NULL) == pid) && (WIFEXITED(status))) {
         result = status.w_retcode;
@@ -147,9 +147,9 @@ need_loading:
         (void)sysctlbyname(SYSCTL_OSXFUSE_TUNABLES_ADMIN, NULL, NULL,
                           &admin_gid, sizeof(admin_gid));
     }
-    
+
 out:
-#ifdef MACFUSE_MODE
+#if OSXFUSE_ENABLE_MACFUSE_MODE
     {
         char *env_value;
         env_value = getenv(OSXFUSE_MACFUSE_MODE_ENV);
@@ -160,6 +160,6 @@ out:
         }
     }
 #endif
-    
+
     _exit(result);
 }

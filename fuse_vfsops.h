@@ -11,13 +11,7 @@
 #ifndef _FUSE_VFSOPS_H_
 #define _FUSE_VFSOPS_H_
 
-#include <sys/kernel_types.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/vnode.h>
-
-#include <fuse_param.h>
+#include "fuse.h"
 
 struct fuse_data;
 struct fuse_ticket;

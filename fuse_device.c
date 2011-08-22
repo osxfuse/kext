@@ -3,17 +3,19 @@
  * Amit Singh <singh@>
  */
 
-#include "fuse.h"
 #include "fuse_device.h"
-#include "fuse_ipc.h"
+
 #include "fuse_internal.h"
-#include "fuse_kludges.h"
+#include "fuse_ipc.h"
 #include "fuse_locking.h"
-#include "fuse_nodehash.h"
-#include "fuse_sysctl.h"
 
 #include <fuse_ioctl.h>
-#include <libkern/libkern.h>
+
+#include <miscfs/devfs/devfs.h>
+
+#if M_OSXFUSE_ENABLE_DSELECT
+#  include <sys/select.h>
+#endif
 
 #define FUSE_DEVICE_GLOBAL_LOCK()   fuse_lck_mtx_lock(fuse_device_mutex)
 #define FUSE_DEVICE_GLOBAL_UNLOCK() fuse_lck_mtx_unlock(fuse_device_mutex)
@@ -109,11 +111,9 @@ d_write_t  fuse_device_write;
 d_ioctl_t  fuse_device_ioctl;
 
 #if M_OSXFUSE_ENABLE_DSELECT
-
 d_select_t fuse_device_select;
-
 #else
-#define fuse_device_select (d_select_t*)enodev
+#  define fuse_device_select (d_select_t*)enodev
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
 static struct cdevsw fuse_device_cdevsw = {
@@ -208,7 +208,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
         fdev->data   = fdata;
         fdev->pid    = proc_pid(p);
         fdev->random = random();
-    }       
+    }
 
     FUSE_DEVICE_LOCAL_UNLOCK(fdev);
 
@@ -332,7 +332,7 @@ again:
             fuse_lck_mtx_unlock(data->ms_mtx);
             return EAGAIN;
         }
-        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL);
+        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
         if (err != 0) {
             fuse_lck_mtx_unlock(data->ms_mtx);
             return (fdata_dead_get(data) ? ENODEV : err);
@@ -397,7 +397,7 @@ again:
      * been invalidated by the sender. The sender is not expecting or wanting
      * a reply, so he sets the FT_INVALID bit in the ticket.
      */
-   
+
     fuse_ticket_drop_invalid(ftick);
 
     return err;
@@ -435,8 +435,8 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 
     if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead.len) {
         IOLog("OSXFUSE: message body size does not match that in the header\n");
-        return EINVAL; 
-    }   
+        return EINVAL;
+    }
 
     if (uio_resid(uio) && ohead.error) {
         IOLog("OSXFUSE: non-zero error for a message with a body\n");
@@ -652,7 +652,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
      * as an argument. In the user-space library, you can get the inode number
      * from a path by using fuse_lookup_inode_by_path_np() [lib/fuse.c].
      *
-     * To see an example of using this, see the implementation of 
+     * To see an example of using this, see the implementation of
      * fuse_purge_path_np() in lib/fuse_darwin.c.
      */
     case FUSEDEVIOCALTERVNODEFORINODE:
@@ -684,7 +684,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
     default:
         break;
-        
+
     }
 
     FUSE_DEVICE_LOCAL_UNLOCK(fdev);
@@ -815,7 +815,7 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
             FUSE_DEVICE_LOCAL_UNLOCK(fdev);
             return EBUSY;
         }
-        
+
         error = EPERM;
         if (p) {
             kauth_cred_t request_cred = kauth_cred_proc_ref(p);

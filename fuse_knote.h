@@ -6,11 +6,12 @@
 #ifndef _FUSE_KNOTE_H_
 #define _FUSE_KNOTE_H_
 
-#include <fuse_param.h>
-
-#if M_OSXFUSE_ENABLE_KQUEUE
+#include "fuse.h"
 
 #include <sys/event.h>
+#include <sys/queue.h>
+
+#if M_OSXFUSE_ENABLE_KQUEUE
 
 /* What a kludge! */
 #ifndef KNOTE
@@ -40,7 +41,7 @@ struct knote {
     struct filterops    *kn_fop;
     int                  kn_status;      /* status bits */
     int                  kn_sfflags;     /* saved filter flags */
-    struct               kevent kn_kevent;
+    struct kevent        kn_kevent;
     caddr_t              kn_hook;
     int                  kn_hookid;
     int64_t              kn_sdata;       /* saved data field */

@@ -3,15 +3,12 @@
  * Amit Singh <singh@>
  */
 
-#include "fuse.h"
 #include "fuse_file.h"
+
 #include "fuse_internal.h"
-#include "fuse_ipc.h"
-#include "fuse_node.h"
-#include "fuse_sysctl.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-#include "fuse_biglock_vnops.h"
+#  include "fuse_biglock_vnops.h"
 #endif
 
 /*
@@ -114,7 +111,7 @@ fuse_filehandle_get(vnode_t       vp,
     fufh->open_flags = oflags;
     fufh->fuse_open_flags = foo->open_flags;
     fufh->aux_count = 0;
-    
+
     fuse_ticket_drop(fdi.tick);
 
     return 0;

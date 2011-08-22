@@ -8,47 +8,26 @@
  * Amit Singh <singh@>
  */
 
-#include <sys/param.h>
-#include <kern/assert.h>
-#include <libkern/libkern.h>
-#include <libkern/OSMalloc.h>
-#include <libkern/locks.h>
-#include <mach/mach_types.h>
-#include <sys/dirent.h>
-#include <sys/disk.h>
-#include <sys/errno.h>
-#include <sys/fcntl.h>
-#include <sys/kernel_types.h>
-#include <sys/mount.h>
-#include <sys/proc.h>
-#include <sys/stat.h>
-#include <sys/ubc.h>
-#include <sys/unistd.h>
-#include <sys/vnode.h>
-#include <sys/vnode_if.h>
-#include <sys/xattr.h>
-#include <sys/buf.h>
-#include <sys/namei.h>
-#include <sys/mman.h>
-#include <vfs/vfs_support.h>
-
-#include "fuse.h"
-#include "fuse_file.h"
-#include "fuse_internal.h"
-#include <fuse_ioctl.h>
-#include "fuse_ipc.h"
-#include "fuse_kludges.h"
-#include "fuse_knote.h"
-#include "fuse_locking.h"
-#include "fuse_node.h"
-#include "fuse_nodehash.h"
-#include <fuse_param.h>
-#include "fuse_sysctl.h"
 #include "fuse_vnops.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-#include "fuse_biglock_vnops.h"
+#include "fuse_file.h"
+#include "fuse_internal.h"
+#include "fuse_ipc.h"
+#include "fuse_knote.h"
+#include "fuse_node.h"
+#include "fuse_nodehash.h"
+
+#if M_OSXFUSE_ENABLE_KQUEUE
+#  include "fuse_knote.h"
 #endif
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#  include "fuse_biglock_vnops.h"
+#endif
+
+#include <fuse_ioctl.h>
+
+#include <sys/namei.h>
 
 /*
     struct vnop_access_args {
@@ -101,12 +80,12 @@ fuse_vnop_access(struct vnop_access_args *ap)
         fvdat->flag &= ~FN_ACCESS_NOOP;
     } else {
         facp.facc_flags |= FACCESS_DO_ACCESS;
-    }   
+    }
 
     facp.facc_flags |= FACCESS_FROM_VNOP;
 
     return fuse_internal_access(vp, action, context, &facp);
-}       
+}
 
 /*
     struct vnop_blktooff_args {
@@ -119,12 +98,12 @@ fuse_vnop_access(struct vnop_access_args *ap)
 FUSE_VNOP_EXPORT
 int
 fuse_vnop_blktooff(struct vnop_blktooff_args *ap)
-{       
+{
     vnode_t    vp        = ap->a_vp;
     daddr64_t  lblkno    = ap->a_lblkno;
     off_t     *offsetPtr = ap->a_offset;
 
-    struct fuse_data *data; 
+    struct fuse_data *data;
 
     fuse_trace_printf_vnop();
 
@@ -511,7 +490,7 @@ fuse_vnop_exchange(struct vnop_exchange_args *ap)
     size_t tlen = 0;
 
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(fvp));
- 
+
     int err = 0;
 
     fuse_trace_printf_vnop_novp();
@@ -601,7 +580,7 @@ out:
  * version of FUSE also has a FUSE_FLUSH method.
  *
  * On Linux, fsync() synchronizes a file's complete in-core state with that
- * on disk. The call is not supposed to return until the system has completed 
+ * on disk. The call is not supposed to return until the system has completed
  * that action or until an error is detected.
  *
  * Linux also has an fdatasync() call that is similar to fsync() but is not
@@ -862,14 +841,14 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     vfs_context_t context = ap->a_context;
 
     struct fuse_dispatcher    fdi;
-    struct fuse_getxattr_in  *fgxi; 
+    struct fuse_getxattr_in  *fgxi;
     struct fuse_getxattr_out *fgxo;
     struct fuse_data         *data;
     mount_t mp;
 
     int err = 0;
-    size_t namelen;      
-    
+    size_t namelen;
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -902,7 +881,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     fdisp_init(&fdi, sizeof(*fgxi) + namelen + 1);
     fdisp_make_vp(&fdi, FUSE_GETXATTR, vp, context);
     fgxi = fdi.indata;
-    
+
     if (uio) {
         fgxi->size = (uint32_t)uio_resid(uio);
     } else {
@@ -910,7 +889,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     }
 
     fgxi->position = (uint32_t)uio_offset(uio);
-    
+
     memcpy((char *)fdi.indata + sizeof(*fgxi), name, namelen);
     ((char *)fdi.indata)[sizeof(*fgxi) + namelen] = '\0';
 
@@ -924,10 +903,10 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
             fuse_clear_implemented(data, FSESS_NOIMPLBIT(GETXATTR));
             return ENOTSUP;
         }
-        return err;  
-    }                
-                     
-    if (uio) {       
+        return err;
+    }
+
+    if (uio) {
         *ap->a_size = fdi.iosize;
         if ((user_ssize_t)fdi.iosize > uio_resid(uio)) {
             err = ERANGE;
@@ -1064,8 +1043,6 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 
 #if M_OSXFUSE_ENABLE_KQUEUE
 
-#include "fuse_knote.h"
-
 /*
     struct vnop_kqfilt_add_args {
         struct vnodeop_desc  *a_desc;
@@ -1200,7 +1177,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_ticket_drop(fdi.tick);
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
-    
+
     if (err == 0) {
         FUSE_KNOTE(vp, NOTE_LINK);
         FUSE_KNOTE(tdvp, NOTE_WRITE);
@@ -1357,7 +1334,7 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         isdotdot = TRUE;
     } else if ((cnp->cn_nameptr[0] == '.') && (cnp->cn_namelen == 1)) {
         isdot = TRUE;
-    } 
+    }
 
     if (isdotdot) {
         pdp = VTOFUD(dvp)->parentvp;
@@ -1502,7 +1479,7 @@ calldaemon:
             }
 
             *vpp = vp;
-        
+
             goto out;
 
         }
@@ -1600,7 +1577,7 @@ out:
                 }
             }
         }
-            
+
         fuse_ticket_drop(fdi.tick);
     }
 
@@ -1918,6 +1895,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
     int error, isdir = 0;
     long hint = 0;
 
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -1975,7 +1954,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
                  * Creator has picked up stashed handle and moved it to the
                  * fufh_type slot.
                  */
-                
+
                 fvdat->flag &= ~FN_CREATING;
 
                 fuse_lck_mtx_unlock(fvdat->createlock);
@@ -1986,7 +1965,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
                 /* Contender is going to sleep now. */
 
                 error = fuse_msleep(fvdat->creator, fvdat->createlock,
-                                    PDROP | PINOD | PCATCH, "fuse_open", NULL);
+                                    PDROP | PINOD | PCATCH, "fuse_open", NULL, data);
                 /*
                  * msleep will drop the mutex. since we have PDROP specified,
                  * it will NOT regrab the mutex when it returns.
@@ -2032,7 +2011,7 @@ ok:
      */
 
     if ((fufh->fuse_open_flags & FOPEN_DIRECT_IO) || (fuse_isdirectio(vp))) {
-        /* 
+        /*
          * direct_io for a vnode implies:
          * - no ubc for the vnode
          * - no readahead for the vnode
@@ -2314,7 +2293,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
      * lock_shared(truncatelock)
      * call the cluster layer (note that we are always block-aligned)
      * lock(nodelock)
-     * do cleanup 
+     * do cleanup
      * unlock(nodelock)
      * unlock(truncatelock)
      */
@@ -3343,26 +3322,26 @@ fuse_vnop_strategy(struct vnop_strategy_args *ap)
     };
 */
 FUSE_VNOP_EXPORT
-int  
+int
 fuse_vnop_symlink(struct vnop_symlink_args *ap)
-{           
-    vnode_t               dvp     = ap->a_dvp; 
+{
+    vnode_t               dvp     = ap->a_dvp;
     vnode_t              *vpp     = ap->a_vpp;
     struct componentname *cnp     = ap->a_cnp;
     char                 *target  = ap->a_target;
     vfs_context_t         context = ap->a_context;
-            
+
     struct fuse_dispatcher fdi;
 
     int err;
     size_t len;
-        
+
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
         panic("OSXFUSE: fuse_vnop_symlink(): called on a dead file system");
     }
-            
+
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
 
     len = strlen(target) + 1;
@@ -3383,7 +3362,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
     }
 
     return err;
-}       
+}
 
 /*
     struct vnop_write_args {
@@ -3434,7 +3413,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
      * call the cluster layer
      * adjust ubc
      * lock(nodelock)
-     * do cleanup 
+     * do cleanup
      * unlock(nodelock)
      * unlock(truncatelock)
      */
@@ -3605,7 +3584,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
-        
+
     if (!error) {
         if (uio_offset(uio) > original_size) {
             /* Updating to new size. */
@@ -3623,7 +3602,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
      * If original_resid > uio_resid(uio), we could set an internal
      * flag bit to "update" (e.g., dep->de_flag |= DE_UPDATE).
      */
-        
+
     /*
      * If the write failed and they want us to, truncate the file back
      * to the size it was before the write was attempted.
@@ -3785,7 +3764,7 @@ struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
 //  { &vnop_searchfs_desc,      (fuse_vnode_op_t) fuse_vnop_searchfs      },
     { &vnop_select_desc,        (fuse_vnode_op_t) fuse_vnop_select        },
     { &vnop_setattr_desc,       (fuse_vnode_op_t) fuse_vnop_setattr       },
-//  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_setattrlist   }, 
+//  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_setattrlist   },
 #if M_OSXFUSE_ENABLE_XATTR
     { &vnop_setxattr_desc,      (fuse_vnode_op_t) fuse_vnop_setxattr      },
 #endif /* M_OSXFUSE_ENABLE_XATTR */
@@ -3811,7 +3790,7 @@ struct vnodeopv_entry_desc fuse_fifo_operation_entries[] = {
     { &vnop_default_desc,       (fuse_fifo_op_t)vn_default_error        },
     { &vnop_fsync_desc,         (fuse_fifo_op_t)fuse_vnop_fsync         },
     { &vnop_getattr_desc,       (fuse_fifo_op_t)fuse_vnop_getattr       },
-    { &vnop_inactive_desc,      (fuse_fifo_op_t)fuse_vnop_inactive      },    
+    { &vnop_inactive_desc,      (fuse_fifo_op_t)fuse_vnop_inactive      },
     { &vnop_ioctl_desc,         (fuse_fifo_op_t)fifo_ioctl              },
 #if M_OSXFUSE_ENABLE_KQUEUE
     { &vnop_kqfilt_add_desc,    (fuse_fifo_op_t)fuse_vnop_kqfilt_add    },

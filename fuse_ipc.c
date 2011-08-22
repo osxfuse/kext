@@ -8,15 +8,23 @@
  * Amit Singh <singh@>
  */
 
-#include <sys/types.h>
-#include <sys/malloc.h>
-
-#include "fuse.h"
-#include "fuse_internal.h"
 #include "fuse_ipc.h"
-#include "fuse_locking.h"
-#include "fuse_node.h"
-#include "fuse_sysctl.h"
+
+#include "fuse_internal.h"
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#  include "fuse_biglock_vnops.h"
+#endif
+
+#if M_OSXFUSE_ENABLE_DSELECT
+#  include <sys/select.h>
+#endif
+
+#if M_OSXFUSE_ENABLE_KUNC
+#  include <UserNotification/KUNCUserNotifications.h>
+#endif
+
+#include <sys/vm.h>
 
 static struct fuse_ticket *fticket_alloc(struct fuse_data *data);
 static void                fticket_refresh(struct fuse_ticket *ftick);
@@ -121,7 +129,7 @@ fiov_adjust_canfail(struct fuse_iov *fiov, size_t size)
 void
 fiov_refresh(struct fuse_iov *fiov)
 {
-    bzero(fiov->base, fiov->len);    
+    bzero(fiov->base, fiov->len);
     fiov_adjust(fiov, 0);
 }
 
@@ -210,7 +218,7 @@ fticket_wait_answer(struct fuse_ticket *ftick)
 
 again:
     err = fuse_msleep(ftick, ftick->tk_aw_mtx, PCATCH, "fu_ans",
-                      data->daemon_timeout_p);
+                      data->daemon_timeout_p, data);
     if (err == EAGAIN) { /* same as EWOULDBLOCK */
 
         kern_return_t kr;
@@ -435,7 +443,7 @@ fdata_alloc(struct proc *p)
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #if !M_OSXFUSE_ENABLE_HUGE_LOCK
-    data->biglock        = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+    data->biglock        = fuse_biglock_alloc();
 #endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
@@ -466,7 +474,7 @@ fdata_destroy(struct fuse_data *data)
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #if !M_OSXFUSE_ENABLE_HUGE_LOCK
-    lck_mtx_free(data->biglock, fuse_lock_group);
+    fuse_biglock_free(data->biglock);
     data->biglock = NULL;
 #endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
@@ -492,7 +500,7 @@ void
 fdata_set_dead(struct fuse_data *data)
 {
     fuse_lck_mtx_lock(data->ms_mtx);
-    if (fdata_dead_get(data)) { 
+    if (fdata_dead_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
         return;
     }
@@ -593,7 +601,7 @@ fuse_ticket_fetch(struct fuse_data *data)
 
     if (!(data->dataflags & FSESS_INITED) && data->ticketer > 1) {
         err = fuse_msleep(&data->ticketer, data->ticket_mtx, PCATCH | PDROP,
-                          "fu_ini", 0);
+                          "fu_ini", 0, data);
     } else {
         if ((fuse_max_tickets != 0) &&
             ((data->ticketer - data->deadticket_counter) > fuse_max_tickets)) {

@@ -6,10 +6,11 @@
 #ifndef _FUSE_NODE_H_
 #define _FUSE_NODE_H_
 
+#include "fuse.h"
+
 #include "fuse_file.h"
 #include "fuse_knote.h"
 #include "fuse_nodehash.h"
-#include <fuse_param.h>
 
 extern errno_t (**fuse_vnode_operations)(void *);
 
@@ -80,7 +81,7 @@ struct fuse_vnode_data {
     struct timespec   entry_valid;
     struct timespec   attr_valid;
     struct vnode_attr cached_attr;
-    off_t             filesize; 
+    off_t             filesize;
     uint64_t          nlookup;
     enum vtype        vtype;
 

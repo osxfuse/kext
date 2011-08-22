@@ -6,8 +6,8 @@
 #ifndef _FUSE_IOCTL_H_
 #define _FUSE_IOCTL_H_
 
-#include <stdint.h>
 #include <sys/ioctl.h>
+#include <stdint.h>
 
 /* FUSEDEVIOCxxx */
 

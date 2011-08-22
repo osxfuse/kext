@@ -11,40 +11,71 @@
 #ifndef _FUSE_INTERNAL_H_
 #define _FUSE_INTERNAL_H_
 
-#include <kern/clock.h>
-#include <sys/types.h>
-#include <sys/kauth.h>
-#include <sys/kernel_types.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/ubc.h>
-#include <sys/uio.h>
-#include <sys/vnode.h>
-#include <sys/xattr.h>
+#include "fuse.h"
 
-#include <fuse_ioctl.h>
 #include "fuse_ipc.h"
-#include "fuse_kludges.h"
 #include "fuse_locking.h"
 #include "fuse_node.h"
 
+#include <fuse_ioctl.h>
+
+#include <sys/ubc.h>
+
 #if M_OSXFUSE_ENABLE_KUNC
-#include <UserNotification/KUNCUserNotifications.h>
-#else
+#  include <UserNotification/KUNCUserNotifications.h>
+#endif
+
+#if !M_OSXFUSE_ENABLE_KUNC
 enum {
     kKUNCDefaultResponse   = 0,
     kKUNCAlternateResponse = 1,
     kKUNCOtherResponse     = 2,
     kKUNCCancelResponse    = 3
 };
-#endif
+#endif /* !M_OSXFUSE_ENABLE_KUNC */
 
 struct fuse_attr;
-struct fuse_data;
-struct fuse_dispatcher;
 struct fuse_filehandle;
-struct fuse_iov;
-struct fuse_ticket;
+
+/* msleep */
+
+__inline__
+int
+fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
+                     struct timespec *ts, struct fuse_data *data);
+
+#ifdef FUSE_TRACE_MSLEEP
+static __inline__
+int
+fuse_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
+            struct timespec *ts, struct fuse_data *data)
+{
+    int ret;
+
+    IOLog("0: msleep(%p, %s)\n", (chan), (wmesg));
+    ret = fuse_internal_msleep(chan, mtx, pri, wmesg, ts, data);
+    IOLog("1: msleep(%p, %s)\n", (chan), (wmesg));
+
+    return ret;
+}
+#define fuse_wakeup(chan)                          \
+{                                                  \
+    IOLog("1: wakeup(%p)\n", (chan));              \
+    wakeup((chan));                                \
+    IOLog("0: wakeup(%p)\n", (chan));              \
+}
+#define fuse_wakeup_one(chan)                      \
+{                                                  \
+    IOLog("1: wakeup_one(%p)\n", (chan));          \
+    wakeup_one((chan));                            \
+    IOLog("0: wakeup_one(%p)\n", (chan));          \
+}
+#else /* !FUSE_TRACE_MSLEEP*/
+#define fuse_msleep(chan, mtx, pri, wmesg, ts, data) \
+    fuse_internal_msleep((chan), (mtx), (pri), (wmesg), (ts), (data))
+#define fuse_wakeup(chan)     wakeup((chan))
+#define fuse_wakeup_one(chan) wakeup_one((chan))
+#endif /* FUSE_TRACE_MSLEEP */
 
 /* time */
 
@@ -169,7 +200,7 @@ fuse_isnoreadahead(vnode_t vp)
     if (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_NO_READAHEAD) {
         return 1;
     }
-    
+
     /* In our model, direct_io implies no readahead. */
     return fuse_isdirectio(vp);
 }
@@ -225,7 +256,7 @@ fuse_isnoubc(vnode_t vp)
     if (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_NO_UBC) {
         return 1;
     }
-    
+
     /* In our model, direct_io implies no UBC. */
     return fuse_isdirectio(vp);
 }
@@ -252,7 +283,7 @@ fuse_isnovncache(vnode_t vp)
     if (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_NO_VNCACHE) {
         return 1;
     }
-    
+
     /* In our model, direct_io implies no vncache for this vnode. */
     return fuse_isdirectio(vp);
 }
@@ -490,7 +521,7 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      */
     /* ATTR_FUDGE_CASE */
     if (!vfs_issynchronous(mp)) {
-        fat->size = fvdat->filesize;    
+        fat->size = fvdat->filesize;
     }
     VATTR_RETURN(vap, va_data_size, fat->size);
 
@@ -616,7 +647,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
 
     /*
-     * When __DARWIN_64_BIT_INO_T is not enabled, the User library 
+     * When __DARWIN_64_BIT_INO_T is not enabled, the User library
      * will set va_create_time to -1. In that case, we will have
      * to ask for it separately, if necessary.
      */
@@ -674,7 +705,7 @@ fuse_internal_exchange(vnode_t       fvp,
                        vfs_context_t context);
 
 #endif /* M_OSXFUSE_ENABLE_EXCHANGE */
-                       
+
 /* fsync */
 
 int
@@ -763,7 +794,7 @@ fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
     int ismpoption = fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEXATTR;
 
     if (ismpoption && name) {
-         #define COM_APPLE_ "com.apple."
+#define COM_APPLE_ "com.apple."
         if (bcmp(name, COM_APPLE_, sizeof(COM_APPLE_) - 1) == 0) {
             return 1;
         }
@@ -825,7 +856,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
 /* entity destruction */
 
 int
-fuse_internal_forget_callback(struct fuse_ticket *ftick, uio_t uio);        
+fuse_internal_forget_callback(struct fuse_ticket *ftick, uio_t uio);
 
 void
 fuse_internal_forget_send(mount_t                 mp,
@@ -865,7 +896,7 @@ fuse_implemented(struct fuse_data *data, uint64_t which)
 
 static __inline__
 void
-fuse_clear_implemented(struct fuse_data *data, uint64_t which) 
+fuse_clear_implemented(struct fuse_data *data, uint64_t which)
 {
     /* FUSE_DATA_LOCK_EXCLUSIVE(data); */
     data->noimplflags |= which;

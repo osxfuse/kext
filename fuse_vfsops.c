@@ -8,21 +8,19 @@
  * Amit Singh <singh@>
  */
 
-#include "fuse.h"
+#include "fuse_vfsops.h"
+
 #include "fuse_device.h"
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
-#include "fuse_kludges.h"
 #include "fuse_locking.h"
 #include "fuse_node.h"
-#include "fuse_sysctl.h"
-#include "fuse_vfsops.h"
-
-#include <fuse_mount.h>
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#include <fuse_biglock_vnops.h>
+#  include "fuse_biglock_vnops.h"
 #endif
+
+#include <fuse_mount.h>
 
 static const struct timespec kZeroTime = { 0, 0 };
 
@@ -91,7 +89,7 @@ fuse_vfsop_biglock_sync(mount_t mp, int waitfor, vfs_context_t context);
 static errno_t
 fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context);
 
-#endif
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
 static struct vfsops fuse_vfs_ops = {
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
@@ -173,7 +171,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-    fuse_biglock      *biglock;
+    fuse_biglock_t    *biglock;
 #endif
 
     fuse_trace_printf_vfsop();
@@ -192,7 +190,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
      * otherwise forcibly set include:
      *
      *     MNT_ASYNC
-     *     MNT_AUTOMOUNTED              
+     *     MNT_AUTOMOUNTED
      *     MNT_DEFWRITE
      *     MNT_DONTBROWSE
      *     MNT_IGNORE_OWNERSHIP
@@ -316,7 +314,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfsstatfsp->f_fsid.val[1] = FUSE_CUSTOM_FSID_VAL1;
 
     } else {
-        vfs_getnewfsid(mp);    
+        vfs_getnewfsid(mp);
     }
 
     if (fusefs_args.altflags & FUSE_MOPT_KILL_ON_UNMOUNT) {
@@ -423,7 +421,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     if (fusefs_args.random != drandom) {
         fuse_device_unlock(fdev);
         IOLog("OSXFUSE: failing mount because of mismatched random\n");
-        return EINVAL; 
+        return EINVAL;
     }
 
     data = fuse_device_get_mpdata(fdev);
@@ -532,7 +530,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
            vfsstatfsp->f_blocks = vfs_attr.f_blocks;
            vfsstatfsp->f_bfree  = vfs_attr.f_bfree;
            vfsstatfsp->f_bavail = vfs_attr.f_bavail;
-           vfsstatfsp->f_bused  = vfs_attr.f_bused; 
+           vfsstatfsp->f_bused  = vfs_attr.f_bused;
            vfsstatfsp->f_files  = vfs_attr.f_files;
            vfsstatfsp->f_ffree  = vfs_attr.f_ffree;
            /* vfsstatfsp->f_fsid already handled above */
@@ -757,7 +755,7 @@ alreadydead:
     }
 
     return 0;
-}        
+}
 
 static errno_t
 fuse_vfsop_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
@@ -899,7 +897,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_RESERVED2] = 0;
     attr->f_capabilities.valid[VOL_CAPABILITIES_RESERVED2] = 0;
     VFSATTR_SET_SUPPORTED(attr, f_capabilities);
-    
+
     attr->f_attributes.validattr.commonattr = 0
         | ATTR_CMN_NAME
         | ATTR_CMN_DEVID
@@ -1000,7 +998,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
     }
 
     // All attributes that we do support, we support natively.
-    
+
     attr->f_attributes.nativeattr.commonattr = \
         attr->f_attributes.validattr.commonattr;
     attr->f_attributes.nativeattr.volattr    = \
@@ -1256,7 +1254,7 @@ fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
 
     if (vfs_isupdate(mp)) {
         return 0;
-    } 
+    }
 
     if (vfs_isrdonly(mp)) {
         return EROFS; // should panic!?
@@ -1326,9 +1324,9 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
             error = ENAMETOOLONG;
             goto out;
         }
-        
+
         vnode_t root_vp;
-        
+
         error = fuse_vfsop_root(mp, &root_vp, context);
         if (error) {
             goto out;

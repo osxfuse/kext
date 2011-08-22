@@ -7,12 +7,6 @@
 #define _FUSE_KLUDGES_H_
 
 #include "fuse.h"
-#include "fuse_sysctl.h"
-
-#include <sys/cdefs.h>
-#include <sys/mount.h>
-#include <sys/types.h>
-#include <sys/vnode.h>
 
 #if M_OSXFUSE_ENABLE_DSELECT
 

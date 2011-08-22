@@ -6,13 +6,12 @@
 #ifndef _FUSE_FILE_H_
 #define _FUSE_FILE_H_
 
-#include <sys/fcntl.h>
+#include "fuse.h"
+
+#include <fuse_param.h>
+
 #include <sys/kauth.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
-#include <sys/mount.h>
-#include <sys/types.h>
-#include <sys/vnode.h>
 
 typedef enum fufh_type {
     FUFH_INVALID = -1,
@@ -152,7 +151,7 @@ fuse_filehandle_preflight_status(vnode_t vp, vnode_t dvp, vfs_context_t context,
         action |= (KAUTH_VNODE_READ_DATA | KAUTH_VNODE_WRITE_DATA);
         break;
 
-    default: 
+    default:
         err = EINVAL;
         break;
     }

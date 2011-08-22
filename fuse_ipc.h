@@ -11,32 +11,20 @@
 #ifndef _FUSE_IPC_H_
 #define _FUSE_IPC_H_
 
-#include <mach/mach_types.h>
-#include <sys/errno.h>
-#include <sys/mount.h>
-#include <sys/vnode.h>
-#include <sys/vnode_if.h>
-#include <sys/kernel_types.h>
-#include <sys/stat.h>
-#include <sys/dirent.h>
-#include <sys/uio.h>
-#include <sys/proc.h>
-#include <sys/vm.h>
-#include <sys/fcntl.h>
-#include <sys/select.h>
-#include <kern/assert.h>
-#include <libkern/libkern.h>
-#include <libkern/OSMalloc.h>
-#include <libkern/locks.h>
+#include "fuse.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#include <IOKit/IOLocks.h>
+#include "fuse_device.h"
+
+#if M_OSXFUSE_ENABLE_DSELECT
+#  include "fuse_kludges.h"
 #endif
 
-#include "fuse.h"
-#include "fuse_device.h"
-#include "fuse_kludges.h"
-#include "fuse_locking.h"
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#  include "fuse_locking.h"
+#endif
+
+#include <sys/kauth.h>
+#include <sys/queue.h>
 
 struct fuse_iov {
     void   *base;
@@ -162,7 +150,7 @@ struct fuse_data {
 #if M_OSXFUSE_ENABLE_DSELECT
     struct fuse_selinfo        d_rsel;
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
- 
+
     lck_rw_t                  *rwlock;
 
     lck_mtx_t                 *ms_mtx;
@@ -198,16 +186,14 @@ struct fuse_data {
     struct timespec            daemon_timeout;
     struct timespec           *daemon_timeout_p;
     struct timespec            init_timeout;
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_OSXFUSE_ENABLE_HUGE_LOCK
-    lck_mtx_t                 *biglock;
-#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
-#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_t            *biglock;
+#endif
 };
 
 enum {
     FUSE_DAEMON_TIMEOUT_NONE       = 0,
-    FUSE_DAEMON_TIMEOUT_PROCESSING = 1, 
+    FUSE_DAEMON_TIMEOUT_PROCESSING = 1,
     FUSE_DAEMON_TIMEOUT_DEAD       = 2,
 };
 

@@ -6,15 +6,16 @@
 #ifndef _FUSE_MOUNT_H_
 #define _FUSE_MOUNT_H_
 
+#include <fuse_param.h>
+#include <fuse_version.h>
+
+#include <sys/mount.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #ifndef KERNEL
 #include <unistd.h>
 #endif
-
-#include <fuse_param.h>
-#include <fuse_version.h>
 
 /*
  * Shared between the kernel and user spaces. This is 64-bit invariant.

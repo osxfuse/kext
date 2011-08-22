@@ -8,24 +8,10 @@
  * Amit Singh <singh@>
  */
 
-#include <sys/param.h>
-#include <sys/systm.h>
-#include <sys/conf.h>
-#include <mach/mach_types.h>
-#include <miscfs/devfs/devfs.h>
-
-#include <libkern/libkern.h>
-#include <libkern/OSMalloc.h>
-#include <libkern/locks.h>
-
 #include "fuse.h"
-#include "fuse_device.h"
-#include "fuse_ipc.h"
+
 #include "fuse_locking.h"
-#include "fuse_node.h"
-#include "fuse_nodehash.h"
 #include "fuse_sysctl.h"
-#include <fuse_mount.h>
 
 OSMallocTag  fuse_malloc_tag = NULL;
 
@@ -84,7 +70,7 @@ static kern_return_t
 init_stuff(void)
 {
     kern_return_t ret = KERN_SUCCESS;
-    
+
     fuse_malloc_tag = OSMalloc_Tagalloc(OSXFUSE_BUNDLE_IDENTIFIER,
                                         OSMT_DEFAULT);
     if (fuse_malloc_tag == NULL) {

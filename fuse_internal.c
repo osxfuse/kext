@@ -8,43 +8,26 @@
  * Amit Singh <singh@>
  */
 
-#include <sys/param.h>
-#include <kern/assert.h>
-#include <libkern/libkern.h>
-#include <libkern/OSMalloc.h>
-#include <libkern/locks.h>
-#include <mach/mach_types.h>
-#include <sys/dirent.h>
-#include <sys/disk.h>
-#include <sys/errno.h>
-#include <sys/fcntl.h>
-#include <sys/kernel_types.h>
-#include <sys/mount.h>
-#include <sys/proc.h>
-#include <sys/stat.h>
-#include <sys/ubc.h>
-#include <sys/unistd.h>
-#include <sys/vnode.h>
-#include <sys/vnode_if.h>
-#include <sys/xattr.h>
-#include <sys/buf.h>
-#include <sys/namei.h>
-#include <sys/mman.h>
-
-#include "fuse.h"
-#include "fuse_file.h"
 #include "fuse_internal.h"
+
 #include "fuse_ipc.h"
+#include "fuse_kludges.h"
 #include "fuse_locking.h"
 #include "fuse_node.h"
-#include "fuse_file.h"
-#include "fuse_nodehash.h"
-#include "fuse_sysctl.h"
-#include "fuse_kludges.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-#include "fuse_biglock_vnops.h"
+#  include "fuse_biglock_vnops.h"
 #endif
+
+/* msleep */
+
+__private_extern__ __inline__
+int
+fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
+                     struct timespec *ts, __unused struct fuse_data *data)
+{
+    return msleep(chan, mtx, pri, wmesg, ts);
+}
 
 /* access */
 
@@ -179,7 +162,7 @@ fuse_internal_access(vnode_t                   vp,
          * On 10.4, I think I can get Finder to lock because of /.Trashes/<uid>
          * unless I use REVOKE_NONE here.
          */
-         
+
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
@@ -233,7 +216,7 @@ fuse_internal_exchange(vnode_t       fvp,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
     ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, (off_t*)0,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
-        
+
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
     }
@@ -282,7 +265,7 @@ fuse_internal_exchange(vnode_t       fvp,
         memcpy(&tmpfud, ffud, sizeof(struct fuse_vnode_data));
         memcpy(ffud, tfud, sizeof(struct fuse_vnode_data));
         memcpy(tfud, &tmpfud, sizeof(struct fuse_vnode_data));
-        
+
         HNodeExchangeFromFSNode(ffud, tfud);
         *
         */
@@ -336,7 +319,7 @@ fuse_internal_fsync(vnode_t                 vp,
     if (vnode_isdir(vp)) {
         op = FUSE_FSYNCDIR;
     }
-    
+
     fdisp_make_vp(fdip, op, vp, context);
     ffsi = fdip->indata;
     ffsi->fh = fufh->fh_id;
@@ -497,7 +480,7 @@ fuse_internal_attr_vat2fsai(mount_t                 mp,
 	if (newsize) {
             *newsize = vap->va_data_size;
         }
-        fsai->valid |= FATTR_SIZE;      
+        fsai->valid |= FATTR_SIZE;
 
         if (vp) {
             struct fuse_filehandle *fufh = NULL;
@@ -526,7 +509,7 @@ fuse_internal_attr_vat2fsai(mount_t                 mp,
      * Possible timestamps:
      *
      * Mac OS X                                          Linux  FUSE API
-     *  
+     *
      * va_access_time    last access time                atime  atime
      * va_backup_time    last backup time                -      -
      * va_change_time    last metadata change time       ctime* -
@@ -769,7 +752,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
          * }
          */
 
-        if (!fudge->namelen) { 
+        if (!fudge->namelen) {
             err = EINVAL;
             break;
         }
@@ -783,7 +766,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
   ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1)) + \
    (((dp)->d_namlen + 1 + 3) & ~3))
 
-        bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen); 
+        bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen);
 
         if (bytesavail > (size_t)uio_resid(uio)) {
             err = -1;
@@ -800,7 +783,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         de->d_fileno = (ino_t)fudge->ino; /* XXX: truncation */
 #endif /* __DARWIN_64_BIT_INO_T */
         de->d_reclen = bytesavail;
-        de->d_type   = fudge->type; 
+        de->d_type   = fudge->type;
         de->d_namlen = fudge->namelen;
 
         /* Filter out any ._* files if the mount is configured as such. */
@@ -947,7 +930,7 @@ fuse_internal_rename(vnode_t               fdvp,
            tcnp->cn_nameptr, tcnp->cn_namelen);
     ((char *)fdi.indata)[sizeof(*fri) + fcnp->cn_namelen +
                          tcnp->cn_namelen + 1] = '\0';
-        
+
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
     }
@@ -1016,7 +999,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     if (!(vtype == VREG || vtype == VDIR)) {
         return ENOTSUP;
     }
- 
+
     if (bflags & B_READ) {
         mode = FREAD;
         fufh_type = FUFH_RDONLY; /* FUFH_RDWR will also do */
@@ -1030,7 +1013,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         if (fvdat->flag & FN_CREATING) {
             (void)fuse_msleep(fvdat->creator, fvdat->createlock,
                               PDROP | PINOD | PCATCH, "fuse_internal_strategy",
-                              NULL);
+                              NULL, data);
         } else {
             fuse_lck_mtx_unlock(fvdat->createlock);
         }
@@ -1106,7 +1089,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
     if (bflags & B_INVAL) {
         IOLog("OSXFUSE: buffer does not contain valid information\n");
-    } 
+    }
 
     if (bflags & B_ERROR) {
         IOLog("OSXFUSE: an I/O error has occured\n");
@@ -1126,7 +1109,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         offset = (off_t)((off_t)buf_blkno(bp) * biosize);
 
         if (offset >= fvdat->filesize) {
-            /* Trying to read at/after EOF? */           
+            /* Trying to read at/after EOF? */
             if (offset != fvdat->filesize) {
                 /* Trying to read after EOF? */
                 buf_seterror(bp, EINVAL);
@@ -1159,7 +1142,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 op = FUSE_READDIR;
             }
             fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
-        
+
             fri = fdi.indata;
             fri->fh = fufh->fh_id;
 
@@ -1175,7 +1158,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fri->size = (typeof(fri->size))chunksize;
             fdi.tick->tk_aw_type = FT_A_BUF;
             fdi.tick->tk_aw_bufdata = bufdat;
-        
+
             if ((err = fdisp_wait_answ(&fdi))) {
                 /* There was a problem with reading. */
                 goto out;
@@ -1247,14 +1230,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 merr = 1;
                 break;
             }
-    
+
             fwo = fdi.answ;
             diff = chunksize - fwo->size;
             if (diff < 0) {
                 err = EINVAL;
                 break;
             }
-    
+
             left -= fwo->size;
             bufdat += fwo->size;
             offset += fwo->size;
@@ -1285,7 +1268,7 @@ out:
     buf_biodone(bp);
 
     return err;
-}    
+}
 
 __private_extern__
 errno_t
@@ -1340,7 +1323,7 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
             if (blkno == -1) {
                 buf_clear(bp);
             }
-                        
+
             /*
              * Our "device" is always /all contiguous/. We don't wanna be
              * doing things like:
@@ -1402,7 +1385,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     if ((err = fdisp_wait_answ(fdip))) {
         return err;
     }
-        
+
     feo = fdip->answ;
 
     if ((err = fuse_internal_checkentry(feo, vtyp))) {
@@ -1433,23 +1416,23 @@ fuse_internal_newentry(vnode_t               dvp,
                        size_t                bufsize,
                        enum vtype            vtype,
                        vfs_context_t         context)
-{   
+{
     int err;
     struct fuse_dispatcher fdi;
     mount_t mp = vnode_mount(dvp);
-    
+
     if (fuse_skip_apple_double_mp(mp, cnp->cn_nameptr, cnp->cn_namelen)) {
         return EACCES;
     }
-    
+
     fdisp_init(&fdi, 0);
     fuse_internal_newentry_makerequest(mp, VTOI(dvp), cnp, op, buf,
                                        bufsize, &fdi, context);
     err = fuse_internal_newentry_core(dvp, vpp, cnp, vtype, &fdi, context);
-    fuse_invalidate_attr(dvp);            
-                   
-    return err;  
-}         
+    fuse_invalidate_attr(dvp);
+
+    return err;
+}
 
 /* entity destruction */
 
@@ -1461,7 +1444,7 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
     fdi.tick = ftick;
 
-    fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0, 
+    fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
     return 0;
@@ -1512,7 +1495,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
 __private_extern__
 void
 fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
-{   
+{
     int err = 0;
 
     fuse_vncache_purge(vp);
@@ -1679,7 +1662,7 @@ fuse_internal_print_vnodes_callback(vnode_t vp, __unused void *cargs)
         vnode_putname(vname);
     }
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
- 
+
     return VNODE_RETURNED;
 }
 

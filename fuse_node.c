@@ -8,15 +8,14 @@
  * Amit Singh <singh@>
  */
 
-#include "fuse.h"
+#include "fuse_node.h"
+
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
 #include "fuse_locking.h"
-#include "fuse_node.h"
-#include "fuse_sysctl.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-#include "fuse_biglock_vnops.h"
+#  include "fuse_biglock_vnops.h"
 #endif
 
 void
@@ -28,7 +27,7 @@ FSNodeScrub(struct fuse_vnode_data *fvdat)
     lck_rw_free(fvdat->truncatelock, fuse_lock_group);
 #endif
     fvdat->fMagic = kFSNodeBadMagic;
-}       
+}
 
 errno_t
 FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
@@ -245,7 +244,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
 int
 fuse_vget_i(vnode_t               *vpp,
-            uint32_t               flags, 
+            uint32_t               flags,
             struct fuse_entry_out *feo,
             struct componentname  *cnp,
             vnode_t                dvp,

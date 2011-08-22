@@ -66,7 +66,7 @@ struct mntopt mopts[] = {
     { "init_timeout=",       0, FUSE_MOPT_INIT_TIMEOUT,           1 }, // kused
     { "iosize=",             0, FUSE_MOPT_IOSIZE,                 1 }, // kused
     { "jail_symlinks",       0, FUSE_MOPT_JAIL_SYMLINKS,          1 }, // kused
-    { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused 
+    { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused
     { "local",               0, FUSE_MOPT_LOCALVOL,               1 }, // kused
     { "native_xattr",        0, FUSE_MOPT_NATIVE_XATTR,           1 }, // kused
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
@@ -460,7 +460,7 @@ const char * const osxfuse_notification_names[] = {
 
 const char * const osxfuse_notification_object = OSXFUSE_IDENTIFIER;
 
-#ifdef MACFUSE_MODE
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 #define OSXFUSE_MACFUSE_MODE_ENV "OSXFUSE_MACFUSE_MODE"
 
 #define MACFUSE_NOTIFICATION_OBJECT \
@@ -473,7 +473,7 @@ const char * const macfuse_notification_names[] = {
 };
 
 const char * const macfuse_notification_object = MACFUSE_NOTIFICATION_OBJECT;
-#endif /* MACFUSE_MODE */
+#endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
 
 /* User info keys */
 
@@ -492,7 +492,7 @@ post_notification(const osxfuse_notification_t  notification,
     CFStringRef            object    = NULL;
     CFMutableDictionaryRef user_info = NULL;
 
-#ifdef MACFUSE_MODE
+#if OSXFUSE_ENABLE_MACFUSE_MODE
     char *env_value = getenv(OSXFUSE_MACFUSE_MODE_ENV);
     if (env_value != NULL && strcmp(env_value, "1") == 0) {
         name   = CFStringCreateWithCString(kCFAllocatorDefault,
@@ -509,7 +509,7 @@ post_notification(const osxfuse_notification_t  notification,
         object = CFStringCreateWithCString(kCFAllocatorDefault,
                                            osxfuse_notification_object,
                                            kCFStringEncodingUTF8);
-#ifdef MACFUSE_MODE
+#if OSXFUSE_ENABLE_MACFUSE_MODE
     }
 #endif
 
@@ -694,7 +694,7 @@ main(int argc, char **argv)
         case '\0':
             break;
 
-        case 'v': 
+        case 'v':
             showversion(1);
             break;
 
@@ -974,13 +974,13 @@ showhelp()
       "    -o fsname=<name>       set the file system's name\n"
       "    -o fssubtype=<num>     set the file system's fssubtype identifier\n"
       "    -o fstypename=<name>   set the file system's type name\n"
-      "    -o iosize=<size>       specify maximum I/O size in bytes\n" 
+      "    -o iosize=<size>       specify maximum I/O size in bytes\n"
       "    -o jail_symlinks       contain symbolic links within the mount\n"
-      "    -o kill_on_unmount     kernel will send a signal (SIGKILL by default) to the\n                           daemon after unmount finishes\n" 
+      "    -o kill_on_unmount     kernel will send a signal (SIGKILL by default) to the\n                           daemon after unmount finishes\n"
       "    -o local               mark the volume as \"local\" (default is \"nonlocal\")\n"
       "    -o negative_vncache    enable vnode name caching of non-existent objects\n"
       "    -o sparse              enable support for sparse files\n"
-      "    -o volname=<name>      set the file system's volume name\n"      
+      "    -o volname=<name>      set the file system's volume name\n"
       "\nAvailable negative mount options:\n"
       "    -o noalerts            disable all graphical alerts (if any) in OSXFUSE Core\n"
       "    -o noappledouble       ignore Apple Double (._) and .DS_Store files entirely\n"

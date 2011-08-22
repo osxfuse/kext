@@ -24,19 +24,16 @@
 #ifndef _FUSE_NODEHASH_H_
 #define _FUSE_NODEHASH_H_
 
-#include <stdint.h>
-#include <sys/systm.h>
-#include <sys/vnode.h>
-#include <libkern/OSMalloc.h>
+#include "fuse.h"
 
 #include "fuse_device.h"
 
 typedef struct HNode * HNodeRef;
 
-extern errno_t HNodeInit(lck_grp_t   *lockGroup, 
-                         lck_attr_t  *lockAttr, 
-                         OSMallocTag  mallocTag, 
-                         uint32_t     magic, 
+extern errno_t HNodeInit(lck_grp_t   *lockGroup,
+                         lck_attr_t  *lockAttr,
+                         OSMallocTag  mallocTag,
+                         uint32_t     magic,
                          size_t       fsNodeSize);
 extern void HNodeTerm(void);
 
