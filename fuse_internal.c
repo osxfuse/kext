@@ -26,7 +26,23 @@ int
 fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
                      struct timespec *ts, __unused struct fuse_data *data)
 {
-    return msleep(chan, mtx, pri, wmesg, ts);
+    int ret;
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    boolean_t biglock_locked = false;
+
+    if (data != NULL && fuse_biglock_have_lock(data->biglock)) {
+        biglock_locked = true;
+        fuse_biglock_unlock(data->biglock);
+    }
+#endif
+    ret = msleep(chan, mtx, pri, wmesg, ts);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    if (biglock_locked) {
+        fuse_biglock_lock(data->biglock);
+    }
+#endif
+
+    return ret;
 }
 
 /* access */
