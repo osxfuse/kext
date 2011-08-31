@@ -102,7 +102,6 @@ fuse_device_close_final(fuse_device_t fdev)
     }
 }
 
-/* Must be called under data->aw_mtx mutex */
 static __inline__
 void
 fuse_reject_answers(struct fuse_data *data)
