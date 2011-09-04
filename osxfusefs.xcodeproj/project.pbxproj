@@ -577,8 +577,8 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
-				MODULE_START = osxfusefs_start;
-				MODULE_STOP = osxfusefs_stop;
+				MODULE_START = fusefs_start;
+				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				OTHER_CFLAGS = (
 					"$(value)",
@@ -629,8 +629,8 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
-				MODULE_START = osxfusefs_start;
-				MODULE_STOP = osxfusefs_stop;
+				MODULE_START = fusefs_start;
+				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				OTHER_CFLAGS = (
 					"$(value)",
@@ -645,7 +645,6 @@
 		};
 		1DEB91C808733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* OSXFUSE.xconfig */;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -662,7 +661,6 @@
 		};
 		1DEB91C908733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* OSXFUSE.xconfig */;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -771,7 +769,6 @@
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				PRODUCT_NAME = All;
-				SDKROOT = macosx10.6;
 				VERSIONING_SYSTEM = "";
 			};
 			name = Debug;
@@ -784,7 +781,6 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				PRODUCT_NAME = All;
-				SDKROOT = macosx10.6;
 				VERSIONING_SYSTEM = "";
 				ZERO_LINK = NO;
 			};
