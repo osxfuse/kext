@@ -12,7 +12,18 @@
 extern void
 fuse_kludge_exchange(vnode_t v1, vnode_t v2)
 {
-    if (version_major > 9) {
+    if (version_major > 10) {
+        char *tmp_v_name = ((struct fuse_kludge_vnode_11 *)v1)->v_name;
+        ((struct fuse_kludge_vnode_11 *)v1)->v_name =
+            ((struct fuse_kludge_vnode_11 *)v2)->v_name;
+        ((struct fuse_kludge_vnode_11 *)v2)->v_name = tmp_v_name;
+
+        vnode_t tmp_v_parent = ((struct fuse_kludge_vnode_11 *)v1)->v_parent;
+        ((struct fuse_kludge_vnode_11 *)v1)->v_parent =
+            ((struct fuse_kludge_vnode_11 *)v2)->v_parent;
+        ((struct fuse_kludge_vnode_11 *)v2)->v_parent = tmp_v_parent;
+    }
+    else if (version_major > 9) {
         char *tmp_v_name = ((struct fuse_kludge_vnode_10 *)v1)->v_name;
         ((struct fuse_kludge_vnode_10 *)v1)->v_name =
             ((struct fuse_kludge_vnode_10 *)v2)->v_name;
