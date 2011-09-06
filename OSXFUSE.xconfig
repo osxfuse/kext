@@ -1,1 +1,3 @@
 VALID_ARCHS[sdk=macosx10.5] = ppc i386
+GCC_VERSION[sdk=macosx10.5] = 4.2
+
