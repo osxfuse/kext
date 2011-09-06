@@ -165,21 +165,28 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
     if (!arg1) {
         error = EPERM;
     } else {
-        error = SYSCTL_IN(req, arg1, sizeof(int));
+        int val;
+        error = SYSCTL_IN(req, &val, sizeof(int));
         if (error == 0) {
-            int val = *(int *)arg1;
             if (val) {
-                fuse_macfuse_mode = 1;
+                val = 1;
             } else {
-                fuse_macfuse_mode = 0;
+                val = 0;
             }
 
             lck_mtx_lock(osxfuse_sysctl_lock);
+            if (fuse_macfuse_mode == val) {
+                lck_mtx_unlock(osxfuse_sysctl_lock);
+            } else {
+                fuse_macfuse_mode = val;
 
-            kern_return_t kr;
-            kr = kernel_thread_start(osxfuse_thread_macfuse_mode, &fuse_macfuse_mode, &osxfuse_sysctl_macfuse_thread);
-            if (kr != KERN_SUCCESS) {
-                IOLog("OSXFUSE: could not change status of MacFUSE mode\n");
+                kern_return_t kr;
+                kr = kernel_thread_start(osxfuse_thread_macfuse_mode, NULL, &osxfuse_sysctl_macfuse_thread);
+                if (kr != KERN_SUCCESS) {
+                    IOLog("OSXFUSE: could not change status of MacFUSE mode\n");
+                }
+
+                // osxfuse_sysctl_lock is unlocked in osxfuse_thread_macfuse_mode
             }
         }
     }
@@ -547,21 +554,14 @@ fuse_sysctl_macfuse_stop(void)
 }
 
 static void
-osxfuse_thread_macfuse_mode(void * parameter, __unused wait_result_t wait_result)
+osxfuse_thread_macfuse_mode(__unused void * parameter, __unused wait_result_t wait_result)
 {
-    if (parameter == NULL) {
-        IOLog("OSXFUSE: failed to change state of MacFUSE mode\n");
-        goto out;
-    }
-
-    int enable = *((int *) parameter);
-    if (enable) {
+    if (fuse_macfuse_mode) {
         fuse_sysctl_macfuse_start();
     } else {
         fuse_sysctl_macfuse_stop();
     }
 
-out:
     lck_mtx_unlock(osxfuse_sysctl_lock);
     thread_terminate(current_thread());
 }
