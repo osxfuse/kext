@@ -125,7 +125,7 @@
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC213B2D1B300A523B2 /* load_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = load_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
-		437490F413B190D9009EAA5E /* OSXFUSE.xconfig */ = {isa = PBXFileReference; explicitFileType = text.xcconfig; path = OSXFUSE.xconfig; sourceTree = "<group>"; };
+		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
 		540965B70C33B17400F5E227 /* osxfusefs.fs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = osxfusefs.fs; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
 		540966530C33B5F500F5E227 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_mount.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -138,7 +138,7 @@
 		541780C00B6413CA003DE6C0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
 		5434066A0B79C3AA00471672 /* fuse_knote.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_knote.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		5434066B0B79C3AA00471672 /* fuse_knote.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_knote.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		549960D00EC093D800DDFCAD /* OSXFUSE.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = OSXFUSE.exports; sourceTree = "<group>"; };
+		549960D00EC093D800DDFCAD /* osxfusefs.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfusefs.exports; sourceTree = "<group>"; };
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = /System/Library/Frameworks/DiskArbitration.framework; sourceTree = "<absolute>"; };
@@ -202,11 +202,11 @@
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
-				549960D00EC093D800DDFCAD /* OSXFUSE.exports */,
-				437490F413B190D9009EAA5E /* OSXFUSE.xconfig */,
-				540966510C33B5F500F5E227 /* common */,
-				54C6DD780B5EEB44002D9FD9 /* kernel */,
-				540966330C33B54F00F5E227 /* user */,
+				437490F413B190D9009EAA5E /* osxfusefs.xcconfig */,
+				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
+				540966510C33B5F500F5E227 /* Common */,
+				54C6DD780B5EEB44002D9FD9 /* Kernel Extension */,
+				540966330C33B54F00F5E227 /* Helpers */,
 				5409662C0C33B54300F5E227 /* Frameworks */,
 				433E5DC813B2D21900A523B2 /* Products */,
 			);
@@ -233,17 +233,17 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		540966330C33B54F00F5E227 /* user */ = {
+		540966330C33B54F00F5E227 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
 				540966660C33B61A00F5E227 /* load */,
 				5409665E0C33B60B00F5E227 /* mount */,
 				540965B70C33B17400F5E227 /* osxfusefs.fs */,
 			);
-			name = user;
+			name = Helpers;
 			sourceTree = "<group>";
 		};
-		540966510C33B5F500F5E227 /* common */ = {
+		540966510C33B5F500F5E227 /* Common */ = {
 			isa = PBXGroup;
 			children = (
 				540966520C33B5F500F5E227 /* fuse_ioctl.h */,
@@ -251,6 +251,7 @@
 				540966540C33B5F500F5E227 /* fuse_param.h */,
 				540966550C33B5F500F5E227 /* fuse_version.h */,
 			);
+			name = Common;
 			path = common;
 			sourceTree = "<group>";
 		};
@@ -272,7 +273,7 @@
 			path = load;
 			sourceTree = "<group>";
 		};
-		54C6DD780B5EEB44002D9FD9 /* kernel */ = {
+		54C6DD780B5EEB44002D9FD9 /* Kernel Extension */ = {
 			isa = PBXGroup;
 			children = (
 				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
@@ -307,7 +308,7 @@
 				54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */,
 				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
 			);
-			name = kernel;
+			name = "Kernel Extension";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -540,7 +541,7 @@
 /* Begin XCBuildConfiguration section */
 		1DEB91C408733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* OSXFUSE.xconfig */;
+			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -592,12 +593,12 @@
 		};
 		1DEB91C508733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* OSXFUSE.xconfig */;
+			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
-				EXPORTED_SYMBOLS_FILE = OSXFUSE.exports;
+				EXPORTED_SYMBOLS_FILE = osxfusefs.exports;
 				GCC_MODEL_TUNING = G5;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
@@ -646,8 +647,8 @@
 		1DEB91C808733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -655,16 +656,15 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
 				PREBINDING = NO;
-				SDKROOT = macosx10.7;
 			};
 			name = Debug;
 		};
 		1DEB91C908733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -672,7 +672,6 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
 				PREBINDING = NO;
-				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
 			};
 			name = Release;
@@ -794,7 +793,6 @@
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				PRODUCT_NAME = osxfusefs.fs;
-				SDKROOT = macosx10.6;
 			};
 			name = Debug;
 		};
@@ -805,7 +803,6 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				PRODUCT_NAME = osxfusefs.fs;
-				SDKROOT = macosx10.6;
 				ZERO_LINK = NO;
 			};
 			name = Release;
