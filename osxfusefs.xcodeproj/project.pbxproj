@@ -142,7 +142,7 @@
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = /System/Library/Frameworks/DiskArbitration.framework; sourceTree = "<absolute>"; };
-		54C6DDB60B5EEB44002D9FD9 /* English */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		54C6DDB60B5EEB44002D9FD9 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
 		54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_device.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_device.h; sourceTree = "<group>"; };
@@ -166,7 +166,7 @@
 		54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vfsops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 30; path = Info.plist; sourceTree = "<group>"; };
+		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = Info.plist; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kludges.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		D27513B306A6225300ADB3A4 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
