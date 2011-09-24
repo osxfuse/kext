@@ -12,6 +12,8 @@
 #include <fuse_ioctl.h>
 
 #include <miscfs/devfs/devfs.h>
+#include <stdbool.h>
+#include <sys/queue.h>
 
 #if M_OSXFUSE_ENABLE_DSELECT
 #  include <sys/select.h>
@@ -21,11 +23,6 @@
 #define FUSE_DEVICE_GLOBAL_UNLOCK() fuse_lck_mtx_unlock(fuse_device_mutex)
 #define FUSE_DEVICE_LOCAL_LOCK(d)   fuse_lck_mtx_lock((d)->mtx)
 #define FUSE_DEVICE_LOCAL_UNLOCK(d) fuse_lck_mtx_unlock((d)->mtx)
-
-#define TAILQ_FOREACH_SAFE(var, head, field, tvar)           \
-        for ((var) = TAILQ_FIRST((head));                    \
-            (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
-            (var) = (tvar))
 
 static int    fuse_cdev_major          = -1;
 static UInt32 fuse_interface_available = FALSE;
