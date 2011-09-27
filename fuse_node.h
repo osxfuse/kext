@@ -56,8 +56,6 @@ enum {
 
 struct fuse_vnode_data {
 
-    /** check **/
-    uint32_t   fMagic;
     bool       fInitialised;
 
     /** self **/

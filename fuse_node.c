@@ -28,7 +28,6 @@ FSNodeScrub(struct fuse_vnode_data *fvdat)
     lck_rw_free(fvdat->nodelock, fuse_lock_group);
     lck_rw_free(fvdat->truncatelock, fuse_lock_group);
 #endif
-    fvdat->fMagic = kFSNodeBadMagic;
 }
 
 errno_t
@@ -73,8 +72,6 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
         if (!fvdat->fInitialised) {
 
-            /* check */
-            fvdat->fMagic       = kFSNodeMagic;
             fvdat->fInitialised = true;
 
             /* self */
