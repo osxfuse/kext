@@ -988,9 +988,9 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
         ihead->gid = kauth_cred_getgid(vfs_context_ucred(context));
     } else {
         /* XXX: could use more thought */
-        ihead->pid = proc_pid((proc_t)current_proc());
-        ihead->uid = kauth_cred_getuid(kauth_cred_get());
-        ihead->gid = kauth_cred_getgid(kauth_cred_get());
+        ihead->pid = proc_selfpid();
+        ihead->uid = kauth_getuid();
+        ihead->gid = kauth_getgid();
     }
 }
 
