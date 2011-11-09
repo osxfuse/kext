@@ -827,11 +827,11 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_adjust(cookediov, bytesavail);
 
         de = (struct dirent *)cookediov->base;
-#if __DARWIN_64_BIT_INO_T
-        de->d_fileno = fudge->ino;
+#ifdef _DARWIN_FEATURE_64_BIT_INODE
+        de->d_ino = fudge->ino;
 #else
-        de->d_fileno = (ino_t)fudge->ino; /* XXX: truncation */
-#endif /* __DARWIN_64_BIT_INO_T */
+        de->d_ino = (ino_t)fudge->ino; /* XXX: truncation */
+#endif /* _DARWIN_FEATURE_64_BIT_INODE */
         de->d_reclen = bytesavail;
         de->d_type   = fudge->type;
         de->d_namlen = fudge->namelen;
