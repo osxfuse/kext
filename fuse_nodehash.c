@@ -25,6 +25,10 @@
 
 #include "fuse_internal.h"
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#  include "fuse_locking.h"
+#endif
+
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
 #  define LCK_MTX_ASSERT lck_mtx_assert
 #else
@@ -644,7 +648,13 @@ HNodeLookupCreatingIfNecessary(fuse_device_t dev,
 
                 lck_mtx_unlock(gHashMutex);
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                fuse_biglock_unlock(mntdata->biglock);
+#endif
                 err = vnode_getwithvid(candidateVN, vid);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                fuse_biglock_lock(mntdata->biglock);
+#endif
 
                 if (err == 0) {
                     /* All ok; return the HNode/vnode to the caller. */
@@ -980,6 +990,9 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
                              vnode_t      *vnPtr)
 {
     errno_t   err = EAGAIN;
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *mntdata;
+#endif
     HNodeRef  thisNode;
     boolean_t needsUnlock;
     vnode_t   resultVN;
@@ -991,6 +1004,9 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
     assert(*vnPtr == NULL);
     assert(gHashMutex != NULL);
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    mntdata = fuse_device_get_mpdata(dev);
+#endif
     needsUnlock = TRUE;
     resultVN = NULL;
 
@@ -1022,7 +1038,13 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
             assert(candidateVN != NULL);
             vid = vnode_vid(candidateVN);
             lck_mtx_unlock(gHashMutex);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(mntdata->biglock);
+#endif
             err = vnode_getwithvid(candidateVN, vid);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(mntdata->biglock);
+#endif
             needsUnlock = FALSE;
             if (err == 0) {
                 assert(thisNode != NULL);
