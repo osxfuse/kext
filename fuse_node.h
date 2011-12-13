@@ -191,16 +191,8 @@ fuse_vncache_purge(vnode_t vp)
     return cache_purge(vp);
 }
 
-static __inline__
+__inline__
 int
-fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
-{
-    int ret = cache_lookup(dvp, vpp, cnp);
-#if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
-          ret, dvp, *vpp, cnp->cn_nameptr);
-#endif
-    return ret;
-}
+fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp);
 
 #endif /* _FUSE_NODE_H_ */

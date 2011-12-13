@@ -273,3 +273,23 @@ fuse_vget_i(vnode_t               *vpp,
 
     return 0;
 }
+    
+__inline__
+int
+fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
+{
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
+    fuse_biglock_unlock(data->biglock);
+#endif
+    int ret = cache_lookup(dvp, vpp, cnp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
+
+#if FUSE_TRACE_VNCACHE
+    IOLog("OSXFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
+          ret, dvp, *vpp, cnp->cn_nameptr);
+#endif
+    return ret;
+}
