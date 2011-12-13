@@ -1895,8 +1895,10 @@ fuse_vnop_open(struct vnop_open_args *ap)
     int error, isdir = 0;
     long hint = 0;
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
-
+#endif
+    
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -1964,8 +1966,21 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
                 /* Contender is going to sleep now. */
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                /*
+                 * Unlock fuse node so that the creating thread can acquire the 
+                 * lock and create the file.
+                 */
+                fuse_biglock_unlock(data->biglock);
+                fuse_nodelock_unlock(VTOFUD(vp));
+#endif
                 error = fuse_msleep(fvdat->creator, fvdat->createlock,
-                                    PDROP | PINOD | PCATCH, "fuse_open", NULL, data);
+                                    PDROP | PINOD | PCATCH, "fuse_open", NULL, NULL);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                fuse_nodelock_lock(VTOFUD(vp), FUSEFS_EXCLUSIVE_LOCK);
+                fuse_biglock_lock(data->biglock);
+#endif
+
                 /*
                  * msleep will drop the mutex. since we have PDROP specified,
                  * it will NOT regrab the mutex when it returns.
