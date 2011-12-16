@@ -13,26 +13,24 @@
 
 /* Compile-time tunables (M_OSXFUSE*) */
 
-#define M_OSXFUSE_ENABLE_FIFOFS            0
-#define M_OSXFUSE_ENABLE_INTERRUPT         1
-#define M_OSXFUSE_ENABLE_SPECFS            0
-#define M_OSXFUSE_ENABLE_TSLOCKING         1
-#define M_OSXFUSE_ENABLE_UNSUPPORTED       1
-#define M_OSXFUSE_ENABLE_XATTR             1
+#define M_OSXFUSE_ENABLE_FIFOFS                0
+#define M_OSXFUSE_ENABLE_INTERRUPT             1
+#define M_OSXFUSE_ENABLE_SPECFS                0
+#define M_OSXFUSE_ENABLE_TSLOCKING             1
+#define M_OSXFUSE_ENABLE_UNSUPPORTED           1
+#define M_OSXFUSE_ENABLE_XATTR                 1
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-#  define M_OSXFUSE_ENABLE_DSELECT         0
-#  define M_OSXFUSE_ENABLE_EXCHANGE        1
-#  define M_OSXFUSE_ENABLE_KQUEUE          1
-#  define M_OSXFUSE_ENABLE_KUNC            0
-#  if __LP64__
-#    define M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK 1
-#  endif /* __LP64__ */
+#  define M_OSXFUSE_ENABLE_DSELECT             0
+#  define M_OSXFUSE_ENABLE_EXCHANGE            1
+#  define M_OSXFUSE_ENABLE_KQUEUE              1
+#  define M_OSXFUSE_ENABLE_KUNC                0
+#  define M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK 1
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#  define M_OSXFUSE_ENABLE_HUGE_LOCK 0
-#  define M_OSXFUSE_ENABLE_LOCK_LOGGING 0
+#  define M_OSXFUSE_ENABLE_HUGE_LOCK           0
+#  define M_OSXFUSE_ENABLE_LOCK_LOGGING        0
 #  define FUSE_VNOP_EXPORT __private_extern__
 #else
 #  define FUSE_VNOP_EXPORT static
