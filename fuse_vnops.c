@@ -1898,7 +1898,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 #endif
-    
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -1968,8 +1968,26 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
                 /*
-                 * Unlock fuse node so that the creating thread can acquire the 
-                 * lock and create the file.
+                 * We assume, that a call to fuse_vnop_create is always
+                 * followed by a call to fuse_vnop_open by the same thread.
+                 *
+                 * Once fuse_vnop_create returns, the vnode of the new file is
+                 * accessible in subsequent fuse_vnop_lookup calls. This allows
+                 * contenders to look up the vnode and try to open the file
+                 * between the call to fuse_vnop_create and fuse_vnop_open.
+                 * Contenders are prevented from completing the call to
+                 * fuse_vnop_open as long as the flag FN_CREATING is set.
+                 *
+                 * Release biglock and fusenode lock before going to sleep, to
+                 * allow the creator to enter fuse_vnop_open, clear the flag
+                 * FN_CREATING and wake up the contenders. Releasing the
+                 * fusenode lock during a vnop is dangerous, but it is
+                 * considered safe at this point:
+                 *
+                 * - fufh_type is determined by the type of the vnode, which is
+                 *   not going to change.
+                 * - fufh points to the file handle determined by fufh_type and
+                 *   is verified after the contender is woken up.
                  */
                 fuse_biglock_unlock(data->biglock);
                 fuse_nodelock_unlock(VTOFUD(vp));

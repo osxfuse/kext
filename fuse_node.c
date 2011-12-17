@@ -273,7 +273,7 @@ fuse_vget_i(vnode_t               *vpp,
 
     return 0;
 }
-    
+
 __inline__
 int
 fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
