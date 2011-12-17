@@ -787,25 +787,18 @@ fuse_internal_strategy(vnode_t vp, buf_t bp);
 errno_t
 fuse_internal_strategy_buf(struct vnop_strategy_args *ap);
 
-
 /* xattr */
 
+#define COM_APPLE_ "com.apple."
+
 static __inline__
-int
+bool
 fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
 {
-    int ismpoption = fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEXATTR;
-
-    if (ismpoption && name) {
-#define COM_APPLE_ "com.apple."
-        if (bcmp(name, COM_APPLE_, sizeof(COM_APPLE_) - 1) == 0) {
-            return 1;
-        }
-    }
-
-    return 0;
+    return name &&
+           (fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEXATTR) &&
+           (bcmp(name, COM_APPLE_, sizeof(COM_APPLE_) - 1) == 0);
 }
-
 
 /* entity creation */
 
