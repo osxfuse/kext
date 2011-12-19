@@ -1027,9 +1027,27 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     if (fvdat->flag & FN_CREATING) {
         fuse_lck_mtx_lock(fvdat->createlock);
         if (fvdat->flag & FN_CREATING) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            /*
+             * We assume, that a call to fuse_vnop_create is always
+             * followed by a call to fuse_vnop_open by the same thread.
+             *
+             * Release biglock and fusenode lock before going to sleep, to
+             * allow the creator to enter fuse_vnop_open, clear the flag
+             * FN_CREATING and wake us up.
+             *
+             * See fuse_vnop_open for more details.
+             */
+            fuse_biglock_unlock(data->biglock);
+            fuse_nodelock_unlock(VTOFUD(vp));
+#endif
             (void)fuse_msleep(fvdat->creator, fvdat->createlock,
                               PDROP | PINOD | PCATCH, "fuse_internal_strategy",
                               NULL, data);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            fuse_nodelock_lock(VTOFUD(vp), FUSEFS_EXCLUSIVE_LOCK);
+            fuse_biglock_lock(data->biglock);
+#endif
         } else {
             fuse_lck_mtx_unlock(fvdat->createlock);
         }

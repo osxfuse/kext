@@ -665,6 +665,10 @@ fuse_biglock_vnop_strategy(struct vnop_strategy_args *ap)
 	 * as the underlying layers expect it. */
 	locked_vnop(buf_vnode(ap->a_bp), fuse_vnop_strategy, ap);
 #else
+    /* WARNING: nodelock and biglock are released and reacquired in 
+     *          fuse_internal_strategy. Calling fuse_vnop_strategy directly 
+     *          will result in a kernel panic! */
+
 	/* VNOP_STRATEGY in kpi_vfs.c is completely unprotected. This seems very
 	 * dangerous, but I don't want to do anything that kpi_vfs.c doesn't do
 	 * without being able to motivate why. */
