@@ -1840,7 +1840,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * I once noted that sync() is not going to help here, but I think
      * I've forgotten the context. Need to think about this again.
      *
-     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0, UBC_PUSHDIRTY);
+     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL, UBC_PUSHDIRTY);
      */
 
     /*
@@ -2080,7 +2080,7 @@ ok:
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
-        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL,
                   UBC_PUSHALL | UBC_INVALIDATE);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);
@@ -2094,7 +2094,7 @@ ok:
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
-        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL,
                   UBC_PUSHALL | UBC_INVALIDATE);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         fuse_biglock_lock(data->biglock);

@@ -222,9 +222,9 @@ fuse_internal_exchange(vnode_t       fvp,
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
-    ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, (off_t*)0,
+    ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, NULL,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
-    ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, (off_t*)0,
+    ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, NULL,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);

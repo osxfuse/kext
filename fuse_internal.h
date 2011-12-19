@@ -603,7 +603,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
-            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, (off_t*)0,
+            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, NULL,
                             UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
@@ -662,7 +662,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
-            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, (off_t*)0,
+            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, NULL,
                             UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(data->biglock);
