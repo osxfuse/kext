@@ -90,15 +90,9 @@ fuse_internal_access(vnode_t                   vp,
         return default_error;
     }
 
-    /* Unless explicitly permitted, deny everyone except the fs owner. */
     if (!vnode_isvroot(vp) && !(facp->facc_flags & FACCESS_NOCHECKSPY)) {
-        if (!(dataflags & FSESS_ALLOW_OTHER)) {
-            int denied = fuse_match_cred(data->daemoncred,
-                                         vfs_context_ucred(context));
-            if (denied) {
-                return EPERM;
-            }
-        }
+        CHECK_BLANKET_DENIAL(vp, context, EPERM);
+
         facp->facc_flags |= FACCESS_NOCHECKSPY;
     }
 
