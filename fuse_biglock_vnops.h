@@ -17,11 +17,11 @@
 
 #define fuse_nodelock_lock(node, type) \
 	do { \
-		int err; \
+		int fnl_err; \
 		log("%s: Locking node %p...", __FUNCTION__, node); \
-		err = fusefs_lock(node, type); \
-		if(err) \
-			return err; \
+		fnl_err = fusefs_lock(node, type); \
+		if(fnl_err) \
+			return fnl_err; \
 		log("%s:   node %p locked!", __FUNCTION__, node); \
 	} while(0)
 
@@ -34,11 +34,11 @@
 
 #define fuse_nodelock_lock_pair(node1, node2, type) \
 	do { \
-		int err; \
+		int fnl_err; \
 		log("%s: Locking node pair (%p, %p)...", __FUNCTION__, node1, node2); \
-		err = fusefs_lockpair(node1, node2, type); \
-		if(err) \
-			return err; \
+		fnl_err = fusefs_lockpair(node1, node2, type); \
+		if(fnl_err) \
+			return fnl_err; \
 		log("%s:   node pair (%p, %p) locked!", __FUNCTION__, node1, node2); \
 	} while(0)
 
@@ -51,11 +51,11 @@
 
 #define fuse_nodelock_lock_four(node1, node2, node3, node4, type) \
 	do { \
-		int err; \
+		int fnl_err; \
 		log("%s: Locking node pair (%p, %p, %p, %p)...", __FUNCTION__, node1, node2, node3, node4); \
-		err = fusefs_lockfour(node1, node2, node3, node4, type); \
-		if(err) \
-			return err; \
+		fnl_err = fusefs_lockfour(node1, node2, node3, node4, type); \
+		if(fnl_err) \
+			return fnl_err; \
 		log("%s:   node pair (%p, %p, %p, %p) locked!", __FUNCTION__, node1, node2, node3, node4); \
 	} while(0)
 
