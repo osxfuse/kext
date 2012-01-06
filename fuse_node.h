@@ -135,18 +135,6 @@ void fuse_vnode_init(vnode_t vp, struct fuse_vnode_data *fvdat,
 void fuse_vnode_ditch(vnode_t vp, vfs_context_t context);
 void fuse_vnode_teardown(vnode_t vp, vfs_context_t context, enum vtype vtyp);
 
-struct get_filehandle_param {
-
-    enum fuse_opcode opcode;
-    uint8_t          do_gc:1;
-    uint8_t          do_new:1;
-
-    int   explicitidentity;
-    pid_t pid;
-    uid_t uid;
-    gid_t gid;
-};
-
 errno_t
 FSNodeGetOrCreateFileVNodeByID(vnode_t               *vpp,
                                uint32_t               flags,
