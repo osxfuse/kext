@@ -2440,7 +2440,6 @@ fuse_vnop_read(struct vnop_read_args *ap)
         struct fuse_dispatcher  fdi;
         struct fuse_filehandle *fufh = NULL;
         struct fuse_read_in    *fri = NULL;
-        off_t                   rounded_iolength;
 
         fufh = &(fvdat->fufh[fufh_type]);
 
@@ -2461,8 +2460,6 @@ fuse_vnop_read(struct vnop_read_args *ap)
             /* Using existing fufh of type fufh_type. */
         }
 
-        rounded_iolength = (off_t)round_page_64(uio_offset(uio) +
-                                                uio_resid(uio));
         fdisp_init(&fdi, 0);
 
         while (uio_resid(uio) > 0) {
