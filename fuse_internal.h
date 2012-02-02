@@ -534,7 +534,7 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      * va_total_alloc
      */
     if (fuse_issparse_mp(mp)) {
-        VATTR_RETURN(vap, va_data_alloc, fat->blocks);
+        VATTR_RETURN(vap, va_data_alloc, fat->blocks * 512);
     }
 
     t.tv_sec = (typeof(t.tv_sec))fat->atime; /* XXX: truncation */
