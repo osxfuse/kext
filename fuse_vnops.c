@@ -351,7 +351,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     }
 
     fdisp_init(fdip, sizeof(*foi) + cnp->cn_namelen + 1);
-    fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
+    fdisp_make(fdip, FUSE_CREATE, mp, parent_nodeid, context);
 
     foi = fdip->indata;
     foi->mode = mode;
@@ -379,9 +379,8 @@ good_old:
     gone_good_old = true;
     fmni.mode = mode; /* fvdat->flags; */
     fmni.rdev = 0;
-    fuse_internal_newentry_makerequest(vnode_mount(dvp), parent_nodeid, cnp,
-                                       FUSE_MKNOD, &fmni, sizeof(fmni),
-                                       fdip, context);
+    fuse_internal_newentry_makerequest(mp, parent_nodeid, cnp, FUSE_MKNOD,
+                                       &fmni, sizeof(fmni), fdip, context);
     err = fdisp_wait_answ(fdip);
     if (err) {
         goto undo;
