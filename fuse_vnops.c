@@ -1698,6 +1698,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     int err = 0;
     int deleted = 0;
     int retried = 0;
+    int preflight = 0;
 
     fuse_trace_printf_vnop();
 
@@ -1731,21 +1732,48 @@ retry:
         goto out;
     }
 
-    if (!deleted) {
+    if (!deleted && !preflight) {
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
         struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+
+        /*
+         * fuse_filehandle_preflight_status eventually calls vnode_authorize
+         * which might call VNOP_GETATTR. Release biglock and fusenode lock to
+         * prevent a deadlock.
+         *
+         * Releasing the fusenode lock during a vnop is dangerous, but it is
+         * considered safe at this point:
+         *
+         * - fufh_type is determined by fflags which is not going to change.
+         * - We make sure that no other thread opens the file while the
+         *   fusenode is released before proceding.
+         */
         fuse_biglock_unlock(data->biglock);
+        fuse_nodelock_unlock(fvdat);
 #endif
         err = fuse_filehandle_preflight_status(vp, fvdat->parentvp,
                                                context, fufh_type);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_nodelock_lock(fvdat, FUSEFS_EXCLUSIVE_LOCK);
         fuse_biglock_lock(data->biglock);
 #endif
+
         if (err == ENOENT) {
             deleted = 1;
             err = 0;
         }
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        /*
+         * Make sure that no other thread created a valid file handle by calling
+         * fuse_filehandle_get while the fusenode lock was released. Calling
+         * fuse_filehandle_get on a valid file handle results in a kernel panic.
+         */
+        preflight = 1;
+        goto retry;
+#endif
     }
+    preflight = 0;
 
 #if FUSE_DEBUG
     fuse_preflight_log(vp, fufh_type, err, "mmap");
