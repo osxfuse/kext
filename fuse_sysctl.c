@@ -83,7 +83,9 @@ SYSCTL_NODE(_macfuse, OID_AUTO, version, CTLFLAG_RW, 0,
 
 int sysctl_osxfuse_control_kill_handler SYSCTL_HANDLER_ARGS;
 int sysctl_osxfuse_control_print_vnodes_handler SYSCTL_HANDLER_ARGS;
+#if OSXFUSE_ENABLE_MACFUSE_MODE
 int sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS;
+#endif
 int sysctl_osxfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS;
 
 int
