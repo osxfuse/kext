@@ -589,6 +589,9 @@ out:
             struct vfsioattr ioattr;
 
             vfs_ioattr(mp, &ioattr);
+            ioattr.io_maxreadcnt = ioattr.io_maxwritecnt = data->iosize;
+            ioattr.io_segreadcnt = ioattr.io_segwritecnt = data->iosize / PAGE_SIZE;
+            ioattr.io_maxsegreadsize = ioattr.io_maxsegwritesize = data->iosize;
             ioattr.io_devblocksize = data->blocksize;
             vfs_setioattr(mp, &ioattr);
         }
