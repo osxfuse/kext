@@ -71,6 +71,7 @@ struct mntopt mopts[] = {
     { "native_xattr",        0, FUSE_MOPT_NATIVE_XATTR,           1 }, // kused
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
     { "sparse",              0, FUSE_MOPT_SPARSE,                 1 }, // kused
+    { "slow_statfs",         0, FUSE_MOPT_SLOW_STATFS,            1 }, // kused
     { "use_ino",             0, FUSE_MOPT_USE_INO,                1 },
     { "volname=",            0, FUSE_MOPT_VOLNAME,                1 }, // kused
 

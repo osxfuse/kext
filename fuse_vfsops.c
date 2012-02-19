@@ -239,6 +239,10 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         mntopts |= FSESS_SPARSE;
     }
 
+    if (fusefs_args.altflags & FUSE_MOPT_SLOW_STATFS) {
+        mntopts |= FSESS_SLOW_STATFS;
+    }
+
     if (fusefs_args.altflags & FUSE_MOPT_AUTO_CACHE) {
         mntopts |= FSESS_AUTO_CACHE;
     }
@@ -828,6 +832,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
         ;
+
+    if (data->dataflags & FSESS_SLOW_STATFS) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] &=
+            ~VOL_CAP_FMT_FAST_STATFS;
+    }
 
     attr->f_capabilities.valid[VOL_CAPABILITIES_FORMAT] = 0
         | VOL_CAP_FMT_PERSISTENTOBJECTIDS
