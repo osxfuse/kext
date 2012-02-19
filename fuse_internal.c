@@ -19,6 +19,8 @@
 #  include "fuse_biglock_vnops.h"
 #endif
 
+#include <AvailabilityMacros.h>
+
 /* msleep */
 
 __private_extern__ __inline__
@@ -1540,7 +1542,8 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
             IOLog("OSXFUSE: disappearing act: revoke failed (%d)\n", err);
         }
 
-        /* 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+        /*
          * Checking whether the vnode is in the process of being recycled
          * to avoid the 'vnode reclaim in progress' kernel panic.
          *
@@ -1550,15 +1553,18 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
          * that we got here.
          */
         if(!vnode_isrecycled(vp)) {
+#endif
             err = vnode_recycle(vp);
             if (err) {
                 IOLog("OSXFUSE: disappearing act: recycle failed (%d)\n", err);
             }
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
         }
         else {
             IOLog("OSXFUSE: Avoided 'vnode reclaim in progress' kernel "
                   "panic. What now?\n");
         }
+#endif
     }
 }
 
