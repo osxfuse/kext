@@ -36,8 +36,6 @@ struct fuse_selinfo {
 
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
-#if M_OSXFUSE_ENABLE_EXCHANGE
-
 /* The shop of horrors. */
 
 /*
@@ -57,7 +55,8 @@ struct fuse_selinfo {
  */
 
 struct fuse_kludge_vnode_9 {
-    char     dummy0[48];
+    char     v_lock[12];
+    char     dummy0[36];
     uint16_t v_lflag;
     char     dummy1[62];
     char    *v_name;
@@ -67,7 +66,8 @@ struct fuse_kludge_vnode_9 {
 
 #if __LP64__
 struct fuse_kludge_vnode_10 {
-    char     dummy0[88];
+    char     v_lock[24];
+    char     dummy0[64];
     uint16_t v_lflag;
     char     dummy1[94];
     char    *v_name;
@@ -76,7 +76,8 @@ struct fuse_kludge_vnode_10 {
 } __attribute__ ((packed));
 #else
 struct fuse_kludge_vnode_10 {
-    char     dummy0[48];
+    char     v_lock[12];
+    char     dummy0[36];
     uint16_t v_lflag;
     char     dummy1[66];
     char    *v_name;
@@ -86,7 +87,8 @@ struct fuse_kludge_vnode_10 {
 #endif
 
 struct fuse_kludge_vnode_11 {
-    void    *dummy0[10];
+    void    *v_lock[3];
+    void    *dummy0[7];
     char     dummy1[8];
     uint16_t v_lflag;
     void    *dummy2[7];
@@ -96,8 +98,12 @@ struct fuse_kludge_vnode_11 {
     void    *dummy4[7];
 } __attribute__ ((packed));
 
+#if M_OSXFUSE_ENABLE_EXCHANGE
+
 extern void fuse_kludge_exchange(vnode_t v1, vnode_t v2);
 
 #endif /* M_OSXFUSE_ENABLE_EXCHANGE */
+
+int fuse_kludge_vnode_isrecycled(vnode_t vp);
 
 #endif /* _FUSE_KLUDGES_H_ */
