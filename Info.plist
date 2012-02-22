@@ -1,6 +1,15 @@
 #include "common/fuse_version.h"
 #include "common/fuse_param.h"
-#define OSXFUSE_KPI_VERSION 9.0.0
+#include <AvailabilityMacros.h>
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
+#  define OSXFUSE_KPI_VERSION 11.0.0
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
+#  define OSXFUSE_KPI_VERSION 10.0.0
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+#  define OSXFUSE_KPI_VERSION 9.0.0
+#else
+#  error "Unsupported version of Mac OS X"
+#endif
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
