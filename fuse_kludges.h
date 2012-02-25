@@ -42,16 +42,16 @@ struct fuse_selinfo {
  * # 10.5        10.6-32     10.6-64     10.7-32     10.7-64
  *
  * # sizeof(struct vnode)
- *   144         148         248         152         256
+ *   144         148         248         148         248
  *
  * # offsetof(struct vnode, v_lflag)
- *   48          48          88          48          88
+ *   48          48          88          44          80
  *
  * # offsetof(struct vnode, v_name)
- *   112         116         184         116         184
+ *   112         116         184         112         176
  *
  * # offsetof(struct vnode, v_parent)
- *   116         120         192         120         192
+ *   116         120         192         116         184
  */
 
 struct fuse_kludge_vnode_9 {
@@ -87,7 +87,7 @@ struct fuse_kludge_vnode_10 {
 #endif
 
 struct fuse_kludge_vnode_11 {
-    void    *v_lock[3];
+    void    *v_lock[2];
     void    *dummy0[7];
     char     dummy1[8];
     uint16_t v_lflag;
