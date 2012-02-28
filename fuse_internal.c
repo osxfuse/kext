@@ -577,6 +577,7 @@ fuse_internal_attr_vat2fsai(mount_t                 mp,
 
     if (VATTR_IS_ACTIVE(vap, va_mode)) {
         fsai->mode = vap->va_mode & ALLPERMS;
+        fsai->mode |= VTTOIF(vnode_vtype(vp));
         fsai->valid |= FATTR_MODE;
     }
     VATTR_SET_SUPPORTED(vap, va_mode);
