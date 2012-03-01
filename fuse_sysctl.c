@@ -10,6 +10,7 @@
 #include <sys/sysctl.h>
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
+#include <kern/thread.h>
 
 static lck_grp_t *osxfuse_lock_group  = NULL;
 static lck_mtx_t *osxfuse_sysctl_lock = NULL;
@@ -17,7 +18,7 @@ static lck_mtx_t *osxfuse_sysctl_lock = NULL;
 static thread_t osxfuse_sysctl_macfuse_thread;
 static void osxfuse_thread_macfuse_mode(void *, wait_result_t);
 
-#endif
+#endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
 
 /* NB: none of these are bigger than unsigned 32-bit. */
 
@@ -196,7 +197,7 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
     return error;
 }
 
-#endif
+#endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
 
 int
 sysctl_osxfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS
@@ -568,7 +569,7 @@ osxfuse_thread_macfuse_mode(__unused void * parameter, __unused wait_result_t wa
     thread_terminate(current_thread());
 }
 
-#endif
+#endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
 
 void
 fuse_sysctl_start(void)
@@ -607,5 +608,5 @@ fuse_sysctl_stop(void)
 
     lck_mtx_free(osxfuse_sysctl_lock, osxfuse_lock_group);
     lck_grp_free(osxfuse_lock_group);
-#endif
+#endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
 }
