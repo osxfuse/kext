@@ -341,7 +341,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("OSXFUSE: fuse_vnop_create(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -519,7 +519,7 @@ fuse_vnop_exchange(struct vnop_exchange_args *ap)
     }
 
     if (fuse_isdeadfs_fs(fvp)) {
-        panic("OSXFUSE: fuse_vnop_exchange(): called on a dead file system");
+        return EIO;
     }
 
     fname = vnode_getname(fvp);
@@ -1148,7 +1148,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("OSXFUSE: fuse_vnop_link(): called on a dead file system");
+        return EIO;
     }
 
     if (vnode_mount(tdvp) != vnode_mount(vp)) {
@@ -1610,7 +1610,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("OSXFUSE: fuse_vnop_mkdir(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -1655,7 +1655,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("OSXFUSE: fuse_vnop_mknod(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
@@ -1702,7 +1702,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("OSXFUSE: fuse_vnop_mmap(): called on a dead file system");
+        return EIO;
     }
 
     if (fuse_isdirectio(vp)) {
@@ -2785,7 +2785,7 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("OSXFUSE: fuse_vnop_remove(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -2926,7 +2926,7 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(fdvp)) {
-        panic("OSXFUSE: fuse_vnop_rename(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(fdvp, context, ENOENT);
@@ -3025,7 +3025,7 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs_fs(vp)) {
-        panic("OSXFUSE: fuse_vnop_rmdir(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -3412,7 +3412,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
     fuse_trace_printf_vnop_novp();
 
     if (fuse_isdeadfs_fs(dvp)) {
-        panic("OSXFUSE: fuse_vnop_symlink(): called on a dead file system");
+        return EIO;
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
