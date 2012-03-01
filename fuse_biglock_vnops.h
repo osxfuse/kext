@@ -14,56 +14,63 @@
 #endif
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#include <kern/thread.h>
 
 #define fuse_nodelock_lock(node, type) \
 	do { \
+		thread_t nodelock_thread = current_thread(); \
 		int fnl_err; \
-		log("%s: Locking node %p...", __FUNCTION__, node); \
+		log("%s thread=%p: Locking node %p...", __FUNCTION__, nodelock_thread, node); \
 		fnl_err = fusefs_lock(node, type); \
 		if(fnl_err) \
 			return fnl_err; \
-		log("%s:   node %p locked!", __FUNCTION__, node); \
+		log("%s thread=%p: node %p locked!", __FUNCTION__, nodelock_thread, node); \
 	} while(0)
 
 #define fuse_nodelock_unlock(node) \
 	do { \
-		log("%s: Unlocking node %p...", __FUNCTION__, node); \
+		thread_t nodelock_thread = current_thread(); \
+		log("%s thread=%p: Unlocking node %p...", __FUNCTION__, nodelock_thread, node); \
 		fusefs_unlock(node); \
-		log("%s:   node %p unlocked!", __FUNCTION__, node); \
+		log("%s thread=%p: node %p unlocked!", __FUNCTION__, nodelock_thread, node); \
 	} while(0)
 
 #define fuse_nodelock_lock_pair(node1, node2, type) \
 	do { \
+		thread_t nodelock_thread = current_thread(); \
 		int fnl_err; \
-		log("%s: Locking node pair (%p, %p)...", __FUNCTION__, node1, node2); \
+		log("%s thread=%p: Locking node pair (%p, %p)...", __FUNCTION__, nodelock_thread, node1, node2); \
 		fnl_err = fusefs_lockpair(node1, node2, type); \
 		if(fnl_err) \
 			return fnl_err; \
-		log("%s:   node pair (%p, %p) locked!", __FUNCTION__, node1, node2); \
+		log("%s thread=%p: node pair (%p, %p) locked!", __FUNCTION__, nodelock_thread, node1, node2); \
 	} while(0)
 
 #define fuse_nodelock_unlock_pair(node1, node2) \
 	do { \
-		log("%s: Unlocking node pair (%p, %p)...", __FUNCTION__, node1, node2); \
+		thread_t nodelock_thread = current_thread(); \
+		log("%s thread=%p: Unlocking node pair (%p, %p)...", __FUNCTION__, nodelock_thread, node1, node2); \
 		fusefs_unlockpair(node1, node2); \
-		log("%s:   node pair (%p, %p) unlocked!", __FUNCTION__, node1, node2); \
+		log("%s thread=%p: node pair (%p, %p) unlocked!", __FUNCTION__, nodelock_thread, node1, node2); \
 	} while(0)
 
 #define fuse_nodelock_lock_four(node1, node2, node3, node4, type) \
 	do { \
+		thread_t nodelock_thread = current_thread(); \
 		int fnl_err; \
-		log("%s: Locking node pair (%p, %p, %p, %p)...", __FUNCTION__, node1, node2, node3, node4); \
+		log("%s thread=%p: Locking node pair (%p, %p, %p, %p)...", __FUNCTION__, nodelock_thread, node1, node2, node3, node4); \
 		fnl_err = fusefs_lockfour(node1, node2, node3, node4, type); \
 		if(fnl_err) \
 			return fnl_err; \
-		log("%s:   node pair (%p, %p, %p, %p) locked!", __FUNCTION__, node1, node2, node3, node4); \
+		log("%s thread=%p: node pair (%p, %p, %p, %p) locked!", __FUNCTION__, nodelock_thread, node1, node2, node3, node4); \
 	} while(0)
 
 #define fuse_nodelock_unlock_four(node1, node2, node3, node4) \
 	do { \
-		log("%s: Unlocking nodes (%p, %p, %p, %p)...", __FUNCTION__, node1, node2, node3, node4); \
+		thread_t nodelock_thread = current_thread(); \
+		log("%s [%p]: Unlocking nodes (%p, %p, %p, %p)...", __FUNCTION__, nodelock_thread, node1, node2, node3, node4); \
 		fusefs_unlockfour(node1, node2, node3, node4); \
-		log("%s:   node pair (%p, %p, %p, %p) unlocked!", __FUNCTION__, node1, node2, node3, node4); \
+		log("%s [%p]:   node pair (%p, %p, %p, %p) unlocked!", __FUNCTION__, nodelock_thread, node1, node2, node3, node4); \
 	} while(0)
 
 /** Wrapper that surrounds a vfsop call with biglock locking. */
