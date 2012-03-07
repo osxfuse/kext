@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Google. All Rights Reserved.
- * Amit Singh <singh@>
+ * Copyright (c) 2007 Amit Singh/Google Inc.
+ * Copyright (c) 2012 Benjamin Fleischer
  */
 
 #ifndef _FUSE_KNOTE_H_
@@ -10,6 +10,7 @@
 
 #include <sys/event.h>
 #include <sys/queue.h>
+#include <AvailabilityMacros.h>
 
 #if M_OSXFUSE_ENABLE_KQUEUE
 
@@ -27,33 +28,102 @@ struct filterops {
 
 TAILQ_HEAD(kqtailq, knote); /* a list of "queued" events */
 
-struct knote {
-    int                  kn_inuse;       /* inuse count */
-    struct kqtailq      *kn_tq;          /* pointer to tail queue */
-    TAILQ_ENTRY(knote)   kn_tqe;         /* linkage for tail queue */
-    struct kqueue       *kn_kq;          /* which kqueue we are on */
-    SLIST_ENTRY(knote)   kn_link;        /* linkage for search list */
-    SLIST_ENTRY(knote)   kn_selnext;     /* klist element chain */
-    union {
-        struct fileproc *p_fp;           /* file data pointer */
-        struct proc     *p_proc;         /* proc pointer */
-    } kn_ptr;
-    struct filterops    *kn_fop;
-    int                  kn_status;      /* status bits */
-    int                  kn_sfflags;     /* saved filter flags */
-    struct kevent        kn_kevent;
-    caddr_t              kn_hook;
-    int                  kn_hookid;
-    int64_t              kn_sdata;       /* saved data field */
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
 
-#define kn_id     kn_kevent.ident
-#define kn_filter kn_kevent.filter
-#define kn_flags  kn_kevent.flags
-#define kn_fflags kn_kevent.fflags
-#define kn_data   kn_kevent.data
-#define kn_fp     kn_ptr.p_fp
+struct knote {
+    int                      kn_inuse;       /* inuse count */
+    struct kqtailq          *kn_tq;          /* pointer to tail queue */
+    TAILQ_ENTRY(knote)       kn_tqe;         /* linkage for tail queue */
+    struct kqueue           *kn_kq;          /* which kqueue we are on */
+    SLIST_ENTRY(knote)       kn_link;        /* linkage for search list */
+    SLIST_ENTRY(knote)       kn_selnext;     /* klist element chain */
+    union {
+        struct fileproc     *p_fp;           /* file data pointer */
+        struct proc         *p_proc;         /* proc pointer */
+    } kn_ptr;
+    struct filterops        *kn_fop;
+    int                      kn_status;      /* status bits */
+    int                      kn_sfflags;     /* saved filter flags */
+    struct kevent            kn_kevent;
+    caddr_t                  kn_hook;
+    int                      kn_hookid;
+    int64_t                  kn_sdata;       /* saved data field */
+
+#define kn_id       kn_kevent.ident
+#define kn_filter   kn_kevent.filter
+#define kn_flags    kn_kevent.flags
+#define kn_fflags   kn_kevent.fflags
+#define kn_data     kn_kevent.data
+#define kn_fp       kn_ptr.p_fp
 
 };
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED < 1070
+
+struct knote {
+    int                      kn_inuse;      /* inuse count */
+    struct kqtailq          *kn_tq;         /* pointer to tail queue */
+    TAILQ_ENTRY(knote)       kn_tqe;        /* linkage for tail queue */
+    struct kqueue           *kn_kq;         /* which kqueue we are on */
+    SLIST_ENTRY(knote)       kn_link;       /* linkage for search list */
+    SLIST_ENTRY(knote)       kn_selnext;    /* klist element chain */
+    union {
+        struct fileproc     *p_fp;          /* file data pointer */
+        struct proc         *p_proc;        /* proc pointer */
+        struct ipc_pset     *p_pset;        /* pset pointer */
+        struct au_sentry    *p_se;          /* Audit session ptr */
+    } kn_ptr;
+    struct filterops        *kn_fop;
+    int                      kn_status;     /* status bits */
+    int                      kn_sfflags;    /* saved filter flags */
+    struct kevent64_s        kn_kevent;
+    void                    *kn_hook;
+    int                      kn_hookid;
+    int64_t                  kn_sdata;      /* saved data field */
+
+#define kn_id       kn_kevent.ident
+#define kn_filter   kn_kevent.filter
+#define kn_flags    kn_kevent.flags
+#define kn_fflags   kn_kevent.fflags
+#define kn_data     kn_kevent.data
+#define kn_udata    kn_kevent.udata
+#define kn_ext      kn_kevent.ext
+#define kn_fp       kn_ptr.p_fp
+};
+
+#else /* MAC_OS_X_VERSION_MIN_REQUIRED >= 1070 */
+
+struct knote {
+    int                      kn_inuse;      /* inuse count */
+    struct kqtailq          *kn_tq;         /* pointer to tail queue */
+    TAILQ_ENTRY(knote)       kn_tqe;        /* linkage for tail queue */
+    struct kqueue           *kn_kq;         /* which kqueue we are on */
+    SLIST_ENTRY(knote)       kn_link;       /* linkage for search list */
+    SLIST_ENTRY(knote)       kn_selnext;    /* klist element chain */
+    union {
+        struct fileproc     *p_fp;          /* file data pointer */
+        struct proc         *p_proc;        /* proc pointer */
+        struct ipc_pset     *p_pset;        /* pset pointer */
+    } kn_ptr;
+    struct filterops        *kn_fop;
+    int                      kn_status;     /* status bits */
+    int                      kn_sfflags;    /* saved filter flags */
+    struct kevent64_s        kn_kevent;
+    void                    *kn_hook;
+    int                      kn_hookid;
+    int64_t                  kn_sdata;      /* saved data field */
+
+#define kn_id       kn_kevent.ident
+#define kn_filter   kn_kevent.filter
+#define kn_flags    kn_kevent.flags
+#define kn_fflags   kn_kevent.fflags
+#define kn_data     kn_kevent.data
+#define kn_udata    kn_kevent.udata
+#define kn_ext      kn_kevent.ext
+#define kn_fp       kn_ptr.p_fp
+};
+
+#endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
 
 #define KNOTE(list, hint)       knote(list, hint)
 #define KNOTE_ATTACH(list, kn)  knote_attach(list, kn)
@@ -76,8 +146,8 @@ extern struct filterops fusevnode_filtops;
 
 #define FUSE_KNOTE(vp, hint)    KNOTE(&VTOFUD(vp)->c_knotes, (hint))
 
-#else
+#else /* !M_OSXFUSE_ENABLE_KQUEUE */
 #define FUSE_KNOTE(vp, hint)    {}
 #endif /* M_OSXFUSE_ENABLE_KQUEUE */
 
-#endif /* _FUSE_NODE_H_ */
+#endif /* _FUSE_KNOTE_H_ */
