@@ -582,10 +582,6 @@
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				OTHER_CFLAGS = (
-					"$(value)",
-					"-D__FreeBSD__=10",
-				);
 				PRODUCT_NAME = osxfusefs;
 				WRAPPER_EXTENSION = kext;
 				ZERO_LINK = YES;
@@ -635,10 +631,6 @@
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				OTHER_CFLAGS = (
-					"$(value)",
-					"-D__FreeBSD__=10",
-				);
 				PRODUCT_NAME = osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
