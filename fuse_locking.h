@@ -149,18 +149,16 @@ extern fusefs_recursive_lock *fuse_huge_lock;
 
 #define fuse_hugelock_lock() \
 	do { \
-		thread_t hugelock_thread = current_thread(); \
-		log("%s thread=%p: Aquiring huge lock %p...", __FUNCTION__, hugelock_thread, fuse_huge_lock); \
+		log("%s thread=%p: Aquiring huge lock %p...", __FUNCTION__, current_thread(), fuse_huge_lock); \
 		fusefs_recursive_lock_lock(fuse_huge_lock); \
-		log("%s thread=%p: huge lock %p aquired!", __FUNCTION__, hugelock_thread, fuse_huge_lock); \
+		log("%s thread=%p: huge lock %p aquired!", __FUNCTION__, current_thread(), fuse_huge_lock); \
 	} while(0)
 
 #define fuse_hugelock_unlock() \
 	do { \
-		thread_t hugelock_thread = current_thread(); \
-		log("%s thread=%p: Releasing huge lock %p...", __FUNCTION__, hugelock_thread, fuse_huge_lock); \
+		log("%s thread=%p: Releasing huge lock %p...", __FUNCTION__, current_thread(), fuse_huge_lock); \
 		fusefs_recursive_lock_unlock(fuse_huge_lock); \
-		log("%s thread=%p: huge lock %p released!", __FUNCTION__, hugelock_thread, fuse_huge_lock); \
+		log("%s thread=%p: huge lock %p released!", __FUNCTION__, current_thread(), fuse_huge_lock); \
 	} while(0)
 
 #define fuse_hugelock_have_lock() fusefs_recursive_lock_have_lock(fuse_huge_lock)
@@ -178,18 +176,16 @@ typedef fusefs_recursive_lock fuse_biglock_t;
 
 #define fuse_biglock_lock(lock) \
 	do { \
-		thread_t biglock_thread = current_thread(); \
-		log("%s thread=%p: Aquiring biglock %p...", __FUNCTION__, biglock_thread, lock); \
+		log("%s thread=%p: Aquiring biglock %p...", __FUNCTION__, current_thread(), lock); \
 		fusefs_recursive_lock_lock(lock); \
-		log("%s thread=%p: biglock %p aquired!", __FUNCTION__, biglock_thread, lock); \
+		log("%s thread=%p: biglock %p aquired!", __FUNCTION__, current_thread(), lock); \
 	} while(0)
 
 #define fuse_biglock_unlock(lock) \
 	do { \
-		thread_t biglock_thread = current_thread(); \
-		log("%s thread=%p: Releasing biglock %p...", __FUNCTION__, biglock_thread, lock); \
+		log("%s thread=%p: Releasing biglock %p...", __FUNCTION__, current_thread(), lock); \
 		fusefs_recursive_lock_unlock(lock); \
-		log("%s thread=%p: biglock %p released!", __FUNCTION__, biglock_thread, lock); \
+		log("%s thread=%p: biglock %p released!", __FUNCTION__, current_thread(), lock); \
 	} while(0)
 
 #define fuse_biglock_have_lock(lock) fusefs_recursive_lock_have_lock(lock)
