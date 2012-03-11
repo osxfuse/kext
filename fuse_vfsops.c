@@ -22,6 +22,8 @@
 
 #include <fuse_mount.h>
 
+#include <libkern/version.h>
+
 static const struct timespec kZeroTime = { 0, 0 };
 
 vfstable_t fuse_vfs_table_ref = NULL;
@@ -822,15 +824,22 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_JOURNAL
 //      | VOL_CAP_FMT_JOURNAL_ACTIVE
         | VOL_CAP_FMT_NO_ROOT_TIMES
-//      | VOL_CAP_FMT_SPARSE_FILES
+        | VOL_CAP_FMT_SPARSE_FILES
 //      | VOL_CAP_FMT_ZERO_RUNS
-//      | VOL_CAP_FMT_CASE_SENSITIVE
+        | VOL_CAP_FMT_CASE_SENSITIVE
         | VOL_CAP_FMT_CASE_PRESERVING
         | VOL_CAP_FMT_FAST_STATFS
         | VOL_CAP_FMT_2TB_FILESIZE
 //      | VOL_CAP_FMT_OPENDENYMODES
-//      | VOL_CAP_FMT_HIDDEN_FILES
+        | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
+#if VERSION_MAJOR >= 10
+//      | VOL_CAP_FMT_NO_VOLUME_SIZES
+//      | VOL_CAP_FMT_DECMPFS_COMPRESSION
+#endif
+#if VERSION_MAJOR >= 11
+//      | VOL_CAP_FMT_64BIT_OBJECT_IDS
+#endif
         ;
 
     if (data->dataflags & FSESS_SLOW_STATFS) {
@@ -854,6 +863,13 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_OPENDENYMODES
         | VOL_CAP_FMT_HIDDEN_FILES
         | VOL_CAP_FMT_PATH_FROM_ID
+#if VERSION_MAJOR >= 10
+        | VOL_CAP_FMT_NO_VOLUME_SIZES
+        | VOL_CAP_FMT_DECMPFS_COMPRESSION
+#endif
+#if VERSION_MAJOR >= 11
+        | VOL_CAP_FMT_64BIT_OBJECT_IDS
+#endif
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
@@ -870,8 +886,8 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_EXTENDED_SECURITY
 //      | VOL_CAP_INT_USERACCESS
 //      | VOL_CAP_INT_MANLOCK
-//      | VOL_CAP_INT_EXTENDED_ATTR
 //      | VOL_CAP_INT_NAMEDSTREAMS
+//      | VOL_CAP_INT_EXTENDED_ATTR
         ;
 
     if (data->dataflags & FSESS_NATIVE_XATTR) {
@@ -900,8 +916,8 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_EXTENDED_SECURITY
         | VOL_CAP_INT_USERACCESS
         | VOL_CAP_INT_MANLOCK
-        | VOL_CAP_INT_EXTENDED_ATTR
         | VOL_CAP_INT_NAMEDSTREAMS
+        | VOL_CAP_INT_EXTENDED_ATTR
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_RESERVED1] = 0;
@@ -936,6 +952,12 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_CMN_GRPUUID
 //      | ATTR_CMN_FILEID
 //      | ATTR_CMN_PARENTID
+#if VERSION_MAJOR >= 10
+//      | ATTR_CMN_FULLPATH
+#endif
+#if VERSION_MAJOR >= 11
+//      | ATTR_CMN_ADDEDTIME
+#endif
         ;
 
     attr->f_attributes.validattr.volattr = 0
