@@ -495,7 +495,7 @@ fuse_internal_attr_vat2fsai(mount_t                 mp,
         // Truncate to a new value.
         fsai->size = vap->va_data_size;
         sizechanged = 1;
-	if (newsize) {
+        if (newsize) {
             *newsize = vap->va_data_size;
         }
         fsai->valid |= FATTR_SIZE;

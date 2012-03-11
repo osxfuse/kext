@@ -1475,4 +1475,4 @@ fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t cont
     locked_vfsop(mp, fuse_vfsop_setattr, fsap, context);
 }
 
-#endif
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
