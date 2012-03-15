@@ -34,6 +34,8 @@
 #include <grp.h>
 #include <string.h>
 
+#include <CoreServices/CoreServices.h>
+
 #include <fuse_param.h>
 #include <fuse_version.h>
 
@@ -116,7 +118,24 @@ need_unloading:
 need_loading:
     pid = fork();
     if (pid == 0) {
-        result = execl(SYSTEM_KEXTLOAD, SYSTEM_KEXTLOAD, OSXFUSE_KEXT, NULL);
+        SInt32 system_version_major, system_version_minor;
+        char *kext_path;
+
+        if ((Gestalt(gestaltSystemVersionMajor, &system_version_major) != noErr) ||
+            (Gestalt(gestaltSystemVersionMinor, &system_version_minor) != noErr)) {
+            result = ENOENT;
+            goto out;
+        }
+
+        result = asprintf(&kext_path, "%s/%ld.%ld/%s", OSXFUSE_SUPPORT_PATH,
+                          (long) system_version_major, (long) system_version_minor,
+                          OSXFUSE_KEXT_NAME);
+        if (result == -1) {
+            result = ENOENT;
+            goto out;
+        }
+
+        result = execl(SYSTEM_KEXTLOAD, SYSTEM_KEXTLOAD, kext_path, NULL);
         /* We can only get here if the exec failed */
         goto out;
     }

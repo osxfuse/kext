@@ -7,16 +7,27 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
+		435958D11511A2BA00B4D7F5 /* Helpers */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 435958D41511A2BA00B4D7F5 /* Build configuration list for PBXAggregateTarget "Helpers" */;
+			buildPhases = (
+			);
+			dependencies = (
+				435958DF15121DB300B4D7F5 /* PBXTargetDependency */,
+				435958D71511A2C500B4D7F5 /* PBXTargetDependency */,
+				435958D91511A2C800B4D7F5 /* PBXTargetDependency */,
+			);
+			name = Helpers;
+			productName = Helpers;
+		};
 		54C6DD290B5EE606002D9FD9 /* All */ = {
 			isa = PBXAggregateTarget;
 			buildConfigurationList = 54C6DD330B5EE623002D9FD9 /* Build configuration list for PBXAggregateTarget "All" */;
 			buildPhases = (
 			);
 			dependencies = (
-				54C6DD310B5EE61A002D9FD9 /* PBXTargetDependency */,
-				54C6DD2D0B5EE61A002D9FD9 /* PBXTargetDependency */,
-				5409661A0C33B4DA00F5E227 /* PBXTargetDependency */,
-				54C6DE900B5F7732002D9FD9 /* PBXTargetDependency */,
+				435958E115121DBE00B4D7F5 /* PBXTargetDependency */,
+				435958DD15121BB900B4D7F5 /* PBXTargetDependency */,
 			);
 			name = All;
 			productName = All;
@@ -36,6 +47,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435958DA15120F5500B4D7F5 /* CoreServices.framework */; };
 		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
 		540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966620C33B60B00F5E227 /* mount_osxfusefs.c */; };
 		540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966670C33B61A00F5E227 /* load_osxfusefs.c */; };
@@ -78,33 +90,40 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		540966190C33B4DA00F5E227 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 540966160C33B4CB00F5E227;
-			remoteInfo = mount_fusefs;
-		};
-		54C6DD2C0B5EE61A002D9FD9 /* PBXContainerItemProxy */ = {
+		435958D61511A2C500B4D7F5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 54D47B7F0B4F610000A8FE1C;
-			remoteInfo = load_fusefs;
+			remoteInfo = load_osxfusefs;
 		};
-		54C6DD300B5EE61A002D9FD9 /* PBXContainerItemProxy */ = {
+		435958D81511A2C800B4D7F5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 32A4FEB80562C75700D090E7;
-			remoteInfo = fusefs;
+			remoteGlobalIDString = 540966160C33B4CB00F5E227;
+			remoteInfo = mount_osxfusefs;
 		};
-		54C6DE8F0B5F7732002D9FD9 /* PBXContainerItemProxy */ = {
+		435958DC15121BB900B4D7F5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 435958D11511A2BA00B4D7F5;
+			remoteInfo = Helpers;
+		};
+		435958DE15121DB300B4D7F5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 54C6DE650B5EED9E002D9FD9;
-			remoteInfo = fusefs.fs;
+			remoteInfo = osxfusefs.fs;
+		};
+		435958E015121DBE00B4D7F5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 32A4FEB80562C75700D090E7;
+			remoteInfo = osxfusefs;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -125,6 +144,7 @@
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC213B2D1B300A523B2 /* load_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = load_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
+		435958DA15120F5500B4D7F5 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
 		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
 		540965B70C33B17400F5E227 /* osxfusefs.fs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = osxfusefs.fs; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
@@ -193,6 +213,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -227,6 +248,7 @@
 			isa = PBXGroup;
 			children = (
 				541780C00B6413CA003DE6C0 /* CoreFoundation.framework */,
+				435958DA15120F5500B4D7F5 /* CoreServices.framework */,
 				54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */,
 				D27513B306A6225300ADB3A4 /* Kernel.framework */,
 			);
@@ -420,9 +442,10 @@
 			targets = (
 				54C6DD290B5EE606002D9FD9 /* All */,
 				32A4FEB80562C75700D090E7 /* osxfusefs */,
+				435958D11511A2BA00B4D7F5 /* Helpers */,
+				54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */,
 				54D47B7F0B4F610000A8FE1C /* load_osxfusefs */,
 				540966160C33B4CB00F5E227 /* mount_osxfusefs */,
-				54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */,
 			);
 		};
 /* End PBXProject section */
@@ -505,25 +528,30 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		5409661A0C33B4DA00F5E227 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 540966160C33B4CB00F5E227 /* mount_osxfusefs */;
-			targetProxy = 540966190C33B4DA00F5E227 /* PBXContainerItemProxy */;
-		};
-		54C6DD2D0B5EE61A002D9FD9 /* PBXTargetDependency */ = {
+		435958D71511A2C500B4D7F5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 54D47B7F0B4F610000A8FE1C /* load_osxfusefs */;
-			targetProxy = 54C6DD2C0B5EE61A002D9FD9 /* PBXContainerItemProxy */;
+			targetProxy = 435958D61511A2C500B4D7F5 /* PBXContainerItemProxy */;
 		};
-		54C6DD310B5EE61A002D9FD9 /* PBXTargetDependency */ = {
+		435958D91511A2C800B4D7F5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 32A4FEB80562C75700D090E7 /* osxfusefs */;
-			targetProxy = 54C6DD300B5EE61A002D9FD9 /* PBXContainerItemProxy */;
+			target = 540966160C33B4CB00F5E227 /* mount_osxfusefs */;
+			targetProxy = 435958D81511A2C800B4D7F5 /* PBXContainerItemProxy */;
 		};
-		54C6DE900B5F7732002D9FD9 /* PBXTargetDependency */ = {
+		435958DD15121BB900B4D7F5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 435958D11511A2BA00B4D7F5 /* Helpers */;
+			targetProxy = 435958DC15121BB900B4D7F5 /* PBXContainerItemProxy */;
+		};
+		435958DF15121DB300B4D7F5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */;
-			targetProxy = 54C6DE8F0B5F7732002D9FD9 /* PBXContainerItemProxy */;
+			targetProxy = 435958DE15121DB300B4D7F5 /* PBXContainerItemProxy */;
+		};
+		435958E115121DBE00B4D7F5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 32A4FEB80562C75700D090E7 /* osxfusefs */;
+			targetProxy = 435958E015121DBE00B4D7F5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -671,6 +699,20 @@
 				PREBINDING = NO;
 				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
+			};
+			name = Release;
+		};
+		435958D21511A2BA00B4D7F5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		435958D31511A2BA00B4D7F5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
@@ -907,6 +949,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		435958D41511A2BA00B4D7F5 /* Build configuration list for PBXAggregateTarget "Helpers" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				435958D21511A2BA00B4D7F5 /* Debug */,
+				435958D31511A2BA00B4D7F5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		540966210C33B4F800F5E227 /* Build configuration list for PBXNativeTarget "mount_osxfusefs" */ = {
 			isa = XCConfigurationList;

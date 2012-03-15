@@ -47,12 +47,13 @@
 
 /* Paths */
 
-#define OSXFUSE_BUNDLE_PATH "/Library/Filesystems/osxfusefs.fs"
-#define OSXFUSE_KEXT        OSXFUSE_BUNDLE_PATH "/Support/osxfusefs.kext"
-#define OSXFUSE_LOAD_PROG   OSXFUSE_BUNDLE_PATH "/Support/load_osxfusefs"
-#define OSXFUSE_MOUNT_PROG  OSXFUSE_BUNDLE_PATH "/Support/mount_osxfusefs"
-#define SYSTEM_KEXTLOAD     "/sbin/kextload"
-#define SYSTEM_KEXTUNLOAD   "/sbin/kextunload"
+#define OSXFUSE_BUNDLE_PATH  "/Library/Filesystems/osxfusefs.fs"
+#define OSXFUSE_SUPPORT_PATH OSXFUSE_BUNDLE_PATH "/Support"
+#define OSXFUSE_KEXT_NAME    "osxfusefs.kext"
+#define OSXFUSE_LOAD_PROG    OSXFUSE_SUPPORT_PATH "/load_osxfusefs"
+#define OSXFUSE_MOUNT_PROG   OSXFUSE_SUPPORT_PATH "/mount_osxfusefs"
+#define SYSTEM_KEXTLOAD      "/sbin/kextload"
+#define SYSTEM_KEXTUNLOAD    "/sbin/kextunload"
 
 /* Compatible API version */
 
