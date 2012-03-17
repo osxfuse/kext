@@ -19,9 +19,9 @@
 #define M_OSXFUSE_ENABLE_TSLOCKING             1
 #define M_OSXFUSE_ENABLE_UNSUPPORTED           1
 #define M_OSXFUSE_ENABLE_XATTR                 1
+#define M_OSXFUSE_ENABLE_DSELECT               1
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-#  define M_OSXFUSE_ENABLE_DSELECT             0
 #  define M_OSXFUSE_ENABLE_EXCHANGE            1
 #  define M_OSXFUSE_ENABLE_KQUEUE              1
 #  define M_OSXFUSE_ENABLE_KUNC                0
