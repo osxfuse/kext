@@ -703,9 +703,9 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 #if M_OSXFUSE_ENABLE_DSELECT
 
 int
-fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
+fuse_device_select(dev_t dev, int which, void *wql, struct proc *p)
 {
-    int unit, revents = 0;
+    int unit, res = 0;
     struct fuse_device *fdev;
     struct fuse_data  *data;
 
@@ -713,12 +713,12 @@ fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
 
     unit = minor(dev);
     if (unit >= OSXFUSE_NDEVICES) {
-        return ENOENT;
+        return 1;
     }
 
     fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
     if (!fdev) {
-        return ENXIO;
+        return 1;
     }
 
     data = fdev->data;
@@ -726,21 +726,34 @@ fuse_device_select(dev_t dev, int events, void *wql, struct proc *p)
         panic("OSXFUSE: no device private data in device_select");
     }
 
-    if (events & (POLLIN | POLLRDNORM)) {
+    switch (which) {
+    case FREAD:
         fuse_lck_mtx_lock(data->ms_mtx);
         if (fdata_dead_get(data) || STAILQ_FIRST(&data->ms_head)) {
-            revents |= (events & (POLLIN | POLLRDNORM));
+            res = 1;
         } else {
             selrecord((proc_t)p, (struct selinfo*)&data->d_rsel, wql);
         }
         fuse_lck_mtx_unlock(data->ms_mtx);
+        break;
+
+    case FWRITE:
+        res = 1;
+        break;
+
+    case 0: /* Exceptional condition */
+        fuse_lck_mtx_lock(data->ms_mtx);
+        if (fdata_dead_get(data)) {
+            res = 1;
+        }
+        fuse_lck_mtx_unlock(data->ms_mtx);
+        break;
+
+    default:
+        break;
     }
 
-    if (events & (POLLOUT | POLLWRNORM)) {
-        revents |= (events & (POLLOUT | POLLWRNORM));
-    }
-
-    return revents;
+    return res;
 }
 
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
