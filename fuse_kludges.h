@@ -11,18 +11,18 @@
 #if M_OSXFUSE_ENABLE_DSELECT
 
 /*
- * # 10.5        10.6-32        10.6-64
+ * # 10.5        10.6-32        10.6-64     10.7-32     10.7-64
  *
  * # sizeof(struct selinfo)
- *   24          24             48
+ *   24          24             48          24           48
  *
  */
 
 struct fuse_selinfo {
-#if __LP64__
+#ifdef __LP64__
     unsigned char __data[48];
 #else
-    unsigned char __data[32];
+    unsigned char __data[24];
 #endif
 };
 
@@ -56,7 +56,7 @@ struct fuse_kludge_vnode_9 {
     char     dummy2[24];
 } __attribute__ ((packed));
 
-#if __LP64__
+#ifdef __LP64__
 struct fuse_kludge_vnode_10 {
     char     v_lock[24];
     char     dummy0[64];
@@ -66,7 +66,7 @@ struct fuse_kludge_vnode_10 {
     vnode_t  v_parent;
     char     dummy2[48];
 } __attribute__ ((packed));
-#else
+#else /* !__LP64__ */
 struct fuse_kludge_vnode_10 {
     char     v_lock[12];
     char     dummy0[36];
@@ -76,7 +76,7 @@ struct fuse_kludge_vnode_10 {
     vnode_t  v_parent;
     char     dummy2[24];
 } __attribute__ ((packed));
-#endif
+#endif /* __LP64__ */
 
 struct fuse_kludge_vnode_11 {
     void    *v_lock[2];
