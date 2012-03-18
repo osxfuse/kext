@@ -751,7 +751,9 @@ int
 fuse_device_kill(int unit, struct proc *p)
 {
     int error = ENOENT;
+
     struct fuse_device *fdev;
+    struct fuse_data   *data;
 
     if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
         return EINVAL;
@@ -764,7 +766,7 @@ fuse_device_kill(int unit, struct proc *p)
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
-    struct fuse_data *data = fdev->data;
+    data = fdev->data;
     if (data) {
         error = EPERM;
         if (p) {
@@ -806,9 +808,9 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
-    if (fdev->data) {
-
-        mount_t mp = fdev->data->mp;
+    struct fuse_data *data = fdev->data;
+    if (data) {
+        mount_t mp = data->mp;
 
         if (vfs_busy(mp, LK_NOWAIT)) {
             FUSE_DEVICE_LOCAL_UNLOCK(fdev);
@@ -819,8 +821,8 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
         if (p) {
             kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
-                fuse_internal_print_vnodes(fdev->data->mp);
+                (fuse_match_cred(data->daemoncred, request_cred) == 0)) {
+                fuse_internal_print_vnodes(mp);
                 error = 0;
             }
             kauth_cred_unref(&request_cred);
