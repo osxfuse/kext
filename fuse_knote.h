@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2007 Amit Singh/Google Inc.
  * Copyright (c) 2012 Benjamin Fleischer
+ * All rights reserved.
  */
 
 #ifndef _FUSE_KNOTE_H_

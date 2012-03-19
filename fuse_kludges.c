@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2006-2008 Google. All Rights Reserved.
- * Amit Singh <singh@>
+ * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2012 Tuxera Inc.
+ * All rights reserved.
  */
 
 #include "fuse_kludges.h"

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2006 Google. All Rights Reserved.
- * Amit Singh <singh@>
+ * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * All rights reserved.
  */
 
 #ifndef _FUSE_VNOPS_H_

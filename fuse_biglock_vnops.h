@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2006 Google. All Rights Reserved.
- * Amit Singh <singh@>
+ * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2011-2012 Benjamin Fleischer
+ * All rights reserved.
  */
 
 #ifndef _FUSE_BIGLOCK_VNOPS_H_
