@@ -24,10 +24,12 @@ fuse_filehandle_get(vnode_t       vp,
                     int           mode)
 {
     struct fuse_dispatcher  fdi;
-    struct fuse_open_in    *foi;
-    struct fuse_open_out   *foo;
+    struct fuse_open_in     foi;
+    struct fuse_open_out    foo;
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+    struct fuse_data        *data = fuse_get_mpdata(vnode_mount(vp));
 
     int err    = 0;
     int isdir  = 0;
@@ -60,15 +62,15 @@ fuse_filehandle_get(vnode_t       vp,
         }
     }
 
-    fdisp_init(&fdi, sizeof(*foi));
-    fdisp_make_vp(&fdi, op, vp, context);
-
     if (vnode_islnk(vp) && (mode & O_SYMLINK)) {
         oflags |= O_SYMLINK;
     }
 
-    foi = fdi.indata;
-    foi->flags = oflags;
+    foi.flags = oflags;
+
+    fdisp_init_abi(&fdi, fuse_open_in, DTOABI(data));
+    fdisp_make_vp(&fdi, op, vp, context);
+    fuse_abi_out(fuse_open_in, DTOABI(data), &foi, fdi.indata);
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
@@ -92,7 +94,6 @@ fuse_filehandle_get(vnode_t       vp,
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
         if (err == ENOENT) {
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-            struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
             fuse_biglock_unlock(data->biglock);
 #endif
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
@@ -104,12 +105,12 @@ fuse_filehandle_get(vnode_t       vp,
     }
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
 
-    foo = fdi.answ;
+    fuse_abi_in(fuse_open_out, DTOABI(data), fdi.answ, &foo);
 
-    fufh->fh_id = foo->fh;
+    fufh->fh_id = foo.fh;
     fufh->open_count = 1;
     fufh->open_flags = oflags;
-    fufh->fuse_open_flags = foo->open_flags;
+    fufh->fuse_open_flags = foo.open_flags;
     fufh->aux_count = 0;
 
     fuse_ticket_drop(fdi.tick);
@@ -121,8 +122,9 @@ int
 fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
                     fuse_op_waitfor_t waitfor)
 {
+    struct fuse_data       *data;
     struct fuse_dispatcher  fdi;
-    struct fuse_release_in *fri;
+    struct fuse_release_in  fri;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh  = NULL;
 
@@ -145,16 +147,19 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
         goto out;
     }
 
+    data = fuse_get_mpdata(vnode_mount(vp));
+
     if (vnode_isdir(vp)) {
         op = FUSE_RELEASEDIR;
         isdir = 1;
     }
 
-    fdisp_init(&fdi, sizeof(*fri));
+    fri.fh = fufh->fh_id;
+    fri.flags = fufh->open_flags;
+
+    fdisp_init_abi(&fdi, fuse_release_in, DTOABI(data));
     fdisp_make_vp(&fdi, op, vp, context);
-    fri = fdi.indata;
-    fri->fh = fufh->fh_id;
-    fri->flags = fufh->open_flags;
+    fuse_abi_out(fuse_release_in, DTOABI(data), &fri, fdi.indata);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(&fdi))) {

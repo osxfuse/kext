@@ -564,7 +564,16 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
 
     VATTR_RETURN(vap, va_type, IFTOVT(fat->mode));
 
-    VATTR_RETURN(vap, va_iosize, data->iosize);
+    if (fat->blksize != 0) {
+        fat->blksize = fuse_round_size(fat->blksize,
+                                       FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+        if (fat->blksize < data->blocksize) {
+            fat->blksize = data->blocksize;
+        }
+    } else {
+        fat->blksize = data->iosize;
+    }
+    VATTR_RETURN(vap, va_iosize, fat->blksize);
 
     VATTR_RETURN(vap, va_flags, fat->flags);
 }
@@ -644,7 +653,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
 
     /*
-     * When __DARWIN_64_BIT_INO_T is not enabled, the User library
+     * When _DARWIN_USE_64_BIT_INODE is not enabled, the User library
      * will set va_create_time to -1. In that case, we will have
      * to ask for it separately, if necessary.
      */
@@ -828,7 +837,8 @@ fuse_internal_newentry(vnode_t               dvp,
                        struct componentname *cnp,
                        enum fuse_opcode      op,
                        void                 *buf,
-                       size_t                bufsize,
+                       fuse_abi_sizeof_t     abi_sizeof,
+                       fuse_abi_out_t        abi_out,
                        enum vtype            vtype,
                        vfs_context_t         context);
 
@@ -838,9 +848,11 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    struct componentname   *cnp,
                                    enum fuse_opcode        op,
                                    void                   *buf,
-                                   size_t                  bufsize,
+                                   fuse_abi_sizeof_t       abi_sizeof,
+                                   fuse_abi_out_t          abi_out,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context);
+
 
 int
 fuse_internal_newentry_core(vnode_t                 dvp,

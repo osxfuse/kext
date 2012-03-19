@@ -66,8 +66,7 @@
 
 /* Compatible API version */
 
-#define OSXFUSE_MIN_USER_VERSION_MAJOR     7
-#define OSXFUSE_MIN_USER_VERSION_MINOR     5
+#define OSXFUSE_MIN_ABI_VERSION            708
 
 /* Device Interface */
 
@@ -101,7 +100,7 @@
 
 /*
  * This is default I/O size used while accessing the virtual storage devices.
- * This can be changed on a per-mount basis.
+ * This can be changed on a per-mount and per-file basis.
  *
  * Nevertheless, the I/O size must be at least as big as the block size.
  */

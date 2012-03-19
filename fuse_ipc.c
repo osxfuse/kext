@@ -720,189 +720,145 @@ static int
 fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
 {
     int err = 0;
+    struct fuse_data *data;
     enum fuse_opcode opcode;
 
     if (fdata_dead_get(ftick->tk_data)) {
         return ENOTCONN;
     }
 
+    data = ftick->tk_data;
     opcode = fticket_opcode(ftick);
 
     switch (opcode) {
-    case FUSE_LOOKUP:
-        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
+#define AUDIT_CASE_SIZE(OPCODE, CMP, SIZE)    \
+    case OPCODE:                              \
+        err = (blen CMP (SIZE)) ? 0 : EINVAL; \
         break;
 
-    case FUSE_FORGET:
-        panic("OSXFUSE: a handler has been intalled for FUSE_FORGET");
-        break;
+#define AUDIT_CASE_OUT(OPCODE, NAME) \
+    AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
 
-    case FUSE_GETATTR:
-        err = (blen == sizeof(struct fuse_attr_out)) ? 0 : EINVAL;
-        break;
+#define AUDIT_CASE_NO_OUT(OPCODE) AUDIT_CASE_SIZE(OPCODE, ==, 0)
 
-    case FUSE_SETATTR:
-        err = (blen == sizeof(struct fuse_attr_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_LOOKUP, fuse_entry_out)
 
-    case FUSE_GETXTIMES:
-        err = (blen == sizeof(struct fuse_getxtimes_out)) ? 0 : EINVAL;
-        break;
+        case FUSE_FORGET:
+            panic("OSXFUSE: a handler has been installed for FUSE_FORGET");
+            break;
 
-    case FUSE_READLINK:
-        err = (PAGE_SIZE >= blen) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_GETATTR, fuse_attr_out)
 
-    case FUSE_SYMLINK:
-        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_SETATTR, fuse_attr_out)
 
-    case FUSE_MKNOD:
-        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_SIZE(FUSE_READLINK, <=, PAGE_SIZE)
 
-    case FUSE_MKDIR:
-        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_SYMLINK, fuse_entry_out)
 
-    case FUSE_UNLINK:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_MKNOD, fuse_entry_out)
 
-    case FUSE_RMDIR:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_MKDIR, fuse_entry_out)
 
-    case FUSE_RENAME:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_UNLINK)
 
-    case FUSE_LINK:
-        err = (blen == sizeof(struct fuse_entry_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_RMDIR)
 
-    case FUSE_OPEN:
-        err = (blen == sizeof(struct fuse_open_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_RENAME)
 
-    case FUSE_READ:
-        err = (((struct fuse_read_in *)(
-                (char *)ftick->tk_ms_fiov.base +
-                        sizeof(struct fuse_in_header)
-                  ))->size >= blen) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_LINK, fuse_entry_out)
 
-    case FUSE_WRITE:
-        err = (blen == sizeof(struct fuse_write_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_OPEN, fuse_open_out)
 
-    case FUSE_STATFS:
-        if (fuse_libabi_geq(ftick->tk_data, 7, 4)) {
-            err = (blen == sizeof(struct fuse_statfs_out)) ? 0 : EINVAL;
-        } else {
-            err = (blen == FUSE_COMPAT_STATFS_SIZE) ? 0 : EINVAL;
-        }
-        break;
+        AUDIT_CASE_SIZE(FUSE_READ, <=,
+            ((struct fuse_read_in *)((char *)ftick->tk_ms_fiov.base +
+                                     sizeof(struct fuse_in_header)))->size)
 
-    case FUSE_RELEASE:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_WRITE, fuse_write_out)
 
-    case FUSE_FSYNC:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_STATFS, fuse_statfs_out)
 
-    case FUSE_SETXATTR:
-        /* TBD */
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_RELEASE)
 
-    case FUSE_GETXATTR:
-        /* TBD */
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_FSYNC)
 
-    case FUSE_LISTXATTR:
-        /* TBD */
-        break;
+        case FUSE_SETXATTR:
+            /* TBD */
+            break;
 
-    case FUSE_REMOVEXATTR:
-        /* TBD */
-        break;
+        case FUSE_GETXATTR:
+            /* TBD */
+            break;
 
-    case FUSE_FLUSH:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        case FUSE_LISTXATTR:
+            /* TBD */
+            break;
 
-    case FUSE_INIT:
-        if (blen == sizeof(struct fuse_init_out) || blen == 8) {
-            err = 0;
-        } else {
-            err = EINVAL;
-        }
-        break;
+        case FUSE_REMOVEXATTR:
+            /* TBD */
+            break;
 
-    case FUSE_OPENDIR:
-        err = (blen == sizeof(struct fuse_open_out)) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_FLUSH)
 
-    case FUSE_READDIR:
-        err = (((struct fuse_read_in *)(
-                (char *)ftick->tk_ms_fiov.base +
-                        sizeof(struct fuse_in_header)
-                  ))->size >= blen) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_SIZE(FUSE_INIT, >=, 8)
 
-    case FUSE_RELEASEDIR:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_OUT(FUSE_OPENDIR, fuse_open_out)
 
-    case FUSE_FSYNCDIR:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_SIZE(FUSE_READDIR, <=,
+            ((struct fuse_read_in *)((char *)ftick->tk_ms_fiov.base +
+                                     sizeof(struct fuse_in_header)))->size)
 
-    case FUSE_GETLK:
-        panic("OSXFUSE: no response body format check for FUSE_GETLK");
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_RELEASEDIR)
 
-    case FUSE_SETLK:
-        panic("OSXFUSE: no response body format check for FUSE_SETLK");
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_FSYNCDIR)
 
-    case FUSE_SETLKW:
-        panic("OSXFUSE: no response body format check for FUSE_SETLKW");
-        break;
+        case FUSE_GETLK:
+            panic("OSXFUSE: no response body format check for FUSE_GETLK");
+            break;
 
-    case FUSE_ACCESS:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        case FUSE_SETLK:
+            panic("OSXFUSE: no response body format check for FUSE_SETLK");
+            break;
 
-    case FUSE_CREATE:
-        err = (blen == sizeof(struct fuse_entry_out) +
-                           sizeof(struct fuse_open_out)) ? 0 : EINVAL;
-        break;
+        case FUSE_SETLKW:
+            panic("OSXFUSE: no response body format check for FUSE_SETLKW");
+            break;
 
-    case FUSE_INTERRUPT:
-        /* TBD */
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_ACCESS)
 
-    case FUSE_BMAP:
-        /* TBD */
-        break;
+        AUDIT_CASE_SIZE(FUSE_CREATE, ==,
+                        fuse_abi_sizeof(fuse_entry_out, DTOABI(data)) +
+                        fuse_abi_sizeof(fuse_open_out, DTOABI(data)))
 
-    case FUSE_DESTROY:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        case FUSE_INTERRUPT:
+            /* TBD */
+            break;
 
-    case FUSE_EXCHANGE:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        case FUSE_BMAP:
+            /* TBD */
+            break;
 
-    case FUSE_SETVOLNAME:
-        err = (blen == 0) ? 0 : EINVAL;
-        break;
+        AUDIT_CASE_NO_OUT(FUSE_DESTROY)
 
-    default:
-        IOLog("OSXFUSE: opcodes out of sync (%d)\n", opcode);
-        panic("OSXFUSE: opcodes out of sync (%d)", opcode);
+        AUDIT_CASE_SIZE(FUSE_IOCTL, >=,
+                        fuse_abi_sizeof(fuse_ioctl_out, DTOABI(data)))
+
+        case FUSE_POLL:
+            /* TBD */
+            break;
+
+        AUDIT_CASE_NO_OUT(FUSE_SETVOLNAME)
+
+        AUDIT_CASE_OUT(FUSE_GETXTIMES, fuse_getxtimes_out)
+
+        AUDIT_CASE_NO_OUT(FUSE_EXCHANGE);
+
+        default:
+            IOLog("OSXFUSE: opcodes out of sync (%d)\n", opcode);
+            panic("OSXFUSE: opcodes out of sync (%d)", opcode);
+
+#undef AUDIT_CASE_SIZE
+#undef AUDIT_CASE_OUT
+#undef AUDIT_CASE_NO_OUT
     }
 
     return err;
@@ -1067,7 +1023,9 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
             goto out;
         } else {
             /* IPC: explicitly setting to answered */
+#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
             age = fdip->tick->tk_age;
+#endif
             fticket_set_answered(fdip->tick);
             fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
 #ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
@@ -1083,7 +1041,7 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
             }
 
             fuse_lck_mtx_unlock(fdip->tick->tk_data->aw_mtx);
-#endif
+#endif /* DONT_TRY_HARD_PREVENT_IO_IN_VAIN */
             return err;
         }
     }

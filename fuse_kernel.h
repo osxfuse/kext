@@ -1,6 +1,6 @@
 /*
     This file defines the kernel interface of FUSE
-    Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
+    Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
 
     This program can be distributed under the terms of the GNU GPL.
     See the file COPYING.
@@ -32,30 +32,69 @@
     SUCH DAMAGE.
 */
 
-#ifndef linux
+/*
+ * This file defines the kernel interface of FUSE
+ *
+ * Protocol changelog:
+ *
+ * 7.9:
+ *  - new fuse_getattr_in input argument of GETATTR
+ *  - add lk_flags in fuse_lk_in
+ *  - add lock_owner field to fuse_setattr_in, fuse_read_in and fuse_write_in
+ *  - add blksize field to fuse_attr
+ *  - add file flags field to fuse_read_in and fuse_write_in
+ *
+ * 7.10
+ *  - add nonseekable open flag
+ *
+ * 7.11
+ *  - add IOCTL message
+ *  - add unsolicited notification support
+ *  - add POLL message and NOTIFY_POLL notification
+ *
+ * 7.12
+ *  - add umask flag to input argument of open, mknod and mkdir
+ *  - add notification messages for invalidation of inodes and
+ *    directory entries
+ */
+
+#ifndef _LINUX_FUSE_H
+#define _LINUX_FUSE_H
+
 #include <sys/types.h>
 #define __u64 uint64_t
+#define __s64 int64_t
 #define __u32 uint32_t
 #define __s32 int32_t
-#else
-#include <asm/types.h>
-#include <linux/major.h>
-#endif
+
+/*
+ * Version negotiation:
+ *
+ * Both the kernel and userspace send the version they support in the
+ * INIT request and reply respectively.
+ *
+ * If the major versions match then both shall use the smallest
+ * of the two minor versions for communication.
+ *
+ * If the kernel supports a larger major version, then userspace shall
+ * reply with the major version it supports, ignore the rest of the
+ * INIT message and expect a new INIT message from the kernel with a
+ * matching major version.
+ *
+ * If the library supports a larger major version, then it shall fall
+ * back to the major protocol version sent by the kernel for
+ * communication and reply with that major version (and an arbitrary
+ * supported minor version).
+ */
 
 /** Version number of this interface */
 #define FUSE_KERNEL_VERSION 7
 
 /** Minor version number of this interface */
-#define FUSE_KERNEL_MINOR_VERSION 8
+#define FUSE_KERNEL_MINOR_VERSION 12
 
 /** The node ID of the root inode */
 #define FUSE_ROOT_ID 1
-
-/** The major number of the fuse character device */
-#define FUSE_MAJOR MISC_MAJOR
-
-/** The minor number of the fuse character device */
-#define FUSE_MINOR 229
 
 /* Make sure all structures are padded to 64bit boundary, so 32bit
    userspace works under 64bit kernels */
@@ -84,6 +123,8 @@ struct fuse_attr {
 #ifdef __APPLE__
 	__u32	flags; /* file flags; see chflags(2) */
 #endif
+    __u32	blksize;
+    __u32	padding;
 };
 
 struct fuse_kstatfs {
@@ -116,11 +157,14 @@ struct fuse_file_lock {
 #define FATTR_ATIME	(1 << 4)
 #define FATTR_MTIME	(1 << 5)
 #define FATTR_FH	(1 << 6)
+#define FATTR_ATIME_NOW	(1 << 7)
+#define FATTR_MTIME_NOW	(1 << 8)
+#define FATTR_LOCKOWNER	(1 << 9)
 #ifdef __APPLE__
-#define FATTR_CRTIME	(1 << 28)
-#define FATTR_CHGTIME	(1 << 29)
-#define FATTR_BKUPTIME	(1 << 30)
-#define FATTR_FLAGS	(1 << 31)
+#  define FATTR_CRTIME		(1 << 28)
+#  define FATTR_CHGTIME		(1 << 29)
+#  define FATTR_BKUPTIME	(1 << 30)
+#  define FATTR_FLAGS		(1 << 31)
 #endif /* __APPLE__ */
 
 /**
@@ -128,29 +172,92 @@ struct fuse_file_lock {
  *
  * FOPEN_DIRECT_IO: bypass page cache for this open file
  * FOPEN_KEEP_CACHE: don't invalidate the data cache on open
+ * FOPEN_NONSEEKABLE: the file is not seekable
  */
 #define FOPEN_DIRECT_IO		(1 << 0)
 #define FOPEN_KEEP_CACHE	(1 << 1)
+#define FOPEN_NONSEEKABLE	(1 << 2)
 #ifdef __APPLE__
-#define FOPEN_PURGE_ATTR	(1 << 30)
-#define FOPEN_PURGE_UBC		(1 << 31)
+#  define FOPEN_PURGE_ATTR	(1 << 30)
+#  define FOPEN_PURGE_UBC		(1 << 31)
 #endif
 
 /**
  * INIT request/reply flags
+ *
+ * FUSE_EXPORT_SUPPORT: filesystem handles lookups of "." and ".."
+ * FUSE_DONT_MASK: don't apply umask to file mode on create operations
  */
 #define FUSE_ASYNC_READ		(1 << 0)
 #define FUSE_POSIX_LOCKS	(1 << 1)
+#define FUSE_FILE_OPS		(1 << 2)
+#define FUSE_ATOMIC_O_TRUNC	(1 << 3)
+#define FUSE_EXPORT_SUPPORT	(1 << 4)
+#define FUSE_BIG_WRITES		(1 << 5)
+#define FUSE_DONT_MASK		(1 << 6)
 #ifdef __APPLE__
-#define FUSE_CASE_INSENSITIVE	(1 << 29)
-#define FUSE_VOL_RENAME		(1 << 30)
-#define FUSE_XTIMES		(1 << 31)
+#  define FUSE_CASE_INSENSITIVE	(1 << 29)
+#  define FUSE_VOL_RENAME	(1 << 30)
+#  define FUSE_XTIMES		(1 << 31)
 #endif
+
+/**
+ * CUSE INIT request/reply flags
+ *
+ * CUSE_UNRESTRICTED_IOCTL:  use unrestricted ioctl
+ */
+#define CUSE_UNRESTRICTED_IOCTL	(1 << 0)
 
 /**
  * Release flags
  */
 #define FUSE_RELEASE_FLUSH	(1 << 0)
+
+/**
+ * Getattr flags
+ */
+#define FUSE_GETATTR_FH		(1 << 0)
+
+/**
+ * Lock flags
+ */
+#define FUSE_LK_FLOCK		(1 << 0)
+
+/**
+ * WRITE flags
+ *
+ * FUSE_WRITE_CACHE: delayed write from page cache, file handle is guessed
+ * FUSE_WRITE_LOCKOWNER: lock_owner field is valid
+ */
+#define FUSE_WRITE_CACHE	(1 << 0)
+#define FUSE_WRITE_LOCKOWNER	(1 << 1)
+
+/**
+ * Read flags
+ */
+#define FUSE_READ_LOCKOWNER	(1 << 1)
+
+/**
+ * Ioctl flags
+ *
+ * FUSE_IOCTL_COMPAT: 32bit compat ioctl on 64bit machine
+ * FUSE_IOCTL_UNRESTRICTED: not restricted to well-formed ioctls, retry allowed
+ * FUSE_IOCTL_RETRY: retry with new iovecs
+ *
+ * FUSE_IOCTL_MAX_IOV: maximum of in_iovecs + out_iovecs
+ */
+#define FUSE_IOCTL_COMPAT	(1 << 0)
+#define FUSE_IOCTL_UNRESTRICTED	(1 << 1)
+#define FUSE_IOCTL_RETRY	(1 << 2)
+
+#define FUSE_IOCTL_MAX_IOV	256
+
+/**
+ * Poll flags
+ *
+ * FUSE_POLL_SCHEDULE_NOTIFY: request poll notify
+ */
+#define FUSE_POLL_SCHEDULE_NOTIFY (1 << 0)
 
 enum fuse_opcode {
 	FUSE_LOOKUP	   = 1,
@@ -189,15 +296,33 @@ enum fuse_opcode {
 	FUSE_INTERRUPT     = 36,
 	FUSE_BMAP          = 37,
 	FUSE_DESTROY       = 38,
+	FUSE_IOCTL         = 39,
+	FUSE_POLL          = 40,
 #ifdef __APPLE__
 	FUSE_SETVOLNAME    = 61,
 	FUSE_GETXTIMES     = 62,
 	FUSE_EXCHANGE      = 63,
 #endif
+
+	/* CUSE specific operations */
+	CUSE_INIT          = 4096,
+};
+
+enum fuse_notify_code {
+	FUSE_NOTIFY_POLL   = 1,
+	FUSE_NOTIFY_INVAL_INODE = 2,
+	FUSE_NOTIFY_INVAL_ENTRY = 3,
+	FUSE_NOTIFY_CODE_MAX,
 };
 
 /* The read buffer is required to be at least 8k, but may be much larger */
 #define FUSE_MIN_READ_BUFFER 8192
+
+#ifdef __APPLE__
+#  define FUSE_COMPAT_ENTRY_OUT_SIZE 136
+#else
+#  define FUSE_COMPAT_ENTRY_OUT_SIZE 120
+#endif
 
 struct fuse_entry_out {
 	__u64	nodeid;		/* Inode ID */
@@ -213,6 +338,18 @@ struct fuse_entry_out {
 struct fuse_forget_in {
 	__u64	nlookup;
 };
+
+struct fuse_getattr_in {
+	__u32	getattr_flags;
+	__u32	dummy;
+	__u64	fh;
+};
+
+#ifdef __APPLE__
+#  define FUSE_COMPAT_ATTR_OUT_SIZE 112
+#else
+#  define FUSE_COMPAT_ATTR_OUT_SIZE 96
+#endif
 
 struct fuse_attr_out {
 	__u64	attr_valid;	/* Cache timeout for the attributes */
@@ -230,14 +367,18 @@ struct fuse_getxtimes_out {
 };
 #endif /* __APPLE__ */
 
+#define FUSE_COMPAT_MKNOD_IN_SIZE 8
+
 struct fuse_mknod_in {
 	__u32	mode;
 	__u32	rdev;
+	__u32	umask;
+	__u32	padding;
 };
 
 struct fuse_mkdir_in {
 	__u32	mode;
-	__u32	padding;
+	__u32	umask;
 };
 
 struct fuse_rename_in {
@@ -261,7 +402,7 @@ struct fuse_setattr_in {
 	__u32	padding;
 	__u64	fh;
 	__u64	size;
-	__u64	unused1;
+	__u64	lock_owner;
 	__u64	atime;
 	__u64	mtime;
 	__u64	unused2;
@@ -286,7 +427,14 @@ struct fuse_setattr_in {
 
 struct fuse_open_in {
 	__u32	flags;
+	__u32	unused;
+};
+
+struct fuse_create_in {
+	__u32	flags;
 	__u32	mode;
+	__u32	umask;
+	__u32	padding;
 };
 
 struct fuse_open_out {
@@ -313,14 +461,22 @@ struct fuse_read_in {
 	__u64	fh;
 	__u64	offset;
 	__u32	size;
+	__u32	read_flags;
+	__u64	lock_owner;
+	__u32	flags;
 	__u32	padding;
 };
+
+#define FUSE_COMPAT_WRITE_IN_SIZE 24
 
 struct fuse_write_in {
 	__u64	fh;
 	__u64	offset;
 	__u32	size;
 	__u32	write_flags;
+	__u64	lock_owner;
+	__u32	flags;
+	__u32	padding;
 };
 
 struct fuse_write_out {
@@ -367,6 +523,8 @@ struct fuse_lk_in {
 	__u64	fh;
 	__u64	owner;
 	struct fuse_file_lock lk;
+	__u32	lk_flags;
+	__u32	padding;
 };
 
 struct fuse_lk_out {
@@ -394,6 +552,27 @@ struct fuse_init_out {
 	__u32	max_write;
 };
 
+#define CUSE_INIT_INFO_MAX 4096
+
+struct cuse_init_in {
+	__u32	major;
+	__u32	minor;
+	__u32	unused;
+	__u32	flags;
+};
+
+struct cuse_init_out {
+	__u32	major;
+	__u32	minor;
+	__u32	unused;
+	__u32	flags;
+	__u32	max_read;
+	__u32	max_write;
+	__u32	dev_major;		/* chardev major */
+	__u32	dev_minor;		/* chardev minor */
+	__u32	spare[10];
+};
+
 struct fuse_interrupt_in {
 	__u64	unique;
 };
@@ -406,6 +585,38 @@ struct fuse_bmap_in {
 
 struct fuse_bmap_out {
 	__u64	block;
+};
+
+struct fuse_ioctl_in {
+	__u64	fh;
+	__u32	flags;
+	__u32	cmd;
+	__u64	arg;
+	__u32	in_size;
+	__u32	out_size;
+};
+
+struct fuse_ioctl_out {
+	__s32	result;
+	__u32	flags;
+	__u32	in_iovs;
+	__u32	out_iovs;
+};
+
+struct fuse_poll_in {
+	__u64	fh;
+	__u64	kh;
+	__u32	flags;
+	__u32   padding;
+};
+
+struct fuse_poll_out {
+	__u32	revents;
+	__u32	padding;
+};
+
+struct fuse_notify_poll_wakeup_out {
+	__u64	kh;
 };
 
 struct fuse_in_header {
@@ -437,3 +648,17 @@ struct fuse_dirent {
 #define FUSE_DIRENT_ALIGN(x) (((x) + sizeof(__u64) - 1) & ~(sizeof(__u64) - 1))
 #define FUSE_DIRENT_SIZE(d) \
 	FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + (d)->namelen)
+
+struct fuse_notify_inval_inode_out {
+	__u64	ino;
+	__s64	off;
+	__s64	len;
+};
+
+struct fuse_notify_inval_entry_out {
+	__u64	parent;
+	__u32	namelen;
+	__u32	padding;
+};
+
+#endif /* _LINUX_FUSE_H */

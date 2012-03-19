@@ -58,9 +58,9 @@ fuse_internal_access(vnode_t                   vp,
     uint32_t mask = 0;
     int dataflags;
     mount_t mp;
-    struct fuse_dispatcher fdi;
-    struct fuse_access_in *fai;
-    struct fuse_data      *data;
+    struct fuse_dispatcher  fdi;
+    struct fuse_access_in   fai;
+    struct fuse_data       *data;
 
     fuse_trace_printf_func();
 
@@ -134,14 +134,14 @@ fuse_internal_access(vnode_t                   vp,
         mask |= W_OK;
     }
 
-    bzero(&fdi, sizeof(fdi));
+    bzero(&fai, sizeof(fdi));
 
-    fdisp_init(&fdi, sizeof(*fai));
+    fai.mask = F_OK;
+    fai.mask |= mask;
+
+    fdisp_init_abi(&fdi, fuse_access_in, DTOABI(data));
     fdisp_make_vp(&fdi, FUSE_ACCESS, vp, context);
-
-    fai = fdi.indata;
-    fai->mask = F_OK;
-    fai->mask |= mask;
+    fuse_abi_out(fuse_access_in, DTOABI(data), &fai, fdi.indata);
 
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
@@ -205,27 +205,32 @@ fuse_internal_exchange(vnode_t       fvp,
                        int           options,
                        vfs_context_t context)
 {
+    struct fuse_data *data;
     struct fuse_dispatcher fdi;
-    struct fuse_exchange_in *fei;
+    struct fuse_exchange_in fei;
     struct fuse_vnode_data *ffud = VTOFUD(fvp);
     struct fuse_vnode_data *tfud = VTOFUD(tvp);
     vnode_t fdvp = ffud->parentvp;
     vnode_t tdvp = tfud->parentvp;
+    void *next;
     int err = 0;
 
-    fdisp_init(&fdi, sizeof(*fei) + flen + tlen + 2);
+    data = fuse_get_mpdata(vnode_mount(fvp));
+
+    fei.olddir = VTOI(fdvp);
+    fei.newdir = VTOI(tdvp);
+    fei.options = (uint64_t)options;
+
+    fdisp_init(&fdi, fuse_abi_sizeof(fuse_exchange_in, DTOABI(data)) +
+                     flen + tlen + 2);
     fdisp_make_vp(&fdi, FUSE_EXCHANGE, fvp, context);
+    next = fuse_abi_out(fuse_exchange_in, DTOABI(data), &fei, fdi.indata);
 
-    fei = fdi.indata;
-    fei->olddir = VTOI(fdvp);
-    fei->newdir = VTOI(tdvp);
-    fei->options = (uint64_t)options;
+    memcpy(next, fname, flen);
+    ((char *)next)[flen] = '\0';
 
-    memcpy((char *)fdi.indata + sizeof(*fei), fname, flen);
-    ((char *)fdi.indata)[sizeof(*fei) + flen] = '\0';
-
-    memcpy((char *)fdi.indata + sizeof(*fei) + flen + 1, tname, tlen);
-    ((char *)fdi.indata)[sizeof(*fei) + flen + tlen + 1] = '\0';
+    memcpy((char *)next + flen + 1, tname, tlen);
+    ((char *)next)[flen + tlen + 1] = '\0';
 
     ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, (off_t*)0,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
@@ -324,22 +329,24 @@ fuse_internal_fsync(vnode_t                 vp,
 {
     int err = 0;
     int op = FUSE_FSYNC;
-    struct fuse_fsync_in *ffsi;
+    struct fuse_fsync_in ffsi;
     struct fuse_dispatcher *fdip = param;
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
     fuse_trace_printf_func();
 
-    fdip->iosize = sizeof(*ffsi);
+    fdip->iosize = fuse_abi_sizeof(fuse_fsync_in, DTOABI(data));
     fdip->tick = NULL;
     if (vnode_isdir(vp)) {
         op = FUSE_FSYNCDIR;
     }
 
     fdisp_make_vp(fdip, op, vp, context);
-    ffsi = fdip->indata;
-    ffsi->fh = fufh->fh_id;
 
-    ffsi->fsync_flags = 1; /* datasync */
+    ffsi.fh = fufh->fh_id;
+    ffsi.fsync_flags = 1; /* datasync */
+
+    fuse_abi_out(fuse_fsync_in, DTOABI(data), &ffsi, fdip->indata);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(fdip))) {
@@ -374,7 +381,7 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
     struct vnode_attr *in_vap = VTOVA(vp);
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
     struct fuse_dispatcher fdi;
-    struct fuse_getxtimes_out *fgxo = NULL;
+    struct fuse_getxtimes_out fgxo;
     int isvroot = vnode_isvroot(vp);
     struct timespec t = { 0, 0 };
     const struct timespec kZeroTime = { 0, 0 };
@@ -410,15 +417,15 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
         goto fake;
     }
 
-    fgxo = (struct fuse_getxtimes_out *)fdi.answ;
+    fuse_abi_in(fuse_getxtimes_out, DTOABI(data), fdi.answ, &fgxo);
 
-    t.tv_sec = (time_t)fgxo->bkuptime; /* XXX: truncation */
-    t.tv_nsec = fgxo->bkuptimensec;
+    t.tv_sec = (time_t)fgxo.bkuptime; /* XXX: truncation */
+    t.tv_nsec = fgxo.bkuptimensec;
     VATTR_RETURN(in_vap, va_backup_time, t);
     VATTR_RETURN(out_vap, va_backup_time, t);
 
-    t.tv_sec = (time_t)fgxo->crtime; /* XXX: truncation */
-    t.tv_nsec = fgxo->crtimensec;
+    t.tv_sec = (time_t)fgxo.crtime; /* XXX: truncation */
+    t.tv_nsec = fgxo.crtimensec;
     VATTR_RETURN(in_vap, va_create_time, t);
     VATTR_RETURN(out_vap, va_create_time, t);
 
@@ -673,7 +680,7 @@ fuse_internal_readdir(vnode_t                 vp,
 {
     int err = 0;
     struct fuse_dispatcher fdi;
-    struct fuse_read_in   *fri;
+    struct fuse_read_in    fri;
     struct fuse_data      *data;
 
     if (uio_resid(uio) == 0) {
@@ -685,15 +692,16 @@ fuse_internal_readdir(vnode_t                 vp,
     /* Note that we DO NOT have a UIO_SYSSPACE here (so no need for p2p I/O). */
 
     while (uio_resid(uio) > 0) {
-
-        fdi.iosize = sizeof(*fri);
-        fdisp_make_vp(&fdi, FUSE_READDIR, vp, context);
-
-        fri = fdi.indata;
-        fri->fh = fufh->fh_id;
-        fri->offset = uio_offset(uio);
         data = fuse_get_mpdata(vnode_mount(vp));
-        fri->size = (typeof(fri->size))min((size_t)uio_resid(uio), data->iosize);
+
+        fri.fh = fufh->fh_id;
+        fri.offset = uio_offset(uio);
+        fri.size = (typeof(fri.size))min((size_t)uio_resid(uio), data->iosize);
+        fri.flags = 0;
+
+        fdi.iosize = fuse_abi_sizeof(fuse_read_in, DTOABI(data));
+        fdisp_make_vp(&fdi, FUSE_READDIR, vp, context);
+        fuse_abi_out(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
@@ -701,7 +709,7 @@ fuse_internal_readdir(vnode_t                 vp,
 
         if ((err = fuse_internal_readdir_processdata(vp,
                                                      uio,
-                                                     fri->size,
+                                                     fri.size,
                                                      fdi.answ,
                                                      fdi.iosize,
                                                      cookediov,
@@ -796,7 +804,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         de->d_fileno = fudge->ino;
 #else
         de->d_fileno = (ino_t)fudge->ino; /* XXX: truncation */
-#endif /* __DARWIN_64_BIT_INO_T */
+#endif
         de->d_reclen = bytesavail;
         de->d_type   = fudge->type;
         de->d_namlen = fudge->namelen;
@@ -929,22 +937,28 @@ fuse_internal_rename(vnode_t               fdvp,
                      struct componentname *tcnp,
                      vfs_context_t         context)
 {
+    struct fuse_data *data;
     struct fuse_dispatcher fdi;
-    struct fuse_rename_in *fri;
+    struct fuse_rename_in fri;
+    void *next;
     int err = 0;
 
-    fdisp_init(&fdi, sizeof(*fri) + fcnp->cn_namelen + tcnp->cn_namelen + 2);
+    data = fuse_get_mpdata(vnode_mount(fdvp));
+
+    fdisp_init(&fdi, fuse_abi_sizeof(fuse_rename_in, DTOABI(data)) +
+                     fcnp->cn_namelen + tcnp->cn_namelen + 2);
     fdisp_make_vp(&fdi, FUSE_RENAME, fdvp, context);
 
-    fri = fdi.indata;
-    fri->newdir = VTOI(tdvp);
-    memcpy((char *)fdi.indata + sizeof(*fri), fcnp->cn_nameptr,
-           fcnp->cn_namelen);
-    ((char *)fdi.indata)[sizeof(*fri) + fcnp->cn_namelen] = '\0';
-    memcpy((char *)fdi.indata + sizeof(*fri) + fcnp->cn_namelen + 1,
-           tcnp->cn_nameptr, tcnp->cn_namelen);
-    ((char *)fdi.indata)[sizeof(*fri) + fcnp->cn_namelen +
-                         tcnp->cn_namelen + 1] = '\0';
+    fri.newdir = VTOI(tdvp);
+
+    next = fuse_abi_out(fuse_rename_in, DTOABI(data), &fri, fdi.indata);
+
+    memcpy(next, fcnp->cn_nameptr, fcnp->cn_namelen);
+    ((char *)next)[fcnp->cn_namelen] = '\0';
+
+    memcpy((char *)next + fcnp->cn_namelen + 1, tcnp->cn_nameptr,
+           tcnp->cn_namelen);
+    ((char *)next)[fcnp->cn_namelen + tcnp->cn_namelen + 1] = '\0';
 
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_drop(fdi.tick);
@@ -1134,7 +1148,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
     if (mode == FREAD) {
 
-        struct fuse_read_in *fri;
+        struct fuse_read_in fri;
 
         buf_setresid(bp, buf_count(bp));
         offset = (off_t)((off_t)buf_blkno(bp) * biosize);
@@ -1164,9 +1178,9 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         while (buf_resid(bp) > 0) {
 
-            chunksize = min((size_t)buf_resid(bp), data->iosize);
+            chunksize = min((size_t)buf_resid(bp), VTOVA(vp)->va_iosize);
 
-            fdi.iosize = sizeof(*fri);
+            fdi.iosize = fuse_abi_sizeof(fuse_read_in, DTOABI(data));
 
             op = FUSE_READ;
             if (vtype == VDIR) {
@@ -1174,8 +1188,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             }
             fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
 
-            fri = fdi.indata;
-            fri->fh = fufh->fh_id;
+            fri.fh = fufh->fh_id;
 
             /*
              * Historical note:
@@ -1185,10 +1198,13 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
              * This wasn't being incremented!?
              */
 
-            fri->offset = offset;
-            fri->size = (typeof(fri->size))chunksize;
+            fri.offset = offset;
+            fri.size = (typeof(fri.size))chunksize;
+            fri.flags = 0;
             fdi.tick->tk_aw_type = FT_A_BUF;
             fdi.tick->tk_aw_bufdata = bufdat;
+
+            fuse_abi_out(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
             if ((err = fdisp_wait_answ(&fdi))) {
                 /* There was a problem with reading. */
@@ -1217,8 +1233,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         } /* while (buf_resid(bp) > 0) */
     } else {
         /* write */
-        struct fuse_write_in  *fwi;
-        struct fuse_write_out *fwo;
+        struct fuse_write_in  fwi;
+        struct fuse_write_out fwo;
         int merr = 0;
         off_t diff;
 
@@ -1241,16 +1257,18 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         while (left) {
 
-            fdi.iosize = sizeof(*fwi);
+            fdi.iosize = fuse_abi_sizeof(fuse_write_in, DTOABI(data));
             op = FUSE_WRITE;
 
             fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
-            chunksize = min((size_t)left, data->iosize);
+            chunksize = min((size_t)left, VTOVA(vp)->va_iosize);
 
-            fwi = fdi.indata;
-            fwi->fh = fufh->fh_id;
-            fwi->offset = offset;
-            fwi->size = (typeof(fwi->size))chunksize;
+            fwi.fh = fufh->fh_id;
+            fwi.offset = offset;
+            fwi.size = (typeof(fwi.size))chunksize;
+            fwi.flags = FUSE_WRITE_CACHE;
+
+            fuse_abi_out(fuse_write_in, DTOABI(data), &fwi, fdi.indata);
 
             fdi.tick->tk_ms_type = FT_M_BUF;
             fdi.tick->tk_ms_bufdata = bufdat;
@@ -1263,17 +1281,17 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 break;
             }
 
-            fwo = fdi.answ;
-            diff = chunksize - fwo->size;
+            fuse_abi_in(fuse_write_out, DTOABI(data), fdi.answ, &fwo);
+            diff = chunksize - fwo.size;
             if (diff < 0) {
                 err = EINVAL;
                 break;
             }
 
-            left -= fwo->size;
-            bufdat += fwo->size;
-            offset += fwo->size;
-            buf_setresid(bp, buf_resid(bp) - fwo->size);
+            left -= fwo.size;
+            bufdat += fwo.size;
+            offset += fwo.size;
+            buf_setresid(bp, buf_resid(bp) - fwo.size);
         }
 
         if (merr) {
@@ -1389,16 +1407,21 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    struct componentname   *cnp,
                                    enum fuse_opcode        op,
                                    void                   *buf,
-                                   size_t                  bufsize,
+                                   fuse_abi_sizeof_t       abi_sizeof,
+                                   fuse_abi_out_t          abi_out,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context)
 {
-    fdisp_init(fdip, bufsize + cnp->cn_namelen + 1);
+    struct fuse_data *data = fuse_get_mpdata(mp);
+    void *next;
+
+    fdisp_init(fdip, (*abi_sizeof)(DTOABI(data)) + cnp->cn_namelen + 1);
 
     fdisp_make(fdip, op, mp, dnid, context);
-    memcpy(fdip->indata, buf, bufsize);
-    memcpy((char *)fdip->indata + bufsize, cnp->cn_nameptr, cnp->cn_namelen);
-    ((char *)fdip->indata)[bufsize + cnp->cn_namelen] = '\0';
+    next = (*abi_out)(DTOABI(data), buf, fdip->indata);
+
+    memcpy(next, cnp->cn_nameptr, cnp->cn_namelen);
+    ((char *)next)[cnp->cn_namelen] = '\0';
 }
 
 __private_extern__
@@ -1411,26 +1434,27 @@ fuse_internal_newentry_core(vnode_t                 dvp,
                             vfs_context_t           context)
 {
     int err = 0;
-    struct fuse_entry_out *feo;
+    struct fuse_entry_out feo;
     mount_t mp = vnode_mount(dvp);
+    struct fuse_data *data = fuse_get_mpdata(mp);
 
     if ((err = fdisp_wait_answ(fdip))) {
         return err;
     }
 
-    feo = fdip->answ;
+    fuse_abi_in(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
 
-    if ((err = fuse_internal_checkentry(feo, vtyp))) {
+    if ((err = fuse_internal_checkentry(&feo, vtyp))) {
         goto out;
     }
 
-    err = fuse_vget_i(vpp, 0 /* flags */, feo, cnp, dvp, mp, context);
+    err = fuse_vget_i(vpp, 0 /* flags */, &feo, cnp, dvp, mp, context);
     if (err) {
-        fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
+        fuse_internal_forget_send(mp, context, feo.nodeid, 1, fdip);
         return err;
     }
 
-    cache_attrs(*vpp, feo);
+    cache_attrs(*vpp, &feo);
 
 out:
     fuse_ticket_drop(fdip->tick);
@@ -1445,7 +1469,8 @@ fuse_internal_newentry(vnode_t               dvp,
                        struct componentname *cnp,
                        enum fuse_opcode      op,
                        void                 *buf,
-                       size_t                bufsize,
+                       fuse_abi_sizeof_t     abi_sizeof,
+                       fuse_abi_out_t        abi_out,
                        enum vtype            vtype,
                        vfs_context_t         context)
 {
@@ -1458,8 +1483,8 @@ fuse_internal_newentry(vnode_t               dvp,
     }
 
     fdisp_init(&fdi, 0);
-    fuse_internal_newentry_makerequest(mp, VTOI(dvp), cnp, op, buf,
-                                       bufsize, &fdi, context);
+    fuse_internal_newentry_makerequest(mp, VTOI(dvp), cnp, op, buf, abi_sizeof,
+                                       abi_out, &fdi, context);
     err = fuse_internal_newentry_core(dvp, vpp, cnp, vtype, &fdi, context);
     fuse_invalidate_attr(dvp);
 
@@ -1490,18 +1515,21 @@ fuse_internal_forget_send(mount_t                 mp,
                           uint64_t                nlookup,
                           struct fuse_dispatcher *fdip)
 {
-    struct fuse_forget_in *ffi;
+    struct fuse_data *data;
+    struct fuse_forget_in ffi;
 
     /*
      * KASSERT(nlookup > 0, ("zero-times forget for vp #%llu",
      *         (long long unsigned) nodeid));
      */
 
-    fdisp_init(fdip, sizeof(*ffi));
-    fdisp_make(fdip, FUSE_FORGET, mp, nodeid, context);
+    data = fuse_get_mpdata(mp);
 
-    ffi = fdip->indata;
-    ffi->nlookup = nlookup;
+    ffi.nlookup = nlookup;
+
+    fdisp_init_abi(fdip, fuse_forget_in, DTOABI(data));
+    fdisp_make(fdip, FUSE_FORGET, mp, nodeid, context);
+    fuse_abi_out(fuse_forget_in, DTOABI(data), &ffi, fdip->indata);
 
     fticket_invalidate(fdip->tick);
     fuse_insert_message(fdip->tick);
@@ -1511,15 +1539,20 @@ __private_extern__
 void
 fuse_internal_interrupt_send(struct fuse_ticket *ftick)
 {
+    struct fuse_data *data;
     struct fuse_dispatcher fdi;
-    struct fuse_interrupt_in *fii;
+    struct fuse_interrupt_in fii;
+
+    data = ftick->tk_data;
+
+    fii.unique = ftick->tk_unique;
 
     fdi.tick = ftick;
-    fdisp_init(&fdi, sizeof(*fii));
-    fdisp_make(&fdi, FUSE_INTERRUPT, ftick->tk_data->mp, (uint64_t)0,
+    fdisp_init_abi(&fdi, fuse_interrupt_in, DTOABI(data));
+    fdisp_make(&fdi, FUSE_INTERRUPT, data->mp, (uint64_t)0,
                (vfs_context_t)0);
-    fii = fdi.indata;
-    fii->unique = ftick->tk_unique;
+    fuse_abi_out(fuse_interrupt_in, DTOABI(data), &fii, fdi.indata);
+
     fticket_invalidate(fdi.tick);
     fuse_insert_message(fdi.tick);
 }
@@ -1571,46 +1604,39 @@ int
 fuse_internal_init_synchronous(struct fuse_ticket *ftick)
 {
     int err = 0;
-    struct fuse_init_out *fiio;
+    struct fuse_init_out fio;
     struct fuse_data *data = ftick->tk_data;
+    struct fuse_abi_version *abi_version = DTOABI(data);
 
     if ((err = ftick->tk_aw_ohead.error)) {
         goto out;
     }
 
-    fiio = fticket_resp(ftick)->base;
+#define FIO ((struct fuse_init_out *)fticket_resp(ftick)->base)
+    abi_version->major = FIO->major;
+    abi_version->minor = FIO->minor;
+#undef FIO
 
-    if ((fiio->major < OSXFUSE_MIN_USER_VERSION_MAJOR) ||
-        (fiio->minor < OSXFUSE_MIN_USER_VERSION_MINOR)){
-        IOLog("OSXFUSE: user-space library has too low a version\n");
+    if (ABITOI(abi_version) < OSXFUSE_MIN_ABI_VERSION){
+        IOLog("OSXFUSE: ABI version of user space library too low\n");
         err = EPROTONOSUPPORT;
         goto out;
     }
 
-    data->fuse_libabi_major = fiio->major;
-    data->fuse_libabi_minor = fiio->minor;
+    fuse_abi_in(fuse_init_out, DTOABI(data),
+                fticket_resp(ftick)->base, &fio);
 
-    if (fuse_libabi_geq(data, OSXFUSE_MIN_USER_VERSION_MAJOR,
-                              OSXFUSE_MIN_USER_VERSION_MINOR)) {
-        if (fticket_resp(ftick)->len == sizeof(struct fuse_init_out)) {
-            data->max_write = fiio->max_write;
-        } else {
-            err = EINVAL;
-        }
-    } else {
-        /* Old fix values */
-        data->max_write = 4096;
-    }
+    data->max_write = fio.max_write;
 
-    if (fiio->flags & FUSE_CASE_INSENSITIVE) {
+    if (fio.flags & FUSE_CASE_INSENSITIVE) {
         data->dataflags |= FSESS_CASE_INSENSITIVE;
     }
 
-    if (fiio->flags & FUSE_VOL_RENAME) {
+    if (fio.flags & FUSE_VOL_RENAME) {
         data->dataflags |= FSESS_VOL_RENAME;
     }
 
-    if (fiio->flags & FUSE_XTIMES) {
+    if (fio.flags & FUSE_XTIMES) {
         data->dataflags |= FSESS_XTIMES;
     }
 
