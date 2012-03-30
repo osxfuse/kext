@@ -25,8 +25,8 @@ static void osxfuse_thread_macfuse_mode(void *, wait_result_t);
 
 int32_t  fuse_admin_group            = 0;                                  // rw
 int32_t  fuse_allow_other            = 0;                                  // rw
-uint32_t fuse_api_major              = FUSE_KERNEL_VERSION;                // r
-uint32_t fuse_api_minor              = FUSE_KERNEL_MINOR_VERSION;          // r
+uint32_t fuse_abi_major              = FUSE_KERNEL_VERSION;                // r
+uint32_t fuse_abi_minor              = FUSE_KERNEL_MINOR_VERSION;          // r
 int32_t  fuse_fh_current             = 0;                                  // r
 uint32_t fuse_fh_reuse_count         = 0;                                  // r
 uint32_t fuse_fh_upcall_count        = 0;                                  // r
@@ -436,10 +436,10 @@ SYSCTL_PROC(_macfuse_tunables,          // our parent
 #endif
 
 /* fuse.version */
-SYSCTL_INT(_osxfuse_version, OID_AUTO, api_major, CTLFLAG_RD,
-           &fuse_api_major, 0, "");
-SYSCTL_INT(_osxfuse_version, OID_AUTO, api_minor, CTLFLAG_RD,
-           &fuse_api_minor, 0, "");
+SYSCTL_INT(_osxfuse_version, OID_AUTO, abi_major, CTLFLAG_RD,
+           &fuse_abi_major, 0, "");
+SYSCTL_INT(_osxfuse_version, OID_AUTO, abi_minor, CTLFLAG_RD,
+           &fuse_abi_minor, 0, "");
 SYSCTL_STRING(_osxfuse_version, OID_AUTO, number, CTLFLAG_RD,
               OSXFUSE_VERSION, 0, "");
 SYSCTL_STRING(_osxfuse_version, OID_AUTO, string, CTLFLAG_RD,
@@ -447,10 +447,10 @@ SYSCTL_STRING(_osxfuse_version, OID_AUTO, string, CTLFLAG_RD,
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
 
-SYSCTL_INT(_macfuse_version, OID_AUTO, api_major, CTLFLAG_RD,
-           &fuse_api_major, 0, "");
-SYSCTL_INT(_macfuse_version, OID_AUTO, api_minor, CTLFLAG_RD,
-           &fuse_api_minor, 0, "");
+SYSCTL_INT(_macfuse_version, OID_AUTO, abi_major, CTLFLAG_RD,
+           &fuse_abi_major, 0, "");
+SYSCTL_INT(_macfuse_version, OID_AUTO, abi_minor, CTLFLAG_RD,
+           &fuse_abi_minor, 0, "");
 SYSCTL_STRING(_macfuse_version, OID_AUTO, number, CTLFLAG_RD,
               OSXFUSE_VERSION, 0, "");
 SYSCTL_STRING(_macfuse_version, OID_AUTO, string, CTLFLAG_RD,
@@ -490,8 +490,8 @@ static struct sysctl_oid *fuse_sysctl_list[] =
     &sysctl__osxfuse_tunables_max_freetickets,
     &sysctl__osxfuse_tunables_max_tickets,
     &sysctl__osxfuse_tunables_userkernel_bufsize,
-    &sysctl__osxfuse_version_api_major,
-    &sysctl__osxfuse_version_api_minor,
+    &sysctl__osxfuse_version_abi_major,
+    &sysctl__osxfuse_version_abi_minor,
     &sysctl__osxfuse_version_number,
     &sysctl__osxfuse_version_string,
     (struct sysctl_oid *)0
@@ -528,8 +528,8 @@ static struct sysctl_oid *fuse_sysctl_list_macfuse[] =
     &sysctl__macfuse_tunables_max_freetickets,
     &sysctl__macfuse_tunables_max_tickets,
     &sysctl__macfuse_tunables_userkernel_bufsize,
-    &sysctl__macfuse_version_api_major,
-    &sysctl__macfuse_version_api_minor,
+    &sysctl__macfuse_version_abi_major,
+    &sysctl__macfuse_version_abi_minor,
     &sysctl__macfuse_version_number,
     &sysctl__macfuse_version_string,
     (struct sysctl_oid *)0
