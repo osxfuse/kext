@@ -1015,7 +1015,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     biosize = data->blocksize;
 
     if (!(vtype == VREG || vtype == VDIR)) {
-        return ENOTSUP;
+        err = ENOTSUP;
+        goto out;
     }
 
     if (bflags & B_READ) {
@@ -1095,24 +1096,21 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (err) {
+        /* A more typical error case. */
+        if ((err == ENOTCONN) || fuse_isdeadfs(vp)) {
+            err = EIO;
+            goto out;
+        }
 
-         /* A more typical error case. */
-         if ((err == ENOTCONN) || fuse_isdeadfs(vp)) {
-             buf_seterror(bp, EIO);
-             buf_biodone(bp);
-             return EIO;
-         }
+        IOLog("OSXFUSE: strategy failed to get fh "
+              "(vtype=%d, fufh_type=%d, err=%d)\n", vtype, fufh_type, err);
 
-         IOLog("OSXFUSE: strategy failed to get fh "
-               "(vtype=%d, fufh_type=%d, err=%d)\n", vtype, fufh_type, err);
+        if (!vfs_issynchronous(mp)) {
+            IOLog("OSXFUSE: asynchronous write failed!\n");
+        }
 
-         if (!vfs_issynchronous(mp)) {
-             IOLog("OSXFUSE: asynchronous write failed!\n");
-         }
-
-         buf_seterror(bp, EIO);
-         buf_biodone(bp);
-         return EIO;
+        err = EIO;
+        goto out;
     }
 
     if (!fufh) {
@@ -1132,7 +1130,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (buf_count(bp) == 0) {
-        return 0;
+        goto out;
     }
 
     fdisp_init(&fdi, 0);
@@ -1148,10 +1146,9 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             /* Trying to read at/after EOF? */
             if (offset != fvdat->filesize) {
                 /* Trying to read after EOF? */
-                buf_seterror(bp, EINVAL);
+                err = EINVAL;
             }
-            buf_biodone(bp);
-            return 0;
+            goto out;
         }
 
         /* Note that we just made sure that offset < fvdat->filesize. */
@@ -1162,7 +1159,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         if (buf_map(bp, &bufdat)) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
-            return EFAULT;
+            err = EFAULT;
+            goto out;
         } else {
             mapped = TRUE;
         }
@@ -1229,7 +1227,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         if (buf_map(bp, &bufdat)) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
-            return EFAULT;
+            err = EFAULT;
+            goto out;
         } else {
             mapped = TRUE;
         }
