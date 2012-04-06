@@ -76,11 +76,7 @@ fuse_vnop_access(struct vnop_access_args *ap)
 
     bzero(&facp, sizeof(facp));
 
-    if (fvdat->flag & FN_ACCESS_NOOP) {
-        fvdat->flag &= ~FN_ACCESS_NOOP;
-    } else {
-        facp.facc_flags |= FACCESS_DO_ACCESS;
-    }
+    facp.facc_flags |= FACCESS_DO_ACCESS;
 
     facp.facc_flags |= FACCESS_FROM_VNOP;
 
