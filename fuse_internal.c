@@ -53,8 +53,7 @@ __private_extern__
 int
 fuse_internal_access(vnode_t                   vp,
                      int                       action,
-                     vfs_context_t             context,
-                     struct fuse_access_param *facp)
+                     vfs_context_t             context)
 {
     int err = 0;
     int default_error = 0;
@@ -90,10 +89,8 @@ fuse_internal_access(vnode_t                   vp,
         return default_error;
     }
 
-    if (!vnode_isvroot(vp) && !(facp->facc_flags & FACCESS_NOCHECKSPY)) {
+    if (!vnode_isvroot(vp)) {
         CHECK_BLANKET_DENIAL(vp, context, EPERM);
-
-        facp->facc_flags |= FACCESS_NOCHECKSPY;
     }
 
     if (vnode_isdir(vp)) {

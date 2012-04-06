@@ -45,7 +45,6 @@ fuse_vnop_access(struct vnop_access_args *ap)
     int           action  = ap->a_action;
     vfs_context_t context = ap->a_context;
 
-    struct fuse_access_param facp;
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
     fuse_trace_printf_vnop();
@@ -73,9 +72,7 @@ fuse_vnop_access(struct vnop_access_args *ap)
         return 0;
     }
 
-    bzero(&facp, sizeof(facp));
-
-    return fuse_internal_access(vp, action, context, &facp);
+    return fuse_internal_access(vp, action, context);
 }
 
 /*

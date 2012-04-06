@@ -466,20 +466,10 @@ fuse_blanket_deny(vnode_t vp, vfs_context_t context)
 
 /* access */
 
-#define FACCESS_NOCHECKSPY 0x00000004
-#define FACCESS_FROM_VNOP  0x00000008
-
-struct fuse_access_param {
-    uid_t    xuid;
-    gid_t    xgid;
-    uint32_t facc_flags;
-};
-
 int
 fuse_internal_access(vnode_t                   vp,
                      int                       action,
-                     vfs_context_t             context,
-                     struct fuse_access_param *facp);
+                     vfs_context_t             context);
 
 /* attributes */
 
