@@ -46,7 +46,6 @@ fuse_vnop_access(struct vnop_access_args *ap)
     vfs_context_t context = ap->a_context;
 
     struct fuse_access_param facp;
-    struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
     fuse_trace_printf_vnop();
