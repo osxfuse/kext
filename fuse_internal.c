@@ -96,10 +96,6 @@ fuse_internal_access(vnode_t                   vp,
         facp->facc_flags |= FACCESS_NOCHECKSPY;
     }
 
-    if (!(facp->facc_flags & FACCESS_DO_ACCESS)) {
-        return default_error;
-    }
-
     if (vnode_isdir(vp)) {
         if (action & (KAUTH_VNODE_LIST_DIRECTORY   |
                       KAUTH_VNODE_READ_EXTATTRIBUTES)) {
