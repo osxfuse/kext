@@ -842,6 +842,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 #endif
         ;
 
+    if (data->dataflags & FSESS_CASE_INSENSITIVE) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] &=
+            ~VOL_CAP_FMT_CASE_SENSITIVE;
+    }
+
     if (data->dataflags & FSESS_SLOW_STATFS) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] &=
             ~VOL_CAP_FMT_FAST_STATFS;
