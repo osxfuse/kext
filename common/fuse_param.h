@@ -11,6 +11,8 @@
 #ifndef _FUSE_PARAM_H_
 #define _FUSE_PARAM_H_
 
+#include <AvailabilityMacros.h>
+
 /* Compile-time tunables (M_OSXFUSE*) */
 
 #define M_OSXFUSE_ENABLE_FIFOFS                0
@@ -23,10 +25,20 @@
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
 #  define M_OSXFUSE_ENABLE_DSELECT             0
 #  define M_OSXFUSE_ENABLE_EXCHANGE            1
-#  define M_OSXFUSE_ENABLE_KQUEUE              1
 #  define M_OSXFUSE_ENABLE_KUNC                0
 #  define M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK 1
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1060
+#  if M_OSXFUSE_ENABLE_UNSUPPORTED
+     /*
+      * In Mac OS X 10.5 the file system implementation is responsible for
+      * posting kqueue events. Starting with Mac OS X 10.6 VFS took over that
+      * job.
+      */
+#    define M_OSXFUSE_ENABLE_KQUEUE            1
+#  endif
+#endif /* MAC_OS_X_VERSION_MIN_REQUIRED < 1060 */
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #  define M_OSXFUSE_ENABLE_HUGE_LOCK           0
