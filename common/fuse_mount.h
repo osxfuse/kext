@@ -48,7 +48,7 @@ enum {
 #define FUSE_FSTYPENAME_PREFIX OSXFUSE_FS_TYPE "_"
 
 /* Courtesy of the Finder, this is 1 less than what you think it should be. */
-#define FUSE_FSTYPENAME_MAXLEN (MFSTYPENAMELEN - sizeof(OSXFUSE_FS_TYPE) - 2)
+#define FUSE_FSTYPENAME_MAXLEN (MFSTYPENAMELEN - sizeof(FUSE_FSTYPENAME_PREFIX) - 1)
 
 /* mount-time flags */
 #define FUSE_MOPT_IGNORE                 0x0000000000000000ULL
