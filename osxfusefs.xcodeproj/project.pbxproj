@@ -48,6 +48,8 @@
 
 /* Begin PBXBuildFile section */
 		435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435958DA15120F5500B4D7F5 /* CoreServices.framework */; };
+		43D6261A1538949F00303F1A /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D626181538949F00303F1A /* fuse_notify.c */; };
+		43D6261B1538949F00303F1A /* fuse_notify.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D626191538949F00303F1A /* fuse_notify.h */; };
 		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
 		540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966620C33B60B00F5E227 /* mount_osxfusefs.c */; };
 		540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966670C33B61A00F5E227 /* load_osxfusefs.c */; };
@@ -146,6 +148,8 @@
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		435958DA15120F5500B4D7F5 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
 		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
+		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
+		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
 		540965B70C33B17400F5E227 /* osxfusefs.fs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = osxfusefs.fs; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
 		540966530C33B5F500F5E227 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_mount.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -321,6 +325,8 @@
 				54C6DDC50B5EEB44002D9FD9 /* fuse_node.h */,
 				54C6DDC60B5EEB44002D9FD9 /* fuse_nodehash.c */,
 				54C6DDC70B5EEB44002D9FD9 /* fuse_nodehash.h */,
+				43D626181538949F00303F1A /* fuse_notify.c */,
+				43D626191538949F00303F1A /* fuse_notify.h */,
 				54C6DDC80B5EEB44002D9FD9 /* fuse_sysctl.c */,
 				54C6DDC90B5EEB44002D9FD9 /* fuse_sysctl.h */,
 				54C6DDCA0B5EEB44002D9FD9 /* fuse_vfsops.c */,
@@ -357,6 +363,7 @@
 				540966BD0C33BA3900F5E227 /* fuse_vfsops.h in Headers */,
 				540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */,
 				54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */,
+				43D6261B1538949F00303F1A /* fuse_notify.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,6 +510,7 @@
 				540966BC0C33BA3900F5E227 /* fuse_vfsops.c in Sources */,
 				540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */,
 				54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */,
+				43D6261A1538949F00303F1A /* fuse_notify.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

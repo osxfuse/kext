@@ -9,6 +9,7 @@
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
 #include "fuse_locking.h"
+#include "fuse_notify.h"
 
 #include <fuse_ioctl.h>
 
@@ -407,7 +408,7 @@ again:
 int
 fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 {
-    int err = 0, found = 0;
+    int err = 0;
 
     struct fuse_device    *fdev;
     struct fuse_data      *data;
@@ -439,39 +440,45 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return EINVAL;
     }
 
-    if (uio_resid(uio) && ohead.error) {
+    if (uio_resid(uio) && ohead.unique && ohead.error) {
         IOLog("OSXFUSE: non-zero error for a message with a body\n");
         return EINVAL;
     }
-
-    ohead.error = -(ohead.error);
 
     /* end audit */
 
     data = fdev->data;
 
-    fuse_lck_mtx_lock(data->aw_mtx);
-
-    TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
-        if (ftick->tk_unique == ohead.unique) {
-            found = 1;
-            fuse_aw_remove(ftick);
-            break;
-        }
-    }
-
-    fuse_lck_mtx_unlock(data->aw_mtx);
-
-    if (found) {
-        if (ftick->tk_aw_handler) {
-            memcpy(&ftick->tk_aw_ohead, &ohead, sizeof(ohead));
-            err = ftick->tk_aw_handler(ftick, uio);
-        } else {
-            fuse_ticket_drop(ftick);
-            return err;
-        }
+    if (!ohead.unique) {
+        /* Unsolicited notification */
+        err = fuse_ipc_notify_handler(data, ohead.error, uio);
     } else {
-        /* ticket has no response handler */
+        int found;
+
+        fuse_lck_mtx_lock(data->aw_mtx);
+
+        TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
+            if (ftick->tk_unique == ohead.unique) {
+                found = 1;
+                fuse_aw_remove(ftick);
+                break;
+            }
+        }
+
+        fuse_lck_mtx_unlock(data->aw_mtx);
+
+        if (found) {
+            if (ftick->tk_aw_handler) {
+                memcpy(&ftick->tk_aw_ohead, &ohead, sizeof(ohead));
+                ftick->tk_aw_ohead.error = -(ftick->tk_aw_ohead.error);
+
+                err = ftick->tk_aw_handler(ftick, uio);
+            } else {
+                fuse_ticket_drop(ftick);
+            }
+        } else {
+            /* ticket has no response handler */
+        }
     }
 
     return err;

@@ -1006,6 +1006,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
     assert(gHashMutex != NULL);
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    bool bl_locked;
     mntdata = fuse_device_get_mpdata(dev);
 #endif
     needsUnlock = TRUE;
@@ -1040,11 +1041,22 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
             vid = vnode_vid(candidateVN);
             lck_mtx_unlock(gHashMutex);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-            fuse_biglock_unlock(mntdata->biglock);
+            /*
+             * Make sure that biglock is actually held by the thread calling us
+             * before trying to unlock it. HNodeLookupRealQuickIfExists is
+             * called by notification handlers that do not hold biglock.
+             * Trying to unlock it in this case would result in a kernel panic.
+             */
+            bl_locked = fuse_biglock_have_lock(mntdata->biglock);
+            if (bl_locked) {
+                fuse_biglock_unlock(mntdata->biglock);
+            }
 #endif
             err = vnode_getwithvid(candidateVN, vid);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-            fuse_biglock_lock(mntdata->biglock);
+            if (bl_locked) {
+                fuse_biglock_lock(mntdata->biglock);
+            }
 #endif
             needsUnlock = FALSE;
             if (err == 0) {

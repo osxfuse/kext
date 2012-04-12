@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
+ * Copyright (c) 2012 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -8,8 +9,11 @@
 
 #include "fuse_internal.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-#  include "fuse_biglock_vnops.h"
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#  if !M_OSXFUSE_ENABLE_HUGE_LOCK
+#    include "fuse_biglock_vnops.h"
+#  endif
+#  include "fuse_notify.h"
 #endif
 
 #if M_OSXFUSE_ENABLE_DSELECT
@@ -144,7 +148,13 @@ fticket_alloc(struct fuse_data *data)
 
     bzero(ftick, sizeof(struct fuse_ticket));
 
-    ftick->tk_unique = data->ticketer++;
+    data->ticketer++;
+    if (data->ticketer == 0) {
+        /* Unique 0 is reserved for notifications. */
+        data->ticketer = 1;
+    }
+
+    ftick->tk_unique = data->ticketer;
     ftick->tk_data = data;
 
     fiov_init(&ftick->tk_ms_fiov, sizeof(struct fuse_in_header));
@@ -428,7 +438,7 @@ fdata_alloc(struct proc *p)
 
     data->freeticket_counter = 0;
     data->deadticket_counter = 0;
-    data->ticketer           = 0;
+    data->ticketer           = 1;
 
 #if M_OSXFUSE_EXCPLICIT_RENAME_LOCK
     data->rename_lock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
@@ -595,7 +605,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         }
     }
 
-    if (!(data->dataflags & FSESS_INITED) && data->ticketer > 1) {
+    if (!(data->dataflags & FSESS_INITED) && data->ticketer > 2) {
         err = fuse_msleep(&data->ticketer, data->ticket_mtx, PCATCH | PDROP,
                           "fu_ini", 0, data);
     } else {
@@ -719,67 +729,68 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
 static int
 fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
 {
-    int err = 0;
-    struct fuse_data *data;
-    enum fuse_opcode opcode;
-
-    if (fdata_dead_get(ftick->tk_data)) {
-        return ENOTCONN;
-    }
-
-    data = ftick->tk_data;
-    opcode = fticket_opcode(ftick);
-
-    switch (opcode) {
-#define AUDIT_CASE_SIZE(OPCODE, CMP, SIZE)    \
+#define FB_AUDIT_CASE_SIZE(OPCODE, CMP, SIZE) \
     case OPCODE:                              \
         err = (blen CMP (SIZE)) ? 0 : EINVAL; \
         break;
 
-#define AUDIT_CASE_OUT(OPCODE, NAME) \
-    AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
+#define FB_AUDIT_CASE_OUT(OPCODE, NAME) \
+    FB_AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
 
-#define AUDIT_CASE_NO_OUT(OPCODE) AUDIT_CASE_SIZE(OPCODE, ==, 0)
+#define FB_AUDIT_CASE_NO_OUT(OPCODE) FB_AUDIT_CASE_SIZE(OPCODE, ==, 0)
 
-        AUDIT_CASE_OUT(FUSE_LOOKUP, fuse_entry_out)
+    int err = 0;
+    struct fuse_data *data;
+    enum fuse_opcode opcode;
+
+    data = ftick->tk_data;
+
+    if (fdata_dead_get(data)) {
+        return ENOTCONN;
+    }
+
+    opcode = fticket_opcode(ftick);
+
+    switch (opcode) {
+        FB_AUDIT_CASE_OUT(FUSE_LOOKUP, fuse_entry_out)
 
         case FUSE_FORGET:
             panic("OSXFUSE: a handler has been installed for FUSE_FORGET");
             break;
 
-        AUDIT_CASE_OUT(FUSE_GETATTR, fuse_attr_out)
+        FB_AUDIT_CASE_OUT(FUSE_GETATTR, fuse_attr_out)
 
-        AUDIT_CASE_OUT(FUSE_SETATTR, fuse_attr_out)
+        FB_AUDIT_CASE_OUT(FUSE_SETATTR, fuse_attr_out)
 
-        AUDIT_CASE_SIZE(FUSE_READLINK, <=, PAGE_SIZE)
+        FB_AUDIT_CASE_SIZE(FUSE_READLINK, <=, PAGE_SIZE)
 
-        AUDIT_CASE_OUT(FUSE_SYMLINK, fuse_entry_out)
+        FB_AUDIT_CASE_OUT(FUSE_SYMLINK, fuse_entry_out)
 
-        AUDIT_CASE_OUT(FUSE_MKNOD, fuse_entry_out)
+        FB_AUDIT_CASE_OUT(FUSE_MKNOD, fuse_entry_out)
 
-        AUDIT_CASE_OUT(FUSE_MKDIR, fuse_entry_out)
+        FB_AUDIT_CASE_OUT(FUSE_MKDIR, fuse_entry_out)
 
-        AUDIT_CASE_NO_OUT(FUSE_UNLINK)
+        FB_AUDIT_CASE_NO_OUT(FUSE_UNLINK)
 
-        AUDIT_CASE_NO_OUT(FUSE_RMDIR)
+        FB_AUDIT_CASE_NO_OUT(FUSE_RMDIR)
 
-        AUDIT_CASE_NO_OUT(FUSE_RENAME)
+        FB_AUDIT_CASE_NO_OUT(FUSE_RENAME)
 
-        AUDIT_CASE_OUT(FUSE_LINK, fuse_entry_out)
+        FB_AUDIT_CASE_OUT(FUSE_LINK, fuse_entry_out)
 
-        AUDIT_CASE_OUT(FUSE_OPEN, fuse_open_out)
+        FB_AUDIT_CASE_OUT(FUSE_OPEN, fuse_open_out)
 
-        AUDIT_CASE_SIZE(FUSE_READ, <=,
+        FB_AUDIT_CASE_SIZE(FUSE_READ, <=,
             ((struct fuse_read_in *)((char *)ftick->tk_ms_fiov.base +
                                      sizeof(struct fuse_in_header)))->size)
 
-        AUDIT_CASE_OUT(FUSE_WRITE, fuse_write_out)
+        FB_AUDIT_CASE_OUT(FUSE_WRITE, fuse_write_out)
 
-        AUDIT_CASE_OUT(FUSE_STATFS, fuse_statfs_out)
+        FB_AUDIT_CASE_OUT(FUSE_STATFS, fuse_statfs_out)
 
-        AUDIT_CASE_NO_OUT(FUSE_RELEASE)
+        FB_AUDIT_CASE_NO_OUT(FUSE_RELEASE)
 
-        AUDIT_CASE_NO_OUT(FUSE_FSYNC)
+        FB_AUDIT_CASE_NO_OUT(FUSE_FSYNC)
 
         case FUSE_SETXATTR:
             /* TBD */
@@ -797,19 +808,19 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
             /* TBD */
             break;
 
-        AUDIT_CASE_NO_OUT(FUSE_FLUSH)
+        FB_AUDIT_CASE_NO_OUT(FUSE_FLUSH)
 
-        AUDIT_CASE_SIZE(FUSE_INIT, >=, 8)
+        FB_AUDIT_CASE_SIZE(FUSE_INIT, >=, 8)
 
-        AUDIT_CASE_OUT(FUSE_OPENDIR, fuse_open_out)
+        FB_AUDIT_CASE_OUT(FUSE_OPENDIR, fuse_open_out)
 
-        AUDIT_CASE_SIZE(FUSE_READDIR, <=,
+        FB_AUDIT_CASE_SIZE(FUSE_READDIR, <=,
             ((struct fuse_read_in *)((char *)ftick->tk_ms_fiov.base +
                                      sizeof(struct fuse_in_header)))->size)
 
-        AUDIT_CASE_NO_OUT(FUSE_RELEASEDIR)
+        FB_AUDIT_CASE_NO_OUT(FUSE_RELEASEDIR)
 
-        AUDIT_CASE_NO_OUT(FUSE_FSYNCDIR)
+        FB_AUDIT_CASE_NO_OUT(FUSE_FSYNCDIR)
 
         case FUSE_GETLK:
             panic("OSXFUSE: no response body format check for FUSE_GETLK");
@@ -823,9 +834,9 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
             panic("OSXFUSE: no response body format check for FUSE_SETLKW");
             break;
 
-        AUDIT_CASE_NO_OUT(FUSE_ACCESS)
+        FB_AUDIT_CASE_NO_OUT(FUSE_ACCESS)
 
-        AUDIT_CASE_SIZE(FUSE_CREATE, ==,
+        FB_AUDIT_CASE_SIZE(FUSE_CREATE, ==,
                         fuse_abi_sizeof(fuse_entry_out, DTOABI(data)) +
                         fuse_abi_sizeof(fuse_open_out, DTOABI(data)))
 
@@ -837,31 +848,31 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
             /* TBD */
             break;
 
-        AUDIT_CASE_NO_OUT(FUSE_DESTROY)
+        FB_AUDIT_CASE_NO_OUT(FUSE_DESTROY)
 
-        AUDIT_CASE_SIZE(FUSE_IOCTL, >=,
+        FB_AUDIT_CASE_SIZE(FUSE_IOCTL, >=,
                         fuse_abi_sizeof(fuse_ioctl_out, DTOABI(data)))
 
         case FUSE_POLL:
             /* TBD */
             break;
 
-        AUDIT_CASE_NO_OUT(FUSE_SETVOLNAME)
+        FB_AUDIT_CASE_NO_OUT(FUSE_SETVOLNAME)
 
-        AUDIT_CASE_OUT(FUSE_GETXTIMES, fuse_getxtimes_out)
+        FB_AUDIT_CASE_OUT(FUSE_GETXTIMES, fuse_getxtimes_out)
 
-        AUDIT_CASE_NO_OUT(FUSE_EXCHANGE);
+        FB_AUDIT_CASE_NO_OUT(FUSE_EXCHANGE);
 
         default:
             IOLog("OSXFUSE: opcodes out of sync (%d)\n", opcode);
             panic("OSXFUSE: opcodes out of sync (%d)", opcode);
-
-#undef AUDIT_CASE_SIZE
-#undef AUDIT_CASE_OUT
-#undef AUDIT_CASE_NO_OUT
     }
 
     return err;
+
+#undef FB_AUDIT_CASE_SIZE
+#undef FB_AUDIT_CASE_OUT
+#undef FB_AUDIT_CASE_NO_OUT
 }
 
 static void
@@ -1073,4 +1084,100 @@ out:
     fuse_ticket_drop(fdip->tick);
 
     return err;
+}
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+
+static int
+fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
+#define FN_AUDIT_CASE_SIZE(OPCODE, CMP, SIZE)       \
+    case OPCODE:                                    \
+        err = (notify_len CMP (SIZE)) ? 0 : EINVAL; \
+        break;
+
+#define FN_AUDIT_CASE_OUT(OPCODE, NAME) \
+    FN_AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
+
+#define FN_AUDIT_CASE_NO_OUT(OPCODE) FN_AUDIT_CASE_SIZE(OPCODE, ==, 0)
+
+    int err = 0;
+
+    if (!fuse_abi_is_notify_supported(DTOABI(data), notify)) {
+        return EINVAL;
+    }
+
+    switch (notify) {
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_POLL, fuse_notify_poll_wakeup_out)
+
+        FN_AUDIT_CASE_SIZE(FUSE_NOTIFY_INVAL_ENTRY, >=,
+                           fuse_abi_sizeof(fuse_notify_inval_entry_out,
+                                           DTOABI(data)))
+
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_INVAL_INODE, fuse_notify_inval_inode_out)
+
+        default:
+            IOLog("OSXFUSE: notification codes out of sync (%d)\n", notify);
+            panic("OSXFUSE: notification codes out of sync (%d)", notify);
+    }
+
+    return err;
+
+#undef FN_AUDIT_CASE_SIZE
+#undef FN_AUDIT_CASE_OUT
+#undef FN_AUDIT_CASE_NO_OUT
+}
+
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+
+int
+fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+    int err = 0;
+
+    struct fuse_iov iov;
+
+    if (fdata_dead_get(data)) {
+        /* Ignore notification */
+        return 0;
+    }
+
+    err = fuse_ipc_notify_audit(data, notify, (size_t)uio_resid(uio));
+    if (err) {
+        return err;
+    }
+
+    fiov_init(&iov, (size_t)uio_resid(uio));
+    err = uiomove(iov.base, (int)uio_resid(uio), uio);
+    if (err) {
+        goto out;
+    }
+
+    switch (notify) {
+        case FUSE_NOTIFY_POLL:
+            /* not implemented */
+            break;
+
+        case FUSE_NOTIFY_INVAL_ENTRY:
+            err = fuse_notify_inval_entry(data, &iov);
+            break;
+
+        case FUSE_NOTIFY_INVAL_INODE:
+            err = fuse_notify_inval_inode(data, &iov);
+            break;
+    }
+
+out:
+    fiov_teardown(&iov);
+    return err;
+#else /* !M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+    /*
+     * Unsolicited notifications require node locks. Because notifications are
+     * sent through the osxfuse device there is no kernel provided node locking
+     * mechanism to use as a fallback. Ignore notification.
+     */
+    (void)data;
+    (void)notify;
+    (void)uio;
+    return 0;
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 }

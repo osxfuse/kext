@@ -20,6 +20,7 @@
 #  include "fuse_locking.h"
 #endif
 
+#include <stdbool.h>
 #include <sys/kauth.h>
 #include <sys/queue.h>
 
@@ -383,12 +384,12 @@ fdisp_simple_vfs_getattr(struct fuse_dispatcher *fdip,
 
 /*
  * Returns true, if the specified FUSE operation is supported in the ABI version
- * used to communicate with the the user space daemon.
+ * used to communicate with FUSE server.
  */
 static __inline__
 bool
-fuse_abi_is_supported(enum fuse_opcode op,
-                      struct fuse_abi_version *abi_version)
+fuse_abi_is_op_supported(struct fuse_abi_version *abi_version,
+                         enum fuse_opcode op)
 {
     switch (op) {
         case FUSE_IOCTL:
@@ -397,6 +398,31 @@ fuse_abi_is_supported(enum fuse_opcode op,
             break;
         default:
             return true; /* ABI 7.8 */
+    }
+}
+
+/*
+ * Returns true, if the specified FUSE notification is supported in the ABI
+ * version used to communicate with the FUSE server.
+ */
+static __inline__
+bool
+fuse_abi_is_notify_supported(struct fuse_abi_version *abi_version, int notify)
+{
+    /* Unsolicited notification require at least ABI 7.11 */
+    if (ABITOI(abi_version) < FUSE_ABI_711 ||
+        notify < 0 ||
+        notify >= FUSE_NOTIFY_CODE_MAX) {
+        return false;
+    }
+
+    switch (notify) {
+        case FUSE_NOTIFY_INVAL_INODE:
+        case FUSE_NOTIFY_INVAL_ENTRY:
+            return ABITOI(abi_version) >= FUSE_ABI_712;
+            break;
+        default:
+            return true; /* ABI 7.11 */
     }
 }
 
@@ -582,9 +608,11 @@ FUSE_ABI_OUT_IMPL(fuse_poll_in, )
 FUSE_ABI_OUT_IMPL(fuse_dirent, )
 
 /* Undefine ABI macros */
-
 #undef FUSE_ABI_SIZEOF_IMPL
 #undef FUSE_ABI_IN_IMPL
 #undef FUSE_ABI_OUT_IMPL
+
+/* Unsolicited notifications */
+int fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio);
 
 #endif /* _FUSE_IPC_H_ */

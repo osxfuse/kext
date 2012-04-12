@@ -1070,7 +1070,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
         return fuse_internal_ioctl_avfi(vp, context, avfi);
     }
 
-    if (!fuse_abi_is_supported(FUSE_IOCTL, DTOABI(data)) ||
+    if (!fuse_abi_is_op_supported(DTOABI(data), FUSE_IOCTL) ||
         !fuse_implemented(data, FSESS_NOIMPLBIT(IOCTL))) {
         return EINVAL;
     }
