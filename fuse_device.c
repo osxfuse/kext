@@ -658,10 +658,10 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
     /*
      * The 'AVFI' (alter-vnode-for-inode) ioctls all require an inode number
      * as an argument. In the user-space library, you can get the inode number
-     * from a path by using fuse_lookup_inode_by_path_np() [lib/fuse.c].
+     * from a path by using fuse_lookup_inode_internal_np() [lib/fuse.c].
      *
      * To see an example of using this, see the implementation of
-     * fuse_purge_path_np() in lib/fuse_darwin.c.
+     * fuse_purge_np() in lib/fuse_darwin.c.
      */
     case FUSEDEVIOCALTERVNODEFORINODE:
         {
