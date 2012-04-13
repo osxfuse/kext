@@ -2065,9 +2065,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
     int error, isdir = 0;
     long hint = 0;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
-#endif
 
     fuse_trace_printf_vnop();
 
