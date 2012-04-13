@@ -487,7 +487,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "xcrun cpp -DOSXFUSE_BUILD_FLAVOR=\"$OSXFUSE_BUILD_FLAVOR\" -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\nxcrun cpp -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
+			shellScript = "xcrun cpp -DOSXFUSE_BUILD_FLAVOR=\"$OSXFUSE_BUILD_FLAVOR\" -I\"$SRCROOT/common\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\nxcrun cpp -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -597,7 +597,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
@@ -646,7 +646,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
