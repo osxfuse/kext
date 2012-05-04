@@ -301,7 +301,8 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
-    int i, err = 0;
+    int err = 0;
+    int i;
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
 
@@ -318,11 +319,12 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     data = fdev->data;
 
+again:
     fuse_lck_mtx_lock(data->ms_mtx);
 
     /* The read loop (outgoing messages to the user daemon). */
 
-again:
+again_locked:
     if (fdata_dead_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
         return ENODEV;
@@ -342,10 +344,19 @@ again:
     }
 
     if (!ftick) {
-        goto again;
+        goto again_locked;
     }
 
     fuse_lck_mtx_unlock(data->ms_mtx);
+
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    if (fticket_answered(ftick)) {
+        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+        fuse_ticket_release(ftick);
+
+        goto again;
+    }
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (fdata_dead_get(data)) {
          if (ftick) {
@@ -384,13 +395,6 @@ again:
         if (err) {
             break;
         }
-    }
-
-    /*
-     * XXX: Stop gap! I really need to finish interruption plumbing.
-     */
-    if (fticket_answered(ftick)) {
-        err = EINTR;
     }
 
     fuse_ticket_release(ftick);

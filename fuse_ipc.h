@@ -64,6 +64,7 @@ struct fuse_ticket {
     int                          tk_flag;
     uint32_t                     tk_age;
     uint32_t                     tk_ref_count;
+    struct fuse_ticket          *tk_interrupt;
 
     STAILQ_ENTRY(fuse_ticket)    tk_freetickets_link;
     TAILQ_ENTRY(fuse_ticket)     tk_alltickets_link;
@@ -342,6 +343,11 @@ fuse_ticket_release(struct fuse_ticket *ticket) {
         panic("OSXFUSE: fuse_ticket_release: ticket reference count is 0");
     }
     if (count == 1) {
+        if (ticket->tk_interrupt) {
+            struct fuse_ticket *interrupt = ticket->tk_interrupt;
+            ticket->tk_interrupt = NULL;
+            fuse_ticket_release(interrupt);
+        }
         fuse_ticket_drop(ticket);
     }
 }

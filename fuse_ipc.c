@@ -180,6 +180,7 @@ fticket_refresh(struct fuse_ticket *ftick)
 
     ftick->tk_flag = 0;
     ftick->tk_age++;
+    ftick->tk_interrupt = NULL;
 }
 
 static void
@@ -323,10 +324,35 @@ alreadydead:
 
 #if M_OSXFUSE_ENABLE_INTERRUPT
     else if (err == EINTR) {
-       /*
-        * XXX: Stop gap! I really need to finish interruption plumbing.
-        */
-       fuse_internal_interrupt_send(ftick);
+        /*
+         * Check if the ticket has been answered. It is possible that we are
+         * being interrupted after receiving the answer to this request but
+         * before the handler had a chance to wake us up.
+         */
+        if (!fticket_answered(ftick)) {
+            /*
+             * We have yet to receive the answer, but nobody is waiting to be
+             * woken up, therefore mark the ticket as answered.
+             */
+            fticket_set_answered(ftick);
+
+            /*
+             * To prevent the following race condition do not reuse the ticket
+             * of the original request.
+             *
+             * - We send an interrupt request to the FUSE server.
+             * - The FUSE server responds to the original request before
+             *   processing our interupt request.
+             * - We drop the original request ticket.
+             * - The server processes our interrupt request and queues it
+             *   believing the request to interrupt has yet to be received.
+             * - We reuse the dropped ticket for a new request.
+             * - The server interrupts our new request.
+             */
+            fticket_set_killl(ftick);
+
+            fuse_internal_interrupt_send(ftick);
+        }
     }
 #endif
 
@@ -623,7 +649,7 @@ void
 fuse_ticket_drop(struct fuse_ticket *ftick)
 {
     int die = 0;
-
+    
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||
@@ -947,25 +973,49 @@ static int
 fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
 {
     int err = 0;
-    int dropflag = 0;
 
     err = fticket_pull(ftick, uio);
 
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
 
-    if (fticket_answered(ftick)) {
-        dropflag = 1;
-    } else {
+    if (ftick->tk_interrupt) {
+        struct fuse_data *data = ftick->tk_data;
+        struct fuse_ticket *interrupt = ftick->tk_interrupt;
+        struct fuse_ticket *curr;
+
+        fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
+
+        /*
+         * Note: Pending requests that are already marked as answered will not
+         * not be sent to user space. See fuse_device_read().
+         */
+        fticket_set_answered(interrupt);
+
+        fuse_lck_mtx_lock(data->aw_mtx);
+        TAILQ_FOREACH(curr, &data->aw_head, tk_aw_link) {
+            if (curr == interrupt) {
+                fuse_aw_remove(curr);
+                fuse_ticket_release(curr);
+                break;
+            }
+        }
+        fuse_lck_mtx_unlock(data->aw_mtx);
+
+        ftick->tk_interrupt = NULL;
+
+        fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);
+
+        /* Release interrupt ticket retained in fuse_internal_interrupt_send */
+        fuse_ticket_release(interrupt);
+    }
+
+    if (!fticket_answered(ftick)) {
         fticket_set_answered(ftick);
         ftick->tk_aw_errno = err;
         fuse_wakeup(ftick);
     }
 
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-
-    if (dropflag) {
-        fuse_ticket_release(ftick);
-    }
 
     return err;
 }

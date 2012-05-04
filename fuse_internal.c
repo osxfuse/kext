@@ -1512,6 +1512,29 @@ fuse_internal_forget_send(mount_t                 mp,
     fuse_ticket_release(fdip->tick);
 }
 
+static int
+fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
+{
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+
+    if (fticket_answered(ftick)) {
+        goto out;
+    }
+
+    if (ftick->tk_aw_ohead.error == EAGAIN) {
+        bzero(&ftick->tk_aw_ohead, sizeof(struct fuse_out_header));
+        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
+        
+        ftick->tk_flag &= ~FT_DIRTY;
+        fuse_insert_message_head(ftick);
+    }
+
+out:
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+
+    return 0;
+}
+
 __private_extern__
 void
 fuse_internal_interrupt_send(struct fuse_ticket *ftick)
@@ -1519,15 +1542,34 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     struct fuse_dispatcher fdi;
     struct fuse_interrupt_in *fii;
 
-    fdi.tick = ftick;
     fdisp_init(&fdi, sizeof(*fii));
     fdisp_make(&fdi, FUSE_INTERRUPT, ftick->tk_data->mp, (uint64_t)0,
                (vfs_context_t)0);
+
     fii = fdi.indata;
     fii->unique = ftick->tk_unique;
-    fticket_invalidate(fdi.tick);
-    fuse_insert_message(fdi.tick);
-    fuse_ticket_release(fdi.tick);
+
+    /*
+     * To prevent the following race condition do not reuse the ticket of the
+     * interrupt request.
+     *
+     * - We send an interrupt request to the FUSE server.
+     * - The FUSE server responds to the interrupted request before processing
+     *   our interupt request.
+     * - We drop the interrupt request ticket and reuse it for a new request.
+     * - The server answeres our interrupt request.
+     */
+    fticket_set_killl(fdi.tick);
+
+    ftick->tk_interrupt = fdi.tick;
+
+    fuse_insert_callback(fdi.tick, &fuse_internal_interrupt_handler);
+    fuse_insert_message_head(fdi.tick);
+
+    /*
+     * Note: The interrupt ticket is released in fuse_standard_handler when
+     * processing the answer to the original ticket.
+     */
 }
 
 __private_extern__
