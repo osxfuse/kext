@@ -147,7 +147,7 @@ fuse_internal_access(vnode_t                   vp,
     fai->mask |= mask;
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == ENOSYS) {
@@ -236,7 +236,7 @@ fuse_internal_exchange(vnode_t       fvp,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == 0) {
@@ -312,7 +312,7 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
         }
     }
 
-    fuse_ticket_drop(ftick);
+    fuse_ticket_release(ftick);
 
     return 0;
 }
@@ -357,11 +357,12 @@ fuse_internal_fsync(vnode_t                 vp,
             }
             goto out;
         } else {
-            fuse_ticket_drop(fdip->tick);
+            fuse_ticket_release(fdip->tick);
         }
     } else {
         fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
         fuse_insert_message(fdip->tick);
+        fuse_ticket_release(fdip->tick);
     }
 
 out:
@@ -425,7 +426,7 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(in_vap, va_create_time, t);
     VATTR_RETURN(out_vap, va_create_time, t);
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
     VTOFUD(vp)->c_flag |= C_XTIMES_VALID;
 
@@ -715,7 +716,7 @@ fuse_internal_readdir(vnode_t                 vp,
 
 /* done: */
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
 out:
     return ((err == -1) ? 0 : err);
@@ -884,7 +885,7 @@ fuse_internal_remove(vnode_t               dvp,
     }
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     fuse_invalidate_attr(dvp);
@@ -950,7 +951,7 @@ fuse_internal_rename(vnode_t               fdvp,
                          tcnp->cn_namelen + 1] = '\0';
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == 0) {
@@ -1285,7 +1286,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (fdi.tick) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     } else {
         /* No ticket upon leaving */
     }
@@ -1436,7 +1437,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     cache_attrs(*vpp, feo);
 
 out:
-    fuse_ticket_drop(fdip->tick);
+    fuse_ticket_release(fdip->tick);
 
     return err;
 }
@@ -1508,6 +1509,7 @@ fuse_internal_forget_send(mount_t                 mp,
 
     fticket_invalidate(fdip->tick);
     fuse_insert_message(fdip->tick);
+    fuse_ticket_release(fdip->tick);
 }
 
 __private_extern__
@@ -1525,6 +1527,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     fii->unique = ftick->tk_unique;
     fticket_invalidate(fdi.tick);
     fuse_insert_message(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 }
 
 __private_extern__
@@ -1618,7 +1621,7 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     }
 
 out:
-    fuse_ticket_drop(ftick);
+    fuse_ticket_release(ftick);
 
     if (err) {
         fdata_set_dead(data);
@@ -1661,6 +1664,8 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
         IOLog("OSXFUSE: in-kernel initialization failed (%d)\n", err);
         return err;
     }
+
+    /* fuse_ticket_release is called in fuse_internal_init_synchronous */
 
     return 0;
 }

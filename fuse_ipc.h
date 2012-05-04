@@ -63,6 +63,7 @@ struct fuse_ticket {
     struct fuse_data            *tk_data;
     int                          tk_flag;
     uint32_t                     tk_age;
+    uint32_t                     tk_ref_count;
 
     STAILQ_ENTRY(fuse_ticket)    tk_freetickets_link;
     TAILQ_ENTRY(fuse_ticket)     tk_alltickets_link;
@@ -301,6 +302,50 @@ struct fuse_ticket *fuse_ticket_fetch(struct fuse_data *data);
 void fuse_ticket_drop(struct fuse_ticket *ftick);
 void fuse_ticket_drop_invalid(struct fuse_ticket *ftick);
 void fuse_ticket_kill(struct fuse_ticket *ftick);
+
+#ifndef OSCompareAndSwap
+#  define OSCompareAndSwap(a, b, c) OSCompareAndSwap(a, b, (volatile UInt32*)c)
+#endif
+
+/*
+ * Increases the reference count of the specified ticket.
+ */
+static __inline__
+void
+fuse_ticket_retain(struct fuse_ticket *ticket)
+{
+    int count;
+
+    do {
+        count = ticket->tk_ref_count;
+    } while (!OSCompareAndSwap(count, count + 1, &(ticket->tk_ref_count)));
+
+    if (count == 0) {
+        panic("OSXFUSE: fuse_ticket_retain: ticket reference count is 0");
+    }
+}
+
+/*
+ * Decrements the reference count of the specified ticket. If the count reaches
+ * 0 the ticket is dropped instantly.
+ */
+static __inline__
+void
+fuse_ticket_release(struct fuse_ticket *ticket) {
+    int count;
+
+    do {
+        count = ticket->tk_ref_count;
+    } while (!OSCompareAndSwap(count, count - 1, &(ticket->tk_ref_count)));
+
+    if (count == 0) {
+        panic("OSXFUSE: fuse_ticket_release: ticket reference count is 0");
+    }
+    if (count == 1) {
+        fuse_ticket_drop(ticket);
+    }
+}
+
 void fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler);
 void fuse_insert_message(struct fuse_ticket *ftick);
 void fuse_insert_message_head(struct fuse_ticket *ftick);

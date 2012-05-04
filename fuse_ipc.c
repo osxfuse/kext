@@ -598,6 +598,7 @@ fuse_ticket_fetch(struct fuse_data *data)
             panic("OSXFUSE: no free ticket despite the counter's value");
         }
     }
+    ftick->tk_ref_count = 1;
 
     if (!(data->dataflags & FSESS_INITED) && data->ticketer > 1) {
         err = fuse_msleep(&data->ticketer, data->ticket_mtx, PCATCH | PDROP,
@@ -614,6 +615,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         fdata_set_dead(data);
     }
 
+    ftick->tk_ref_count = 1;
     return ftick;
 }
 
@@ -658,7 +660,7 @@ void
 fuse_ticket_drop_invalid(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_INVAL) {
-        fuse_ticket_drop(ftick);
+        fuse_ticket_release(ftick);
     }
 }
 
@@ -669,6 +671,7 @@ fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler)
         return;
     }
 
+    fuse_ticket_retain(ftick);
     ftick->tk_aw_handler = handler;
 
     fuse_lck_mtx_lock(ftick->tk_data->aw_mtx);
@@ -683,11 +686,12 @@ fuse_insert_message(struct fuse_ticket *ftick)
         panic("OSXFUSE: ticket reused without being refreshed");
     }
 
-    ftick->tk_flag |= FT_DIRTY;
-
     if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
+
+    fuse_ticket_retain(ftick);
+    ftick->tk_flag |= FT_DIRTY;
 
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push(ftick);
@@ -710,6 +714,8 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
     if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
+
+    fuse_ticket_retain(ftick);
 
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push_head(ftick);
@@ -958,7 +964,7 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (dropflag) {
-        fuse_ticket_drop(ftick);
+        fuse_ticket_release(ftick);
     }
 
     return err;
@@ -974,6 +980,9 @@ fdisp_make(struct fuse_dispatcher *fdip,
     struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (fdip->tick) {
+        if (fdip->tick->tk_ref_count != 1) {
+            panic("OSXFUSE: ticket cannot be reused");
+        }
         fticket_refresh(fdip->tick);
     } else {
         fdip->tick = fuse_ticket_fetch(data);
@@ -1002,6 +1011,9 @@ fdisp_make_canfail(struct fuse_dispatcher *fdip,
     struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (fdip->tick) {
+        if (fdip->tick->tk_ref_count != 1) {
+            panic("OSXFUSE: ticket cannot be reused");
+        }
         fticket_refresh(fdip->tick);
     } else {
         fdip->tick = fuse_ticket_fetch(data);
@@ -1116,7 +1128,7 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     return 0;
 
 out:
-    fuse_ticket_drop(fdip->tick);
+    fuse_ticket_release(fdip->tick);
 
     return err;
 }

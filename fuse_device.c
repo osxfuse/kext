@@ -264,6 +264,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
             ftick->tk_aw_errno = ENOTCONN;
             fuse_wakeup(ftick);
             fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+            fuse_ticket_release(ftick);
         }
 
         fuse_lck_mtx_unlock(data->aw_mtx);
@@ -348,7 +349,7 @@ again:
 
     if (fdata_dead_get(data)) {
          if (ftick) {
-             fuse_ticket_drop_invalid(ftick);
+             fuse_ticket_release(ftick);
          }
          return ENODEV;
     }
@@ -392,14 +393,7 @@ again:
         err = EINTR;
     }
 
-    /*
-     * The FORGET message is an example of a ticket that has explicitly
-     * been invalidated by the sender. The sender is not expecting or wanting
-     * a reply, so he sets the FT_INVALID bit in the ticket.
-     */
-
-    fuse_ticket_drop_invalid(ftick);
-
+    fuse_ticket_release(ftick);
     return err;
 }
 
@@ -465,10 +459,8 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         if (ftick->tk_aw_handler) {
             memcpy(&ftick->tk_aw_ohead, &ohead, sizeof(ohead));
             err = ftick->tk_aw_handler(ftick, uio);
-        } else {
-            fuse_ticket_drop(ftick);
-            return err;
         }
+        fuse_ticket_release(ftick);
     } else {
         /* ticket has no response handler */
     }
@@ -775,6 +767,7 @@ fuse_device_kill(int unit, struct proc *p)
                         ftick->tk_aw_errno = ENOTCONN;
                         fuse_wakeup(ftick);
                         fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+                        fuse_ticket_release(ftick);
                     }
                 }
                 fuse_lck_mtx_unlock(fdev->data->aw_mtx);
