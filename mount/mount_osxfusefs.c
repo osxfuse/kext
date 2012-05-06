@@ -333,14 +333,14 @@ fuse_to_fssubtype(void **target, void *value, void *fallback)
     return 0;
 }
 
-static uint32_t  blocksize      = FUSE_DEFAULT_BLOCKSIZE;
-static uint32_t  daemon_timeout = FUSE_DEFAULT_DAEMON_TIMEOUT;
-static uint32_t  fsid           = 0;
+static uintptr_t blocksize      = FUSE_DEFAULT_BLOCKSIZE;
+static uintptr_t daemon_timeout = FUSE_DEFAULT_DAEMON_TIMEOUT;
+static uintptr_t fsid           = 0;
 static char     *fsname         = NULL;
-static uint32_t  fssubtype      = 0;
+static uintptr_t fssubtype      = 0;
 static char     *fstypename     = NULL;
-static uint32_t  init_timeout   = FUSE_DEFAULT_INIT_TIMEOUT;
-static uint32_t  iosize         = FUSE_DEFAULT_IOSIZE;
+static uintptr_t init_timeout   = FUSE_DEFAULT_INIT_TIMEOUT;
+static uintptr_t iosize         = FUSE_DEFAULT_IOSIZE;
 static uint32_t  drandom        = 0;
 static char     *volname        = NULL;
 
@@ -891,12 +891,12 @@ main(int argc, char **argv)
     }
 
     args.altflags       = altflags;
-    args.blocksize      = blocksize;
-    args.daemon_timeout = daemon_timeout;
-    args.fsid           = fsid;
-    args.fssubtype      = fssubtype;
-    args.init_timeout   = init_timeout;
-    args.iosize         = iosize;
+    args.blocksize      = (uint32_t) blocksize;
+    args.daemon_timeout = (uint32_t) daemon_timeout;
+    args.fsid           = (uint32_t) fsid;
+    args.fssubtype      = (uint32_t) fssubtype;
+    args.init_timeout   = (uint32_t) init_timeout;
+    args.iosize         = (uint32_t) iosize;
     args.random         = drandom;
 
     char *daemon_name = NULL;
