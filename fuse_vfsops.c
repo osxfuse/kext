@@ -703,7 +703,7 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     err = fdisp_wait_answ(&fdi);
     if (!err) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     /*
@@ -1206,7 +1206,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
     if (faking == 0) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     return 0;
@@ -1373,7 +1373,7 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
         ((char *)fdi.indata)[namelen] = '\0';
 
         if (!(error = fdisp_wait_answ(&fdi))) {
-            fuse_ticket_drop(fdi.tick);
+            fuse_ticket_release(fdi.tick);
         }
 
         (void)vnode_put(root_vp);

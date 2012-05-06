@@ -144,7 +144,7 @@ fuse_internal_access(vnode_t                   vp,
     fuse_abi_out(fuse_access_in, DTOABI(data), &fai, fdi.indata);
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == ENOSYS) {
@@ -238,7 +238,7 @@ fuse_internal_exchange(vnode_t       fvp,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == 0) {
@@ -314,7 +314,7 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
         }
     }
 
-    fuse_ticket_drop(ftick);
+    fuse_ticket_release(ftick);
 
     return 0;
 }
@@ -361,11 +361,12 @@ fuse_internal_fsync(vnode_t                 vp,
             }
             goto out;
         } else {
-            fuse_ticket_drop(fdip->tick);
+            fuse_ticket_release(fdip->tick);
         }
     } else {
         fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
         fuse_insert_message(fdip->tick);
+        fuse_ticket_release(fdip->tick);
     }
 
 out:
@@ -429,7 +430,7 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(in_vap, va_create_time, t);
     VATTR_RETURN(out_vap, va_create_time, t);
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
     VTOFUD(vp)->c_flag |= C_XTIMES_VALID;
 
@@ -720,7 +721,7 @@ fuse_internal_readdir(vnode_t                 vp,
 
 /* done: */
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
 out:
     return ((err == -1) ? 0 : err);
@@ -889,7 +890,7 @@ fuse_internal_remove(vnode_t               dvp,
     }
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     fuse_invalidate_attr(dvp);
@@ -961,7 +962,7 @@ fuse_internal_rename(vnode_t               fdvp,
     ((char *)next)[fcnp->cn_namelen + tcnp->cn_namelen + 1] = '\0';
 
     if (!(err = fdisp_wait_answ(&fdi))) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     if (err == 0) {
@@ -1300,7 +1301,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     }
 
     if (fdi.tick) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     } else {
         /* No ticket upon leaving */
     }
@@ -1457,7 +1458,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     cache_attrs(*vpp, &feo);
 
 out:
-    fuse_ticket_drop(fdip->tick);
+    fuse_ticket_release(fdip->tick);
 
     return err;
 }
@@ -1533,6 +1534,30 @@ fuse_internal_forget_send(mount_t                 mp,
 
     fticket_invalidate(fdip->tick);
     fuse_insert_message(fdip->tick);
+    fuse_ticket_release(fdip->tick);
+}
+
+static int
+fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
+{
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+
+    if (fticket_answered(ftick)) {
+        goto out;
+    }
+
+    if (ftick->tk_aw_ohead.error == EAGAIN) {
+        bzero(&ftick->tk_aw_ohead, sizeof(struct fuse_out_header));
+        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
+        
+        ftick->tk_flag &= ~FT_DIRTY;
+        fuse_insert_message_head(ftick);
+    }
+
+out:
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+
+    return 0;
 }
 
 __private_extern__
@@ -1547,14 +1572,32 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
 
     fii.unique = ftick->tk_unique;
 
-    fdi.tick = ftick;
     fdisp_init_abi(&fdi, fuse_interrupt_in, DTOABI(data));
     fdisp_make(&fdi, FUSE_INTERRUPT, data->mp, (uint64_t)0,
                (vfs_context_t)0);
     fuse_abi_out(fuse_interrupt_in, DTOABI(data), &fii, fdi.indata);
 
-    fticket_invalidate(fdi.tick);
-    fuse_insert_message(fdi.tick);
+    /*
+     * To prevent the following race condition do not reuse the ticket of the
+     * interrupt request.
+     *
+     * - We send an interrupt request to the FUSE server.
+     * - The FUSE server responds to the interrupted request before processing
+     *   our interupt request.
+     * - We drop the interrupt request ticket and reuse it for a new request.
+     * - The server answeres our interrupt request.
+     */
+    fticket_set_killl(fdi.tick);
+
+    ftick->tk_interrupt = fdi.tick;
+
+    fuse_insert_callback(fdi.tick, &fuse_internal_interrupt_handler);
+    fuse_insert_message_head(fdi.tick);
+
+    /*
+     * Note: The interrupt ticket is released in fuse_standard_handler when
+     * processing the answer to the original ticket.
+     */
 }
 
 __private_extern__
@@ -1641,7 +1684,7 @@ fuse_internal_init_synchronous(struct fuse_ticket *ftick)
     }
 
 out:
-    fuse_ticket_drop(ftick);
+    fuse_ticket_release(ftick);
 
     if (err) {
         fdata_set_dead(data);
@@ -1684,6 +1727,8 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
         IOLog("OSXFUSE: in-kernel initialization failed (%d)\n", err);
         return err;
     }
+
+    /* fuse_ticket_release is called in fuse_internal_init_synchronous */
 
     return 0;
 }

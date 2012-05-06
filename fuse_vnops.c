@@ -279,7 +279,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
         err = fdisp_wait_answ(&fdi);
 
         if (!err) {
-            fuse_ticket_drop(fdi.tick);
+            fuse_ticket_release(fdi.tick);
         } else {
             if (err == ENOSYS) {
                 fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
@@ -406,7 +406,7 @@ bringup:
     next = fuse_abi_in(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
 
     if ((err = fuse_internal_checkentry(&feo, VREG))) { // VBLK/VCHR not allowed
-        fuse_ticket_drop(fdip->tick);
+        fuse_ticket_release(fdip->tick);
         goto undo;
     }
 
@@ -431,6 +431,7 @@ bringup:
 
            fuse_insert_callback(fdip->tick, fuse_internal_forget_callback);
            fuse_insert_message(fdip->tick);
+           fuse_ticket_release(fdip->tick);
        }
        return err;
     }
@@ -456,7 +457,7 @@ bringup:
 
     cache_purge_negatives(dvp);
 
-    fuse_ticket_drop(fdip->tick);
+    fuse_ticket_release(fdip->tick);
 
     FUSE_KNOTE(dvp, NOTE_WRITE);
 
@@ -817,7 +818,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         fvdat->filesize = new_filesize;
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
     if (vnode_vtype(vp) != vap->va_type) {
         if ((vnode_vtype(vp) == VNON) && (vap->va_type != VNON)) {
@@ -960,7 +961,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         *ap->a_size = fgxo.size;
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
     return err;
 }
@@ -1159,7 +1160,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
         memcpy(ap->a_data, next, param_len);
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
     return err;
 }
 
@@ -1301,7 +1302,7 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_abi_in(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
 
     err = fuse_internal_checkentry(&feo, vnode_vtype(vp));
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
 
@@ -1389,7 +1390,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         *ap->a_size = fgxo.size;
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
     return err;
 }
@@ -1708,7 +1709,7 @@ out:
             }
         }
 
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
     }
 
     return err;
@@ -2259,7 +2260,7 @@ ok:
                     VTOFUD(vp)->filesize = new_filesize;
                     ubc_setsize(vp, (off_t)new_filesize);
                 }
-                fuse_ticket_drop(fdi.tick);
+                fuse_ticket_release(fdi.tick);
             }
             fufh->fuse_open_flags &= ~FOPEN_PURGE_ATTR;
         }
@@ -2633,7 +2634,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
             }
         }
 
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
 
     } /* direct_io */
 
@@ -2783,7 +2784,7 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
 #endif
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
     fuse_invalidate_attr(vp);
 
     return err;
@@ -3031,7 +3032,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
 
     err = fdisp_wait_answ(&fdi);
     if (!err) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
         fuse_invalidate_attr(vp);
         FUSE_KNOTE(vp, NOTE_ATTRIB);
@@ -3336,7 +3337,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         }
     }
 
-    fuse_ticket_drop(fdi.tick);
+    fuse_ticket_release(fdi.tick);
 
 out:
     if (!err && sizechanged) {
@@ -3473,7 +3474,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     }
 
     if (!err) {
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
         fuse_invalidate_attr(vp);
         FUSE_KNOTE(vp, NOTE_ATTRIB);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
@@ -3745,7 +3746,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fuse_invalidate_attr(vp);
         }
 
-        fuse_ticket_drop(fdi.tick);
+        fuse_ticket_release(fdi.tick);
 
         return error;
 

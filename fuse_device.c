@@ -266,6 +266,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
             ftick->tk_aw_errno = ENOTCONN;
             fuse_wakeup(ftick);
             fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+            fuse_ticket_release(ftick);
         }
 
         fuse_lck_mtx_unlock(data->aw_mtx);
@@ -302,7 +303,8 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
-    int i, err = 0;
+    int err = 0;
+    int i;
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
 
@@ -319,11 +321,12 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     data = fdev->data;
 
+again:
     fuse_lck_mtx_lock(data->ms_mtx);
 
     /* The read loop (outgoing messages to the user daemon). */
 
-again:
+again_locked:
     if (fdata_dead_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
         return ENODEV;
@@ -343,14 +346,23 @@ again:
     }
 
     if (!ftick) {
-        goto again;
+        goto again_locked;
     }
 
     fuse_lck_mtx_unlock(data->ms_mtx);
 
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    if (fticket_answered(ftick)) {
+        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+        fuse_ticket_release(ftick);
+
+        goto again;
+    }
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+
     if (fdata_dead_get(data)) {
          if (ftick) {
-             fuse_ticket_drop_invalid(ftick);
+             fuse_ticket_release(ftick);
          }
          return ENODEV;
     }
@@ -387,21 +399,7 @@ again:
         }
     }
 
-    /*
-     * XXX: Stop gap! I really need to finish interruption plumbing.
-     */
-    if (fticket_answered(ftick)) {
-        err = EINTR;
-    }
-
-    /*
-     * The FORGET message is an example of a ticket that has explicitly
-     * been invalidated by the sender. The sender is not expecting or wanting
-     * a reply, so he sets the FT_INVALID bit in the ticket.
-     */
-
-    fuse_ticket_drop_invalid(ftick);
-
+    fuse_ticket_release(ftick);
     return err;
 }
 
@@ -473,9 +471,8 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
                 ftick->tk_aw_ohead.error = -(ftick->tk_aw_ohead.error);
 
                 err = ftick->tk_aw_handler(ftick, uio);
-            } else {
-                fuse_ticket_drop(ftick);
             }
+            fuse_ticket_release(ftick);
         } else {
             /* ticket has no response handler */
         }
@@ -796,6 +793,7 @@ fuse_device_kill(int unit, struct proc *p)
                         ftick->tk_aw_errno = ENOTCONN;
                         fuse_wakeup(ftick);
                         fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+                        fuse_ticket_release(ftick);
                     }
                 }
                 fuse_lck_mtx_unlock(fdev->data->aw_mtx);
