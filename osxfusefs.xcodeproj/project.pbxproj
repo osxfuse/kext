@@ -379,6 +379,7 @@
 				32A4FEBD0562C75700D090E7 /* Sources */,
 				32A4FEBF0562C75700D090E7 /* Frameworks */,
 				32A4FEC00562C75700D090E7 /* Rez */,
+				432D7C891556EAE800E82CC8 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -439,6 +440,7 @@
 				Japanese,
 				French,
 				German,
+				en,
 			);
 			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			productRefGroup = 089C166AFE841209C02AAC07 /* fusefs */;
@@ -476,6 +478,19 @@
 /* End PBXRezBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		432D7C891556EAE800E82CC8 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ \"${DEPLOYMENT_POSTPROCESSING}\" == \"YES\" ]]\nthen\n    source=\"${CONFIGURATION_BUILD_DIR}/${WRAPPER_NAME}\"\n    target=\"${CONFIGURATION_BUILD_DIR}/Debug/${WRAPPER_NAME}\"\n\n    if [[ -e \"${target}\" ]]\n    then\n        rm -rf \"${target}\"\n    fi\n    cp -PpR \"${source}\" \"${target}\"\nfi";
+		};
 		54C6DE890B5F7315002D9FD9 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -568,8 +583,8 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
@@ -600,14 +615,12 @@
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				PRODUCT_NAME = osxfusefs;
 				WRAPPER_EXTENSION = kext;
-				ZERO_LINK = YES;
 			};
 			name = Debug;
 		};
@@ -618,8 +631,8 @@
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
+				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				EXPORTED_SYMBOLS_FILE = osxfusefs.exports;
-				GCC_MODEL_TUNING = G5;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -649,13 +662,12 @@
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				INSTALL_PATH = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				PRODUCT_NAME = osxfusefs;
-				STRIP_INSTALLED_PRODUCT = YES;
+				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
 				WRAPPER_EXTENSION = kext;
 			};
@@ -673,7 +685,6 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
-				PREBINDING = NO;
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -691,7 +702,6 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
-				PREBINDING = NO;
 				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
 			};
@@ -719,7 +729,6 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
@@ -746,9 +755,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
-				PREBINDING = NO;
 				PRODUCT_NAME = mount_osxfusefs;
-				ZERO_LINK = YES;
 			};
 			name = Debug;
 		};
@@ -760,7 +767,6 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -787,10 +793,8 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				PREBINDING = NO;
 				PRODUCT_NAME = mount_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
@@ -816,7 +820,6 @@
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				PRODUCT_NAME = All;
 				VERSIONING_SYSTEM = "";
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
@@ -838,7 +841,6 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				PRODUCT_NAME = osxfusefs.fs;
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
@@ -849,7 +851,6 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_SHORT_ENUMS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
@@ -877,9 +878,7 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
-				PREBINDING = NO;
 				PRODUCT_NAME = load_osxfusefs;
-				ZERO_LINK = YES;
 			};
 			name = Debug;
 		};
@@ -890,7 +889,6 @@
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
 				GCC_SHORT_ENUMS = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
@@ -917,10 +915,8 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
-				PREBINDING = NO;
 				PRODUCT_NAME = load_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
-				ZERO_LINK = NO;
 			};
 			name = Release;
 		};
