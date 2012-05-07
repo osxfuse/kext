@@ -1245,11 +1245,15 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         while (left) {
 
+            chunksize = min((size_t)left, data->iosize);
+
             fdi.iosize = sizeof(*fwi);
             op = FUSE_WRITE;
 
             fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
-            chunksize = min((size_t)left, data->iosize);
+
+            /* Take the size of the write buffer into account */
+            fdi.finh->len += (typeof(fdi.finh->len))chunksize;
 
             fwi = fdi.indata;
             fwi->fh = fufh->fh_id;
@@ -1524,7 +1528,7 @@ fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     if (ftick->tk_aw_ohead.error == EAGAIN) {
         bzero(&ftick->tk_aw_ohead, sizeof(struct fuse_out_header));
         fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
-        
+
         ftick->tk_flag &= ~FT_DIRTY;
         fuse_insert_message_head(ftick);
     }
