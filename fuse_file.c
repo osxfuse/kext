@@ -70,7 +70,7 @@ fuse_filehandle_get(vnode_t       vp,
 
     fdisp_init_abi(&fdi, fuse_open_in, DTOABI(data));
     fdisp_make_vp(&fdi, op, vp, context);
-    fuse_abi_out(fuse_open_in, DTOABI(data), &foi, fdi.indata);
+    fuse_abi_in(fuse_open_in, DTOABI(data), &foi, fdi.indata);
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     if ((err = fdisp_wait_answ(&fdi))) {
@@ -105,7 +105,7 @@ fuse_filehandle_get(vnode_t       vp,
     }
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
 
-    fuse_abi_in(fuse_open_out, DTOABI(data), fdi.answ, &foo);
+    fuse_abi_out(fuse_open_out, DTOABI(data), fdi.answ, &foo);
 
     fufh->fh_id = foo.fh;
     fufh->open_count = 1;
@@ -159,7 +159,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
 
     fdisp_init_abi(&fdi, fuse_release_in, DTOABI(data));
     fdisp_make_vp(&fdi, op, vp, context);
-    fuse_abi_out(fuse_release_in, DTOABI(data), &fri, fdi.indata);
+    fuse_abi_in(fuse_release_in, DTOABI(data), &fri, fdi.indata);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(&fdi))) {

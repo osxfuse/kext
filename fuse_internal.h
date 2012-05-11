@@ -838,7 +838,7 @@ fuse_internal_newentry(vnode_t               dvp,
                        enum fuse_opcode      op,
                        void                 *buf,
                        fuse_abi_sizeof_t     abi_sizeof,
-                       fuse_abi_out_t        abi_out,
+                       fuse_abi_in_t         abi_in,
                        enum vtype            vtype,
                        vfs_context_t         context);
 
@@ -849,7 +849,7 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    enum fuse_opcode        op,
                                    void                   *buf,
                                    fuse_abi_sizeof_t       abi_sizeof,
-                                   fuse_abi_out_t          abi_out,
+                                   fuse_abi_in_t           abi_in,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context);
 

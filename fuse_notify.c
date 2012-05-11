@@ -27,7 +27,7 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov) {
     vnode_t vp;
     struct componentname cn;
 
-    next = fuse_abi_in(fuse_notify_inval_entry_out, DTOABI(data), iov->base,
+    next = fuse_abi_out(fuse_notify_inval_entry_out, DTOABI(data), iov->base,
                        &fnieo);
     if (fnieo.namelen > iov->len - ((char *)next - (char *)iov->base)) {
         return EINVAL;
@@ -94,7 +94,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov) {
     HNodeRef hp;
     vnode_t vp;
 
-    fuse_abi_in(fuse_notify_inval_inode_out, DTOABI(data), iov->base, &fniio);
+    fuse_abi_out(fuse_notify_inval_inode_out, DTOABI(data), iov->base, &fniio);
 
     err = (int)HNodeLookupRealQuickIfExists(data->fdev, (ino_t)fniio.ino,
                                             0 /* fork index */, &hp, &vp);

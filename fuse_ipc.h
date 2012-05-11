@@ -568,6 +568,49 @@ FUSE_ABI_SIZEOF_IMPL(fuse_notify_inval_entry_out, )
  * the native FUSE ABI version implemented by this kernel extension and writes
  * it to the given output pointer.
  */
+#define fuse_abi_out(name, abi_version, inp, outp) \
+    fuse_abi_impl_out_##name((abi_version), (inp), (outp))
+
+typedef void *(*fuse_abi_out_t)(struct fuse_abi_version *, void *, void *);
+#define fuse_abi_out_p(name) &fuse_abi_impl_out_##name
+
+#define FUSE_ABI_OUT_IMPL(NAME, COMMANDS)                                      \
+    static __inline__                                                         \
+    void *                                                                    \
+    fuse_abi_impl_out_##NAME(struct fuse_abi_version *abi_version, void *inp, \
+                             void *outp)                                      \
+    {                                                                         \
+        size_t abi_size = fuse_abi_sizeof(NAME, abi_version);                 \
+        if (sizeof(struct NAME) > abi_size) {                                 \
+            bzero(outp, sizeof(struct NAME));                                 \
+        }                                                                     \
+        memcpy(outp, inp, min(sizeof(struct NAME), abi_size));                \
+        COMMANDS                                                              \
+        return (void *)((char *)inp + abi_size);                              \
+    }
+
+FUSE_ABI_OUT_IMPL(fuse_entry_out, )     /* attr.blksize = 0 (< ABI 7.9) */
+FUSE_ABI_OUT_IMPL(fuse_attr_out, )      /* attr.blksize = 0 (< ABI 7.9) */
+FUSE_ABI_OUT_IMPL(fuse_getxtimes_out, )
+FUSE_ABI_OUT_IMPL(fuse_open_out, )
+FUSE_ABI_OUT_IMPL(fuse_write_out, )
+FUSE_ABI_OUT_IMPL(fuse_statfs_out, )
+FUSE_ABI_OUT_IMPL(fuse_getxattr_out, )
+FUSE_ABI_OUT_IMPL(fuse_lk_out, )
+FUSE_ABI_OUT_IMPL(fuse_init_out, )
+FUSE_ABI_OUT_IMPL(fuse_bmap_out, )
+FUSE_ABI_OUT_IMPL(fuse_ioctl_out, )
+FUSE_ABI_OUT_IMPL(fuse_poll_out, )
+FUSE_ABI_OUT_IMPL(fuse_notify_poll_wakeup_out, )
+FUSE_ABI_OUT_IMPL(fuse_dirent, )
+FUSE_ABI_OUT_IMPL(fuse_notify_inval_inode_out, )
+FUSE_ABI_OUT_IMPL(fuse_notify_inval_entry_out, )
+
+/*
+ * Translates the specified FUSE input data structure at the input pointer to
+ * the FUSE ABI version used to communicate with the user space daemon and
+ * writes it to the given output pointer.
+ */
 #define fuse_abi_in(name, abi_version, inp, outp) \
     fuse_abi_impl_in_##name((abi_version), (inp), (outp))
 
@@ -581,87 +624,44 @@ typedef void *(*fuse_abi_in_t)(struct fuse_abi_version *, void *, void *);
                             void *outp)                                      \
     {                                                                        \
         size_t abi_size = fuse_abi_sizeof(NAME, abi_version);                \
-        if (sizeof(struct NAME) > abi_size) {                                \
-            bzero(outp, sizeof(struct NAME));                                \
+        if (sizeof(struct NAME) < abi_size) {                                \
+            bzero(outp, abi_size);                                           \
         }                                                                    \
         memcpy(outp, inp, min(sizeof(struct NAME), abi_size));               \
         COMMANDS                                                             \
-        return (void *)((char *)inp + abi_size);                             \
+        return (void *)((char *)outp + abi_size);                            \
     }
 
-FUSE_ABI_IN_IMPL(fuse_entry_out, )      /* attr.blksize = 0 (< ABI 7.9) */
-FUSE_ABI_IN_IMPL(fuse_attr_out, )       /* attr.blksize = 0 (< ABI 7.9) */
-FUSE_ABI_IN_IMPL(fuse_getxtimes_out, )
-FUSE_ABI_IN_IMPL(fuse_open_out, )
-FUSE_ABI_IN_IMPL(fuse_write_out, )
-FUSE_ABI_IN_IMPL(fuse_statfs_out, )
-FUSE_ABI_IN_IMPL(fuse_getxattr_out, )
-FUSE_ABI_IN_IMPL(fuse_lk_out, )
-FUSE_ABI_IN_IMPL(fuse_init_out, )
-FUSE_ABI_IN_IMPL(fuse_bmap_out, )
-FUSE_ABI_IN_IMPL(fuse_ioctl_out, )
-FUSE_ABI_IN_IMPL(fuse_poll_out, )
-FUSE_ABI_IN_IMPL(fuse_notify_poll_wakeup_out, )
+FUSE_ABI_IN_IMPL(fuse_forget_in, )
+FUSE_ABI_IN_IMPL(fuse_getattr_in, )
+FUSE_ABI_IN_IMPL(fuse_mknod_in, )
+FUSE_ABI_IN_IMPL(fuse_mkdir_in, )
+FUSE_ABI_IN_IMPL(fuse_rename_in, )
+FUSE_ABI_IN_IMPL(fuse_exchange_in, )
+FUSE_ABI_IN_IMPL(fuse_link_in, )
+FUSE_ABI_IN_IMPL(fuse_setattr_in, )
+FUSE_ABI_IN_IMPL(fuse_open_in, )
+FUSE_ABI_IN_IMPL(fuse_create_in, )
+FUSE_ABI_IN_IMPL(fuse_release_in, )
+FUSE_ABI_IN_IMPL(fuse_flush_in, )
+FUSE_ABI_IN_IMPL(fuse_read_in, )
+FUSE_ABI_IN_IMPL(fuse_write_in, )
+FUSE_ABI_IN_IMPL(fuse_fsync_in, )
+FUSE_ABI_IN_IMPL(fuse_setxattr_in, )
+FUSE_ABI_IN_IMPL(fuse_getxattr_in, )
+FUSE_ABI_IN_IMPL(fuse_lk_in, )
+FUSE_ABI_IN_IMPL(fuse_access_in, )
+FUSE_ABI_IN_IMPL(fuse_init_in, )
+FUSE_ABI_IN_IMPL(fuse_interrupt_in, )
+FUSE_ABI_IN_IMPL(fuse_bmap_in, )
+FUSE_ABI_IN_IMPL(fuse_ioctl_in, )
+FUSE_ABI_IN_IMPL(fuse_poll_in, )
 FUSE_ABI_IN_IMPL(fuse_dirent, )
-FUSE_ABI_IN_IMPL(fuse_notify_inval_inode_out, )
-FUSE_ABI_IN_IMPL(fuse_notify_inval_entry_out, )
-
-/*
- * Translates the specified FUSE input data structure at the input pointer to
- * the FUSE ABI version used to communicate with the user space daemon and
- * writes it to the given output pointer.
- */
-#define fuse_abi_out(name, abi_version, inp, outp) \
-    fuse_abi_impl_out_##name((abi_version), (inp), (outp))
-
-typedef void *(*fuse_abi_out_t)(struct fuse_abi_version *, void *, void *);
-#define fuse_abi_out_p(name) &fuse_abi_impl_out_##name
-
-#define FUSE_ABI_OUT_IMPL(NAME, COMMANDS)                                     \
-    static __inline__                                                         \
-    void *                                                                    \
-    fuse_abi_impl_out_##NAME(struct fuse_abi_version *abi_version, void *inp, \
-                             void *outp)                                      \
-    {                                                                         \
-        size_t abi_size = fuse_abi_sizeof(NAME, abi_version);                 \
-        if (sizeof(struct NAME) < abi_size) {                                 \
-            bzero(outp, abi_size);                                            \
-        }                                                                     \
-        memcpy(outp, inp, min(sizeof(struct NAME), abi_size));                \
-        COMMANDS                                                              \
-        return (void *)((char *)outp + abi_size);                             \
-    }
-
-FUSE_ABI_OUT_IMPL(fuse_forget_in, )
-FUSE_ABI_OUT_IMPL(fuse_getattr_in, )
-FUSE_ABI_OUT_IMPL(fuse_mknod_in, )
-FUSE_ABI_OUT_IMPL(fuse_mkdir_in, )
-FUSE_ABI_OUT_IMPL(fuse_rename_in, )
-FUSE_ABI_OUT_IMPL(fuse_exchange_in, )
-FUSE_ABI_OUT_IMPL(fuse_link_in, )
-FUSE_ABI_OUT_IMPL(fuse_setattr_in, )
-FUSE_ABI_OUT_IMPL(fuse_open_in, )
-FUSE_ABI_OUT_IMPL(fuse_create_in, )
-FUSE_ABI_OUT_IMPL(fuse_release_in, )
-FUSE_ABI_OUT_IMPL(fuse_flush_in, )
-FUSE_ABI_OUT_IMPL(fuse_read_in, )
-FUSE_ABI_OUT_IMPL(fuse_write_in, )
-FUSE_ABI_OUT_IMPL(fuse_fsync_in, )
-FUSE_ABI_OUT_IMPL(fuse_setxattr_in, )
-FUSE_ABI_OUT_IMPL(fuse_getxattr_in, )
-FUSE_ABI_OUT_IMPL(fuse_lk_in, )
-FUSE_ABI_OUT_IMPL(fuse_access_in, )
-FUSE_ABI_OUT_IMPL(fuse_init_in, )
-FUSE_ABI_OUT_IMPL(fuse_interrupt_in, )
-FUSE_ABI_OUT_IMPL(fuse_bmap_in, )
-FUSE_ABI_OUT_IMPL(fuse_ioctl_in, )
-FUSE_ABI_OUT_IMPL(fuse_poll_in, )
-FUSE_ABI_OUT_IMPL(fuse_dirent, )
 
 /* Undefine ABI macros */
 #undef FUSE_ABI_SIZEOF_IMPL
-#undef FUSE_ABI_IN_IMPL
 #undef FUSE_ABI_OUT_IMPL
+#undef FUSE_ABI_IN_IMPL
 
 /* Unsolicited notifications */
 int fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio);

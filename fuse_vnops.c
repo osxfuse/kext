@@ -274,7 +274,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
 
         fdisp_init_abi(&fdi, fuse_flush_in, DTOABI(data));
         fdisp_make_vp(&fdi, FUSE_FLUSH, vp, context);
-        fuse_abi_out(fuse_flush_in, DTOABI(data), &ffi, fdi.indata);
+        fuse_abi_in(fuse_flush_in, DTOABI(data), &ffi, fdi.indata);
 
         err = fdisp_wait_answ(&fdi);
 
@@ -370,7 +370,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fdisp_init(fdip, fuse_abi_sizeof(fuse_create_in, DTOABI(data)) +
                cnp->cn_namelen + 1);
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
-    next = fuse_abi_out(fuse_create_in, DTOABI(data), &fci, fdip->indata);
+    next = fuse_abi_in(fuse_create_in, DTOABI(data), &fci, fdip->indata);
 
     memcpy(next, cnp->cn_nameptr, cnp->cn_namelen);
     ((char *)next)[cnp->cn_namelen] = '\0';
@@ -395,7 +395,7 @@ good_old:
     fuse_internal_newentry_makerequest(vnode_mount(dvp), parent_nodeid, cnp,
                                        FUSE_MKNOD, &fmni,
                                        fuse_abi_sizeof_p(fuse_mknod_in),
-                                       fuse_abi_out_p(fuse_mknod_in),
+                                       fuse_abi_in_p(fuse_mknod_in),
                                        fdip, context);
     err = fdisp_wait_answ(fdip);
     if (err) {
@@ -403,7 +403,7 @@ good_old:
     }
 
 bringup:
-    next = fuse_abi_in(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
+    next = fuse_abi_out(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
 
     if ((err = fuse_internal_checkentry(&feo, VREG))) { // VBLK/VCHR not allowed
         fuse_ticket_release(fdip->tick);
@@ -420,14 +420,14 @@ bringup:
            struct fuse_release_in fri;
            uint64_t nodeid = feo.nodeid;
 
-           fuse_abi_in(fuse_open_out, DTOABI(data), next, &foo);
+           fuse_abi_out(fuse_open_out, DTOABI(data), next, &foo);
 
            fri.fh = foo.fh;
            fri.flags = OFLAGS(mode);
 
            fdisp_init_abi(fdip, fuse_release_in, DTOABI(data));
            fdisp_make(fdip, FUSE_RELEASE, mp, nodeid, context);
-           fuse_abi_out(fuse_release_in, DTOABI(data), &fri, fdip->indata);
+           fuse_abi_in(fuse_release_in, DTOABI(data), &fri, fdip->indata);
 
            fuse_insert_callback(fdip->tick, fuse_internal_forget_callback);
            fuse_insert_message(fdip->tick);
@@ -440,7 +440,7 @@ bringup:
         struct fuse_vnode_data *fvdat = VTOFUD(*vpp);
         struct fuse_filehandle *fufh = &(fvdat->fufh[FUFH_RDWR]);
 
-        fuse_abi_in(fuse_open_out, DTOABI(data), next, &foo);
+        fuse_abi_out(fuse_open_out, DTOABI(data), next, &foo);
 
         fufh->fh_id = foo.fh;
         fufh->open_flags = foo.open_flags;
@@ -762,7 +762,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     fdisp_init_abi(&fdi, fuse_getattr_in, DTOABI(data));
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
-    fuse_abi_out(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
+    fuse_abi_in(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
 
     if ((err = fdisp_wait_answ(&fdi))) {
         if ((err == ENOTCONN) && vnode_isvroot(vp)) {
@@ -781,7 +781,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         return err;
     }
 
-    fuse_abi_in(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
+    fuse_abi_out(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
 
     /* XXX: Could check the sanity/volatility of va_mode here. */
 
@@ -931,7 +931,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     fdisp_init(&fdi, fuse_abi_sizeof(fuse_getxattr_in, DTOABI(data)) +
                      namelen + 1);
     fdisp_make_vp(&fdi, FUSE_GETXATTR, vp, context);
-    next = fuse_abi_out(fuse_getxattr_in, DTOABI(data), &fgxi, fdi.indata);
+    next = fuse_abi_in(fuse_getxattr_in, DTOABI(data), &fgxi, fdi.indata);
 
     memcpy(next, name, namelen);
     ((char *)next)[namelen] = '\0';
@@ -957,7 +957,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
             err = uiomove((char *)fdi.answ, (int)fdi.iosize, uio);
         }
     } else {
-        fuse_abi_in(fuse_getxattr_out, DTOABI(data), fdi.answ, &fgxo);
+        fuse_abi_out(fuse_getxattr_out, DTOABI(data), fdi.answ, &fgxo);
         *ap->a_size = fgxo.size;
     }
 
@@ -1139,7 +1139,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
                      ((cmd & IOC_IN) ? param_len : 0));
     fdisp_make_vp(&fdi, FUSE_IOCTL, vp, context);
 
-    next = fuse_abi_out(fuse_ioctl_in, DTOABI(data), &fioi, fdi.indata);
+    next = fuse_abi_in(fuse_ioctl_in, DTOABI(data), &fioi, fdi.indata);
     if (cmd & IOC_IN) {
         memcpy(next, ap->a_data, param_len);
     }
@@ -1153,7 +1153,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
         return err;
     }
 
-    next = fuse_abi_in(fuse_ioctl_out, DTOABI(data), fdi.answ, &fioo);
+    next = fuse_abi_out(fuse_ioctl_out, DTOABI(data), fdi.answ, &fioo);
     err = -fioo.result;
 
     if (!err && (ap->a_command & IOC_OUT)) {
@@ -1293,13 +1293,13 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_internal_newentry_makerequest(vnode_mount(tdvp), VTOI(tdvp), cnp,
                                        FUSE_LINK, &fli,
                                        fuse_abi_sizeof_p(fuse_link_in),
-                                       fuse_abi_out_p(fuse_link_in),
+                                       fuse_abi_in_p(fuse_link_in),
                                        &fdi, context);
     if ((err = fdisp_wait_answ(&fdi))) {
         return err;
     }
 
-    fuse_abi_in(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
+    fuse_abi_out(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
 
     err = fuse_internal_checkentry(&feo, vnode_vtype(vp));
     fuse_ticket_release(fdi.tick);
@@ -1367,7 +1367,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
 
     fdisp_init_abi(&fdi, fuse_getxattr_in, DTOABI(data));
     fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, context);
-    fuse_abi_out(fuse_getxattr_in, DTOABI(data), &fgxi, fdi.indata);
+    fuse_abi_in(fuse_getxattr_in, DTOABI(data), &fgxi, fdi.indata);
 
     err = fdisp_wait_answ(&fdi);
     if (err) {
@@ -1386,7 +1386,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
             err = uiomove((char *)fdi.answ, (int)fdi.iosize, uio);
         }
     } else {
-        fuse_abi_in(fuse_getxattr_out, DTOABI(data), fdi.answ, &fgxo);
+        fuse_abi_out(fuse_getxattr_out, DTOABI(data), fdi.answ, &fgxo);
         *ap->a_size = fgxo.size;
     }
 
@@ -1525,13 +1525,13 @@ calldaemon:
         ((char *)fdi.indata)[cnp->cn_namelen] = '\0';
     } else if (op == FUSE_GETATTR) {
         bzero(&fgi, sizeof(fgi));
-        fuse_abi_out(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
+        fuse_abi_in(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
     }
 
     lookup_err = fdisp_wait_answ(&fdi);
 
     if ((op == FUSE_LOOKUP) && !lookup_err) { /* lookup call succeeded */
-        fuse_abi_in(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
+        fuse_abi_out(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
         nodeid = feo.nodeid;
         size = feo.attr.size;
         if (!nodeid) {
@@ -1589,10 +1589,10 @@ calldaemon:
         struct fuse_attr_out fao;
 
         if (op == FUSE_GETATTR) {
-            fuse_abi_in(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
+            fuse_abi_out(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
             fattr = &(fao.attr);
         } else {
-            fuse_abi_in(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
+            fuse_abi_out(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
             fattr = &(feo.attr);
         }
 
@@ -1755,7 +1755,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 
     err = fuse_internal_newentry(dvp, vpp, cnp, FUSE_MKDIR, &fmdi,
                                  fuse_abi_sizeof_p(fuse_mkdir_in),
-                                 fuse_abi_out_p(fuse_mkdir_in),
+                                 fuse_abi_in_p(fuse_mkdir_in),
                                  VDIR, context);
 
     if (err == 0) {
@@ -1807,7 +1807,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 
     err = fuse_internal_newentry(dvp, vpp, cnp, FUSE_MKNOD, &fmni,
                                  fuse_abi_sizeof_p(fuse_mknod_in),
-                                 fuse_abi_out_p(fuse_mknod_in),
+                                 fuse_abi_in_p(fuse_mknod_in),
                                  vap->va_type, context);
 
     if (err == 0) {
@@ -2244,11 +2244,11 @@ ok:
 
             fdisp_init_abi(&fdi, fuse_getattr_in, DTOABI(data));
             fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
-            fuse_abi_out(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
+            fuse_abi_in(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
 
             if (!fdisp_wait_answ(&fdi)) {
                 struct fuse_attr_out fao;
-                fuse_abi_in(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
+                fuse_abi_out(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
 
                 /* XXX: Could check the sanity/volatility of va_mode here. */
                 if ((fao.attr.mode & S_IFMT)) {
@@ -2611,7 +2611,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
                                       VTOVA(vp)->va_iosize);
             fri.flags = 0;
 
-            fuse_abi_out(fuse_read_in, DTOABI(data), &fri, fdi.indata);
+            fuse_abi_in(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
             if ((err = fdisp_wait_answ(&fdi))) {
                 return err;
@@ -3291,14 +3291,14 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     fdisp_init_abi(&fdi, fuse_setattr_in, DTOABI(data));
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
-    fuse_abi_out(fuse_setattr_in, DTOABI(data), &fsai, fdi.indata);
+    fuse_abi_in(fuse_setattr_in, DTOABI(data), &fsai, fdi.indata);
 
     if ((err = fdisp_wait_answ(&fdi))) {
         fuse_invalidate_attr(vp);
         return err;
     }
 
-    fuse_abi_in(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
+    fuse_abi_out(fuse_attr_out, DTOABI(data), fdi.answ, &fao);
     vtyp = IFTOVT(fao.attr.mode);
 
     if (vnode_vtype(vp) != vtyp) {
@@ -3456,7 +3456,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
         fticket_set_killl(fdi.tick);
     }
 
-    next = fuse_abi_out(fuse_setxattr_in, DTOABI(data), &fsxi,
+    next = fuse_abi_in(fuse_setxattr_in, DTOABI(data), &fsxi,
                         fdi.indata);
 
     memcpy(next, name, namelen);
@@ -3717,7 +3717,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fdi.iosize = fuse_abi_sizeof(fuse_write_in, DTOABI(data)) +
                          chunksize;
             fdisp_make_vp(&fdi, FUSE_WRITE, vp, context);
-            next = fuse_abi_out(fuse_write_in, DTOABI(data), &fwi, fdi.indata);
+            next = fuse_abi_in(fuse_write_in, DTOABI(data), &fwi, fdi.indata);
 
             error = uiomove(next, (int)chunksize, uio);
             if (error) {
@@ -3729,7 +3729,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
                 return error;
             }
 
-            fuse_abi_in(fuse_write_out, DTOABI(data), fdi.answ, &fwo);
+            fuse_abi_out(fuse_write_out, DTOABI(data), fdi.answ, &fwo);
 
             diff = chunksize - fwo.size;
             if (diff < 0) {

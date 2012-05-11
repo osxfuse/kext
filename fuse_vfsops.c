@@ -1090,7 +1090,7 @@ dostatfs:
     if (faking == 1) {
         bzero(&fsfo, sizeof(fsfo));
     } else {
-        fuse_abi_in(fuse_statfs_out, DTOABI(data), fdi.answ, &fsfo);
+        fuse_abi_out(fuse_statfs_out, DTOABI(data), fdi.answ, &fsfo);
     }
 
     if (fsfo.st.bsize == 0) {
