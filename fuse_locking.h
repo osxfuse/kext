@@ -164,7 +164,7 @@ extern fusefs_recursive_lock *fuse_huge_lock;
 #define fuse_biglock_unlock(lock) fuse_hugelock_unlock()
 #define fuse_biglock_have_lock(lock) fuse_hugelock_have_lock()
 
-#else /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#elif M_OSXFUSE_ENABLE_BIG_LOCK
 
 typedef fusefs_recursive_lock fuse_biglock_t;
 
@@ -187,7 +187,13 @@ typedef fusefs_recursive_lock fuse_biglock_t;
 
 #define fuse_biglock_have_lock(lock) fusefs_recursive_lock_have_lock(lock)
 
-#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
+#else /* !M_OSXFUSE_ENABLE_HUGO_LOCK && !M_OSXFUSE_ENABLE_BIG_LOCK */
+
+#define fuse_biglock_lock(lock) do {} while(0)
+#define fuse_biglock_unlock(lock) do {} while(0)
+#define fuse_biglock_have_lock(lock) false
+
+#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK, M_OSXFUSE_ENABLE_BIG_LOCK */
 
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 

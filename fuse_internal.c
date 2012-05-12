@@ -12,7 +12,7 @@
 #include "fuse_locking.h"
 #include "fuse_node.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_biglock_vnops.h"
 #endif
 
@@ -26,7 +26,7 @@ fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
                      struct timespec *ts, __unused struct fuse_data *data)
 {
     int ret;
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     boolean_t biglock_locked = false;
 
     if (data != NULL && fuse_biglock_have_lock(data->biglock)) {
@@ -35,7 +35,7 @@ fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
     }
 #endif
     ret = msleep(chan, mtx, pri, wmesg, ts);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     if (biglock_locked) {
         fuse_biglock_lock(data->biglock);
     }
@@ -178,11 +178,11 @@ fuse_internal_access(vnode_t                   vp,
          * unless I use REVOKE_NONE here.
          */
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
     }
@@ -908,13 +908,13 @@ fuse_internal_remove(vnode_t               dvp,
      */
     if (need_invalidate && !err) {
         if (!vfs_busy(mp, LK_NOWAIT)) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             struct fuse_data *data = fuse_get_mpdata(mp);
             fuse_biglock_unlock(data->biglock);
 #endif
             vnode_iterate(mp, 0, fuse_internal_remove_callback,
                           (void *)&target_nlink);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
             vfs_unbusy(mp);
@@ -1042,7 +1042,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
     if (fvdat->flag & FN_CREATING) {
         fuse_lck_mtx_lock(fvdat->createlock);
         if (fvdat->flag & FN_CREATING) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             /*
              * We assume, that a call to fuse_vnop_create is always
              * followed by a call to fuse_vnop_open by the same thread.
@@ -1059,7 +1059,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             (void)fuse_msleep(fvdat->creator, fvdat->createlock,
                               PDROP | PINOD | PCATCH, "fuse_internal_strategy",
                               NULL, data);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_nodelock_lock(VTOFUD(vp), FUSEFS_EXCLUSIVE_LOCK);
             fuse_biglock_lock(data->biglock);
 #endif

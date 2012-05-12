@@ -10,11 +10,10 @@
 #include "fuse.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#  include "fuse_ipc.h"
-#  include "fuse_locking.h"
-#endif
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+#include "fuse_ipc.h"
+#include "fuse_locking.h"
+
 #include <kern/thread.h>
 
 #define fuse_nodelock_lock(node, type) \

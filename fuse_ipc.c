@@ -10,7 +10,7 @@
 #include "fuse_internal.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#  if !M_OSXFUSE_ENABLE_HUGE_LOCK
+#  if M_OSXFUSE_ENABLE_BIG_LOCK
 #    include "fuse_biglock_vnops.h"
 #  endif
 #  include "fuse_notify.h"
@@ -474,9 +474,9 @@ fdata_alloc(struct proc *p)
     data->timeout_mtx    = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     data->biglock        = fuse_biglock_alloc();
-#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     return data;
@@ -505,10 +505,10 @@ fdata_destroy(struct fuse_data *data)
     lck_mtx_free(data->timeout_mtx, fuse_lock_group);
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#if !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_free(data->biglock);
     data->biglock = NULL;
-#endif /* !M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 
     while ((ftick = fuse_pop_allticks(data))) {
@@ -655,7 +655,7 @@ void
 fuse_ticket_drop(struct fuse_ticket *ftick)
 {
     int die = 0;
-    
+
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||

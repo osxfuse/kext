@@ -169,7 +169,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t    *biglock;
 #endif
 
@@ -434,13 +434,13 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         return ENXIO;
     }
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     biglock = data->biglock;
     fuse_biglock_lock(biglock);
 #endif
 
     if (data->mount_state != FM_NOTMOUNTED) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(biglock);
 #endif
         fuse_device_unlock(fdev);
@@ -569,7 +569,7 @@ out:
         if (data) {
             data->mount_state = FM_NOTMOUNTED;
             if (!(data->dataflags & FSESS_OPENED)) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
                 assert(biglock == data->biglock);
                 fuse_biglock_unlock(biglock);
 #endif
@@ -600,7 +600,7 @@ out:
         }
     }
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_device_lock(fdev);
     data = fuse_device_get_mpdata(fdev); /* ...and again */
     if(data) {
@@ -638,7 +638,7 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         panic("OSXFUSE: no mount private data in vfs_unmount");
     }
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -673,22 +673,22 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     fuse_rootvp = data->rootvp;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     err = vflush(mp, fuse_rootvp, flags);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
     if (err) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         return err;
     }
 
     if (vnode_isinuse(fuse_rootvp, 1) && !(flags & FORCECLOSE)) {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         return EBUSY;
@@ -717,21 +717,21 @@ alreadydead:
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     vnode_rele(fuse_rootvp); /* We got this reference in fuse_vfsop_mount(). */
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
     data->rootvp = NULLVP;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
     (void)vflush(mp, NULLVP, FORCECLOSE);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -741,7 +741,7 @@ alreadydead:
     data->mount_state = FM_NOTMOUNTED;
     OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
 
@@ -1301,12 +1301,12 @@ fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
     args.waitfor = waitfor;
     args.error = 0;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *data = fuse_get_mpdata(mp);
     fuse_biglock_unlock(data->biglock);
 #endif
     vnode_iterate(mp, 0, fuse_sync_callback, (void *)&args);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
 
@@ -1497,4 +1497,4 @@ fuse_vfsop_biglock_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t cont
     locked_vfsop(mp, fuse_vfsop_setattr, fsap, context);
 }
 
-#endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
+#endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */

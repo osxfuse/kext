@@ -38,7 +38,13 @@
 #endif /* MAC_OS_X_VERSION_MIN_REQUIRED < 1060 */
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+   /*
+    * The options M_OSXFUSE_ENABLE_BIG_LOCK and M_OSXFUSE_ENABLE_HUGE_LOCK are
+    * mutually exclusive.
+    */
 #  define M_OSXFUSE_ENABLE_HUGE_LOCK           0
+#  define M_OSXFUSE_ENABLE_BIG_LOCK            1
+
 #  define M_OSXFUSE_ENABLE_LOCK_LOGGING        0
 #  define FUSE_VNOP_EXPORT __private_extern__
 #else

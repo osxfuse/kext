@@ -16,7 +16,7 @@
 #  include "fuse_kludges.h"
 #endif
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_locking.h"
 #endif
 
@@ -190,7 +190,7 @@ struct fuse_data {
     struct timespec            daemon_timeout;
     struct timespec           *daemon_timeout_p;
     struct timespec            init_timeout;
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t            *biglock;
 #endif
 };

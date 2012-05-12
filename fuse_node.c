@@ -11,7 +11,7 @@
 #include "fuse_ipc.h"
 #include "fuse_locking.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_biglock_vnops.h"
 #endif
 
@@ -169,12 +169,12 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             params.vnfs_filesize   = size;
             params.vnfs_markroot   = markroot;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             err = vnode_create(VNCREATE_FLAVOR, (uint32_t)sizeof(params),
                                &params, &vn);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
         }
@@ -202,22 +202,22 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
         if (vnode_vtype(vn) != vtyp) {
             IOLog("OSXFUSE: vnode changed type behind us (old=%d, new=%d)\n",
                   vnode_vtype(vn), vtyp);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
             vnode_put(vn);
             err = EIO;
         } else if (VTOFUD(vn)->generation != generation) {
             IOLog("OSXFUSE: vnode changed generation\n");
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
             vnode_put(vn);
@@ -277,7 +277,7 @@ __inline__
 int
 fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 {
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
     bool bl_locked;
 
@@ -293,7 +293,7 @@ fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
     }
 #endif
     int ret = cache_lookup(dvp, vpp, cnp);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     if (bl_locked) {
         fuse_biglock_lock(data->biglock);
     }

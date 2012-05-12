@@ -26,7 +26,7 @@
 
 #include "fuse_internal.h"
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_locking.h"
 #endif
 
@@ -649,11 +649,11 @@ HNodeLookupCreatingIfNecessary(fuse_device_t dev,
 
                 lck_mtx_unlock(gHashMutex);
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
                 fuse_biglock_unlock(mntdata->biglock);
 #endif
                 err = vnode_getwithvid(candidateVN, vid);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
                 fuse_biglock_lock(mntdata->biglock);
 #endif
 
@@ -991,7 +991,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
                              vnode_t      *vnPtr)
 {
     errno_t   err = EAGAIN;
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *mntdata;
 #endif
     HNodeRef  thisNode;
@@ -1005,7 +1005,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
     assert(*vnPtr == NULL);
     assert(gHashMutex != NULL);
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
     bool bl_locked;
     mntdata = fuse_device_get_mpdata(dev);
 #endif
@@ -1040,7 +1040,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
             assert(candidateVN != NULL);
             vid = vnode_vid(candidateVN);
             lck_mtx_unlock(gHashMutex);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             /*
              * Make sure that biglock is actually held by the thread calling us
              * before trying to unlock it. HNodeLookupRealQuickIfExists is
@@ -1053,7 +1053,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
             }
 #endif
             err = vnode_getwithvid(candidateVN, vid);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
             if (bl_locked) {
                 fuse_biglock_lock(mntdata->biglock);
             }
