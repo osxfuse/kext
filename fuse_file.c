@@ -66,6 +66,10 @@ fuse_filehandle_get(vnode_t       vp,
         oflags |= O_SYMLINK;
     }
 
+    if ((mode & O_TRUNC) && (data->dataflags & FSESS_ATOMIC_O_TRUNC)) {
+        oflags |= O_TRUNC;
+    }
+
     foi.flags = oflags;
 
     fdisp_init_abi(&fdi, fuse_open_in, DTOABI(data));

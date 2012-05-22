@@ -1773,6 +1773,10 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
         data->dataflags |= FSESS_XTIMES;
     }
 
+    if (fio.flags & FUSE_ATOMIC_O_TRUNC) {
+        data->dataflags |= FSESS_ATOMIC_O_TRUNC;
+    }
+
 out:
     if (err) {
         fdata_set_dead(data);
