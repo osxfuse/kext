@@ -161,7 +161,6 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
             goto out;
         }
     } else {
-        fuse_insert_callback(fdi.tick, NULL);
         fuse_insert_message(fdi.tick);
     }
     fuse_ticket_release(fdi.tick);
