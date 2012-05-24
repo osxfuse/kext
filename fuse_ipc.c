@@ -641,7 +641,6 @@ fuse_ticket_fetch(struct fuse_data *data)
         fdata_set_dead(data);
     }
 
-    ftick->tk_ref_count = 1;
     return ftick;
 }
 
@@ -649,7 +648,7 @@ void
 fuse_ticket_drop(struct fuse_ticket *ftick)
 {
     int die = 0;
-    
+
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||
@@ -706,6 +705,23 @@ fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler)
 }
 
 void
+fuse_remove_callback(struct fuse_ticket *ftick)
+{
+    struct fuse_data *data = ftick->tk_data;
+    struct fuse_ticket *curr;
+
+    fuse_lck_mtx_lock(data->aw_mtx);
+    TAILQ_FOREACH(curr, &data->aw_head, tk_aw_link) {
+        if (curr == ftick) {
+            fuse_aw_remove(curr);
+            fuse_ticket_release(curr);
+            break;
+        }
+    }
+    fuse_lck_mtx_unlock(data->aw_mtx);
+}
+
+void
 fuse_insert_message(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_DIRTY) {
@@ -735,13 +751,12 @@ fuse_insert_message_head(struct fuse_ticket *ftick)
         panic("OSXFUSE: ticket reused without being refreshed");
     }
 
-    ftick->tk_flag |= FT_DIRTY;
-
     if (fdata_dead_get(ftick->tk_data)) {
         return;
     }
 
     fuse_ticket_retain(ftick);
+    ftick->tk_flag |= FT_DIRTY;
 
     fuse_lck_mtx_lock(ftick->tk_data->ms_mtx);
     fuse_ms_push_head(ftick);
@@ -979,33 +994,12 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
 
     if (ftick->tk_interrupt) {
-        struct fuse_data *data = ftick->tk_data;
         struct fuse_ticket *interrupt = ftick->tk_interrupt;
-        struct fuse_ticket *curr;
 
-        fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
-
-        /*
-         * Note: Pending requests that are already marked as answered will not
-         * not be sent to user space. See fuse_device_read().
-         */
-        fticket_set_answered(interrupt);
-
-        fuse_lck_mtx_lock(data->aw_mtx);
-        TAILQ_FOREACH(curr, &data->aw_head, tk_aw_link) {
-            if (curr == interrupt) {
-                fuse_aw_remove(curr);
-                fuse_ticket_release(curr);
-                break;
-            }
-        }
-        fuse_lck_mtx_unlock(data->aw_mtx);
-
-        ftick->tk_interrupt = NULL;
-
-        fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);
+        fuse_internal_interrupt_remove(interrupt);
 
         /* Release interrupt ticket retained in fuse_internal_interrupt_send */
+        ftick->tk_interrupt = NULL;
         fuse_ticket_release(interrupt);
     }
 
@@ -1030,9 +1024,6 @@ fdisp_make(struct fuse_dispatcher *fdip,
     struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (fdip->tick) {
-        if (fdip->tick->tk_ref_count != 1) {
-            panic("OSXFUSE: ticket cannot be reused");
-        }
         fticket_refresh(fdip->tick);
     } else {
         fdip->tick = fuse_ticket_fetch(data);
@@ -1041,6 +1032,31 @@ fdisp_make(struct fuse_dispatcher *fdip,
     if (fdip->tick == 0) {
         panic("OSXFUSE: fuse_ticket_fetch() failed");
     }
+
+#ifdef FUSE_TRACE_TICKET
+    if (fdip->tick->tk_age == 1) {
+        int aw_count = 0;
+        int ms_count = 0;
+
+        struct fuse_ticket    *ftick;
+        struct fuse_ticket    *x_ftick;
+
+        fuse_lck_mtx_lock(data->ms_mtx);
+        STAILQ_FOREACH_SAFE(ftick, &data->ms_head, tk_ms_link, x_ftick) {
+            ms_count++;
+        }
+        fuse_lck_mtx_unlock(data->ms_mtx);
+
+        fuse_lck_mtx_lock(data->aw_mtx);
+        TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
+            aw_count++;
+        }
+        fuse_lck_mtx_unlock(data->aw_mtx);
+
+        IOLog("OSXFUSE: new ticket created op=%d ms_count=%d aw_count=%d\n",
+              op, ms_count, aw_count);
+    }
+#endif
 
     FUSE_DIMALLOC(&fdip->tick->tk_ms_fiov, fdip->finh,
                   fdip->indata, fdip->iosize);
@@ -1061,9 +1077,6 @@ fdisp_make_canfail(struct fuse_dispatcher *fdip,
     struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (fdip->tick) {
-        if (fdip->tick->tk_ref_count != 1) {
-            panic("OSXFUSE: ticket cannot be reused");
-        }
         fticket_refresh(fdip->tick);
     } else {
         fdip->tick = fuse_ticket_fetch(data);
@@ -1130,12 +1143,12 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
         if (fticket_answered(fdip->tick)) {
             /* IPC: already answered */
             fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
-            goto out;
         } else {
             /* IPC: explicitly setting to answered */
             age = fdip->tick->tk_age;
             fticket_set_answered(fdip->tick);
             fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
+
 #ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
             fuse_lck_mtx_lock(fdip->tick->tk_data->aw_mtx);
             TAILQ_FOREACH(ftick, &fdip->tick->tk_data->aw_head, tk_aw_link) {
@@ -1147,11 +1160,11 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
                     break;
                 }
             }
-
             fuse_lck_mtx_unlock(fdip->tick->tk_data->aw_mtx);
 #endif
-            return err;
         }
+
+        goto out;
     }
 
     /* IPC was NOT interrupt */

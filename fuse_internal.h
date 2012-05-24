@@ -712,7 +712,6 @@ int
 fuse_internal_fsync(vnode_t                 vp,
                     vfs_context_t           context,
                     struct fuse_filehandle *fufh,
-                    void                   *param,
                     fuse_op_waitfor_t       waitfor);
 
 int
@@ -867,6 +866,9 @@ fuse_internal_forget_send(mount_t                 mp,
 
 void
 fuse_internal_interrupt_send(struct fuse_ticket *ftick);
+
+void
+fuse_internal_interrupt_remove(struct fuse_ticket *interrupt);
 
 enum {
     REVOKE_NONE = 0,

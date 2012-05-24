@@ -351,6 +351,18 @@ again_locked:
 
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
     if (fticket_answered(ftick)) {
+        fuse_remove_callback(ftick);
+
+        if (ftick->tk_interrupt) {
+            struct fuse_ticket *interrupt = ftick->tk_interrupt;
+
+            fuse_internal_interrupt_remove(interrupt);
+
+            /* Release interrupt ticket retained in fuse_internal_interrupt_send */
+            ftick->tk_interrupt = NULL;
+            fuse_ticket_release(interrupt);
+        }
+
         fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
         fuse_ticket_release(ftick);
 

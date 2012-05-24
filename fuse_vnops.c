@@ -411,23 +411,23 @@ bringup:
               vpp, (gone_good_old) ? 0 : FN_CREATING,
               feo, mp, dvp, context, NULL /* oflags */);
     if (err) {
-       if (gone_good_old) {
-           fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
-       } else {
-           struct fuse_release_in *fri;
-           uint64_t nodeid = feo->nodeid;
-           uint64_t fh_id = ((struct fuse_open_out *)(feo + 1))->fh;
+        if (gone_good_old) {
+            fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
+        } else {
+            struct fuse_release_in *fri;
+            uint64_t nodeid = feo->nodeid;
+            uint64_t fh_id = ((struct fuse_open_out *)(feo + 1))->fh;
 
-           fdisp_init(fdip, sizeof(*fri));
-           fdisp_make(fdip, FUSE_RELEASE, mp, nodeid, context);
-           fri = fdip->indata;
-           fri->fh = fh_id;
-           fri->flags = OFLAGS(mode);
-           fuse_insert_callback(fdip->tick, fuse_internal_forget_callback);
-           fuse_insert_message(fdip->tick);
-           fuse_ticket_release(fdip->tick);
-       }
-       return err;
+            fdi.iosize = sizeof(*fri);
+            fdisp_make(fdip, FUSE_RELEASE, mp, nodeid, context);
+            fri = fdip->indata;
+            fri->fh = fh_id;
+            fri->flags = OFLAGS(mode);
+            fuse_insert_callback(fdip->tick, fuse_internal_forget_callback);
+            fuse_insert_message(fdip->tick);
+        }
+        fuse_ticket_release(fdip->tick);
+        return err;
     }
 
     fdip->answ = gone_good_old ? NULL : feo + 1;
@@ -604,7 +604,6 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     int           waitfor = ap->a_waitfor;
     vfs_context_t context = ap->a_context;
 
-    struct fuse_dispatcher  fdi;
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
@@ -644,11 +643,10 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
         goto out;
     }
 
-    fdisp_init(&fdi, 0);
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
         if (FUFH_IS_VALID(fufh)) {
-            tmp_err = fuse_internal_fsync(vp, context, fufh, &fdi,
+            tmp_err = fuse_internal_fsync(vp, context, fufh,
                                           FUSE_OP_FOREGROUNDED);
             if (tmp_err) {
                 err = tmp_err;
@@ -745,6 +743,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
     /* XXX: Could check the sanity/volatility of va_mode here. */
 
     if ((((struct fuse_attr_out *)fdi.answ)->attr.mode & S_IFMT) == 0) {
+        fuse_ticket_release(fdi.tick);
         return EIO;
     }
 
@@ -1559,7 +1558,6 @@ out:
                 fuse_internal_forget_send(vnode_mount(dvp), context,
                                           nodeid, 1, &fdi);
             }
-            return err;
         } else {
 
             if (!islastcn) {
@@ -2738,9 +2736,10 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
 
     if ((!fuse_isdeadfs(vp)) && (fvdat->nlookup)) {
         struct fuse_dispatcher fdi;
-        fdi.tick = NULL;
+        fdisp_init(&fdi, 0);
         fuse_internal_forget_send(vnode_mount(vp), context, VTOI(vp),
                                   fvdat->nlookup, &fdi);
+        fuse_ticket_release(fdi.tick);
     }
 
     fuse_vncache_purge(vp);
@@ -3416,6 +3415,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
 
     /* XXX: Need to take vap into account. */
 
+    /* Note: fuse_internal_newentry_core releases fdi.tick */
     err = fuse_internal_newentry_core(dvp, vpp, cnp, VLNK, &fdi, context);
 
     if (err == 0) {

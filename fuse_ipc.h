@@ -127,13 +127,6 @@ fticket_opcode(struct fuse_ticket *ftick)
     return (((struct fuse_in_header *)(ftick->tk_ms_fiov.base))->opcode);
 }
 
-static __inline__
-void
-fticket_invalidate(struct fuse_ticket *ftick)
-{
-    ftick->tk_flag |= FT_INVAL;
-}
-
 int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
 enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
@@ -353,6 +346,7 @@ fuse_ticket_release(struct fuse_ticket *ticket) {
 }
 
 void fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler);
+void fuse_remove_callback(struct fuse_ticket *ftick);
 void fuse_insert_message(struct fuse_ticket *ftick);
 void fuse_insert_message_head(struct fuse_ticket *ftick);
 

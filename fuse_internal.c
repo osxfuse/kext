@@ -312,8 +312,6 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
         }
     }
 
-    fuse_ticket_release(ftick);
-
     return 0;
 }
 
@@ -322,48 +320,44 @@ int
 fuse_internal_fsync(vnode_t                 vp,
                     vfs_context_t           context,
                     struct fuse_filehandle *fufh,
-                    void                   *param,
                     fuse_op_waitfor_t       waitfor)
 {
     int err = 0;
     int op = FUSE_FSYNC;
     struct fuse_fsync_in *ffsi;
-    struct fuse_dispatcher *fdip = param;
+    struct fuse_dispatcher fdi;
 
     fuse_trace_printf_func();
 
-    fdip->iosize = sizeof(*ffsi);
-    fdip->tick = NULL;
+    fdisp_init(&fdi, sizeof(*ffsi));
     if (vnode_isdir(vp)) {
         op = FUSE_FSYNCDIR;
     }
 
-    fdisp_make_vp(fdip, op, vp, context);
-    ffsi = fdip->indata;
+    fdisp_make_vp(&fdi, op, vp, context);
+    ffsi = fdi.indata;
     ffsi->fh = fufh->fh_id;
 
     ffsi->fsync_flags = 1; /* datasync */
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
-        if ((err = fdisp_wait_answ(fdip))) {
+        if ((err = fdisp_wait_answ(&fdi))) {
             if (err == ENOSYS) {
                 if (op == FUSE_FSYNC) {
-                    fuse_clear_implemented(fdip->tick->tk_data,
+                    fuse_clear_implemented(fdi.tick->tk_data,
                                            FSESS_NOIMPLBIT(FSYNC));
                 } else if (op == FUSE_FSYNCDIR) {
-                    fuse_clear_implemented(fdip->tick->tk_data,
+                    fuse_clear_implemented(fdi.tick->tk_data,
                                            FSESS_NOIMPLBIT(FSYNCDIR));
                 }
             }
             goto out;
-        } else {
-            fuse_ticket_release(fdip->tick);
         }
     } else {
-        fuse_insert_callback(fdip->tick, fuse_internal_fsync_callback);
-        fuse_insert_message(fdip->tick);
-        fuse_ticket_release(fdip->tick);
+        fuse_insert_callback(fdi.tick, fuse_internal_fsync_callback);
+        fuse_insert_message(fdi.tick);
     }
+    fuse_ticket_release(fdi.tick);
 
 out:
     return err;
@@ -1401,7 +1395,7 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context)
 {
-    fdisp_init(fdip, bufsize + cnp->cn_namelen + 1);
+    fdip->iosize = bufsize + cnp->cn_namelen + 1;
 
     fdisp_make(fdip, op, mp, dnid, context);
     memcpy(fdip->indata, buf, bufsize);
@@ -1435,7 +1429,7 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     err = fuse_vget_i(vpp, 0 /* flags */, feo, cnp, dvp, mp, context);
     if (err) {
         fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
-        return err;
+        goto out;
     }
 
     cache_attrs(*vpp, feo);
@@ -1468,6 +1462,7 @@ fuse_internal_newentry(vnode_t               dvp,
     fdisp_init(&fdi, 0);
     fuse_internal_newentry_makerequest(mp, VTOI(dvp), cnp, op, buf,
                                        bufsize, &fdi, context);
+    /* Note: fuse_internal_newentry_core releases fdi.tick */
     err = fuse_internal_newentry_core(dvp, vpp, cnp, vtype, &fdi, context);
     fuse_invalidate_attr(dvp);
 
@@ -1487,6 +1482,7 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
     fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
+    fuse_ticket_release(fdi.tick);
     return 0;
 }
 
@@ -1505,15 +1501,13 @@ fuse_internal_forget_send(mount_t                 mp,
      *         (long long unsigned) nodeid));
      */
 
-    fdisp_init(fdip, sizeof(*ffi));
+    fdip->iosize = sizeof(*ffi);
     fdisp_make(fdip, FUSE_FORGET, mp, nodeid, context);
 
     ffi = fdip->indata;
     ffi->nlookup = nlookup;
 
-    fticket_invalidate(fdip->tick);
     fuse_insert_message(fdip->tick);
-    fuse_ticket_release(fdip->tick);
 }
 
 static int
@@ -1574,6 +1568,23 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
      * Note: The interrupt ticket is released in fuse_standard_handler when
      * processing the answer to the original ticket.
      */
+}
+
+__private_extern__
+void
+fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
+{
+    fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
+
+    /*
+     * Note: Pending requests that are already marked as answered will not
+     * not be sent to user space. See fuse_device_read().
+     */
+    fticket_set_answered(interrupt);
+
+    fuse_remove_callback(interrupt);
+
+    fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);
 }
 
 __private_extern__
