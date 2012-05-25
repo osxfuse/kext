@@ -164,14 +164,11 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(&fdi))) {
             goto out;
-        } else {
-            fuse_ticket_release(fdi.tick);
         }
     } else {
-        fuse_insert_callback(fdi.tick, NULL);
         fuse_insert_message(fdi.tick);
-        fuse_ticket_release(fdi.tick);
     }
+    fuse_ticket_release(fdi.tick);
 
 out:
     FUSE_OSAddAtomic(-1, (SInt32 *)&fuse_fh_current);

@@ -1224,7 +1224,6 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     int type;
     struct fuse_sync_cargs *args;
     struct fuse_vnode_data *fvdat;
-    struct fuse_dispatcher  fdi;
     struct fuse_filehandle *fufh;
     struct fuse_data       *data;
     mount_t mp;
@@ -1251,11 +1250,10 @@ fuse_sync_callback(vnode_t vp, void *cargs)
 
     cluster_push(vp, 0);
 
-    fdisp_init(&fdi, 0);
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
         if (FUFH_IS_VALID(fufh)) {
-            (void)fuse_internal_fsync(vp, args->context, fufh, &fdi,
+            (void)fuse_internal_fsync(vp, args->context, fufh,
                                       FUSE_OP_FOREGROUNDED);
         }
     }
