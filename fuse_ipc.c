@@ -952,8 +952,6 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
 {
     int err = 0;
 
-    err = fticket_pull(ftick, uio);
-
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
 
     if (ftick->tk_interrupt) {
@@ -968,7 +966,10 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
 
     if (!fticket_answered(ftick)) {
         fticket_set_answered(ftick);
+
+        err = fticket_pull(ftick, uio);
         ftick->tk_aw_errno = err;
+
         fuse_wakeup(ftick);
     }
 
