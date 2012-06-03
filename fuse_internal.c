@@ -261,8 +261,15 @@ fuse_internal_exchange(vnode_t       fvp,
         off_t tmpfilesize = ffud->filesize;
         ffud->filesize = tfud->filesize;
         tfud->filesize = tmpfilesize;
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         ubc_setsize(fvp, (off_t)ffud->filesize);
         ubc_setsize(tvp, (off_t)tfud->filesize);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
 
         fuse_kludge_exchange(fvp, tvp);
 
@@ -604,6 +611,9 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
 {
     int ret = 0;
     uint32_t hint = 0;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data;
+#endif
 
     if (!avfi) {
         return EINVAL;
@@ -616,6 +626,10 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
          */
         return EINVAL;
     }
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    data = fuse_get_mpdata(vnode_mount(vp));
+#endif
 
     /* The result of this /does/ alter our return value. */
     if (avfi->cmd & FUSE_AVFI_UBC) {
@@ -635,7 +649,23 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
                 hint |= NOTE_EXTEND;
             }
             VTOFUD(vp)->filesize = avfi->size;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            /*
+             * We could have been called by fuse_vnop_ioctl (biglock locked) or
+             * by fuse_device_ioctl (biglock unlocked), therefore make sure
+             * biglock is locked before trying to unlock it.
+             */
+            boolean_t biglock_locked = fuse_biglock_have_lock(data->biglock);
+            if (biglock_locked) {
+                fuse_biglock_unlock(data->biglock);
+            }
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
             ubc_setsize(vp, avfi->size);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            if (biglock_locked) {
+                fuse_biglock_lock(data->biglock);
+            }
+#endif
         }
         (void)fuse_invalidate_attr(vp);
     }

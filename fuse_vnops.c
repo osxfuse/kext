@@ -2256,7 +2256,13 @@ ok:
                         hint |= NOTE_EXTEND;
                     }
                     VTOFUD(vp)->filesize = new_filesize;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                    fuse_biglock_unlock(data->biglock);
+#endif
                     ubc_setsize(vp, (off_t)new_filesize);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                    fuse_biglock_lock(data->biglock);
+#endif
                 }
                 fuse_ticket_release(fdi.tick);
             }
@@ -3341,7 +3347,13 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 out:
     if (!err && sizechanged) {
         VTOFUD(vp)->filesize = newsize;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         ubc_setsize(vp, (off_t)newsize);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
     }
 
     if (err == 0) {
@@ -3817,7 +3829,13 @@ fuse_vnop_write(struct vnop_write_args *ap)
         if (uio_offset(uio) > original_size) {
             /* Updating to new size. */
             fvdat->filesize = uio_offset(uio);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             ubc_setsize(vp, (off_t)fvdat->filesize);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
             FUSE_KNOTE(vp, NOTE_WRITE | NOTE_EXTEND);
         } else {
             fvdat->filesize = original_size;

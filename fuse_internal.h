@@ -588,10 +588,17 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int purged = 0;
     long hint = 0;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data;
+#endif
 
     if (in_vap == out_vap) {
         return;
     }
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    data = fuse_get_mpdata(vnode_mount(vp));
+#endif
 
     VATTR_RETURN(out_vap, va_fsid, in_vap->va_fsid);
 
@@ -627,7 +634,13 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
                 hint |= NOTE_EXTEND;
             }
             fvdat->filesize = in_vap->va_data_size;
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             ubc_setsize(vp, fvdat->filesize);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
         }
     }
     VATTR_RETURN(out_vap, va_data_size, in_vap->va_data_size);
