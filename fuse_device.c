@@ -331,7 +331,7 @@ again_locked:
     }
 
     if (!(ftick = fuse_ms_pop(data))) {
-        if (ioflag & FNONBLOCK) {
+        if (ioflag & IO_NDELAY) {
             fuse_lck_mtx_unlock(data->ms_mtx);
             return EAGAIN;
         }
