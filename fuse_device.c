@@ -423,7 +423,6 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     struct fuse_device    *fdev;
     struct fuse_data      *data;
     struct fuse_ticket    *ftick;
-    struct fuse_ticket    *x_ftick;
     struct fuse_out_header ohead;
 
     fuse_trace_printf_func();
@@ -463,7 +462,8 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         /* Unsolicited notification */
         err = fuse_ipc_notify_handler(data, ohead.error, uio);
     } else {
-        int found;
+        struct fuse_ticket *x_ftick;
+        int found = 0;
 
         fuse_lck_mtx_lock(data->aw_mtx);
 
