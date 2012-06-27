@@ -1706,12 +1706,7 @@ fuse_vnop_mmap(struct vnop_mmap_args *ap)
     }
 
     if (fuse_isdirectio(vp)) {
-        /*
-         * We should be returning ENODEV here, but ubc_map() translates
-         * all errors except ENOPERM to 0. Even then, this is not going
-         * to prevent the mmap()!
-         */
-        return EPERM;
+        return ENODEV;
     }
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
