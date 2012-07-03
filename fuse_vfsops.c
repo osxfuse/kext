@@ -697,26 +697,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         return EBUSY;
     }
 
-    if (fdata_dead_get(data)) {
-        goto alreadydead;
-    }
-
-    fdisp_init(&fdi, 0 /* no data to send along */);
-    fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
-
-    err = fdisp_wait_answ(&fdi);
-    if (!err) {
-        fuse_ticket_release(fdi.tick);
-    }
-
-    /*
-     * Note that dounmount() signals a VQ_UNMOUNT VFS event.
-     */
-
-    fdata_set_dead(data);
-
-alreadydead:
-
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
@@ -737,6 +717,22 @@ alreadydead:
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
+
+    if (!fdata_dead_get(data)) {
+        fdisp_init(&fdi, 0 /* no data to send along */);
+        fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
+
+        err = fdisp_wait_answ(&fdi);
+        if (!err) {
+            fuse_ticket_release(fdi.tick);
+        }
+
+        /*
+         * Note that dounmount() signals a VQ_UNMOUNT VFS event.
+         */
+
+        fdata_set_dead(data);
+    }
 
     fuse_device_lock(fdev);
 
