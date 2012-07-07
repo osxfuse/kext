@@ -1186,7 +1186,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             buf_setcount(bp, (uint32_t)(fvdat->filesize - offset));
         }
 
-        if (buf_map(bp, &bufdat)) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        err = buf_map(bp, &bufdat);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+        if (err) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
             err = EFAULT;
             goto out;
@@ -1254,7 +1261,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         int merr = 0;
         off_t diff;
 
-        if (buf_map(bp, &bufdat)) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        err = buf_map(bp, &bufdat);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+        if (err) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
             err = EFAULT;
             goto out;
