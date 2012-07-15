@@ -896,8 +896,10 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
             VOL_CAP_INT_EXTENDED_ATTR;
     }
 
-    /* Don't set the EXCHANGEDATA capability if it's known not to be
-     * implemented in the FUSE daemon. */
+    /*
+     * Don't set the EXCHANGEDATA capability if it's known not to be
+     * implemented in the FUSE daemon.
+     */
     if (fuse_implemented(data, FSESS_NOIMPLBIT(EXCHANGE))) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
             VOL_CAP_INT_EXCHANGEDATA;
@@ -1008,11 +1010,6 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         ;
 
     // Handle some special cases
-
-    if (!(data->dataflags & FSESS_CASE_INSENSITIVE)) {
-        attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] |=
-            VOL_CAP_FMT_CASE_SENSITIVE;
-    }
 
     /*
     if (data->dataflags & FSESS_VOL_RENAME) {
