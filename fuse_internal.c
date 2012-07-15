@@ -1746,6 +1746,13 @@ out:
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
+    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
+    if (err) {
+        IOLog("OSXFUSE: failed to update vfsstat (err=%d)\n", err);
+    }
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
     return 0;
 }
 
