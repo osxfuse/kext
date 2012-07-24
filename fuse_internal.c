@@ -56,7 +56,7 @@ fuse_internal_access(vnode_t                   vp,
                      vfs_context_t             context)
 {
     int err = 0;
-    int default_error = 0;
+    int default_error = ENOTSUP;
     uint32_t mask = 0;
     int dataflags;
     mount_t mp;
@@ -74,10 +74,6 @@ fuse_internal_access(vnode_t                   vp,
     /* Allow for now; let checks be handled inline later. */
     if (fuse_isdeferpermissions_mp(mp)) {
         return 0;
-    }
-
-    if (facp->facc_flags & FACCESS_FROM_VNOP) {
-        default_error = ENOTSUP;
     }
 
     /*
