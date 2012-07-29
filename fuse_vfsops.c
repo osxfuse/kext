@@ -802,7 +802,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 
     struct fuse_data *data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("OSXFUSE: no private data for mount point?");
+        return;
     }
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] = 0
@@ -1070,11 +1070,11 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     }
 
     if ((err = fdisp_simple_vfs_getattr(&fdi, mp, context))) {
-
-         // If we cannot communicate with the daemon (most likely because
-         // it's dead), we still want to portray that we are a bonafide
-         // file system so that we can be gracefully unmounted.
-
+        /*
+         * If we cannot communicate with the daemon (most likely because
+         * it's dead), we still want to portray that we are a bonafide
+         * file system so that we can be gracefully unmounted.
+         */
         if (err == ENOTCONN) {
             deading = faking = 1;
             goto dostatfs;
@@ -1177,8 +1177,11 @@ dostatfs:
 
     /* f_fsid and f_owner handled elsewhere. */
 
-    /* Handle capabilities and attributes. */
-    handle_capabilities_and_attributes(mp, attr);
+    if (VFSATTR_IS_ACTIVE(attr, f_capabilities) ||
+        VFSATTR_IS_ACTIVE(attr, f_attributes)) {
+        /* Handle capabilities and attributes. */
+        handle_capabilities_and_attributes(mp, attr);
+    }
 
     VFSATTR_RETURN(attr, f_create_time, kZeroTime);
     VFSATTR_RETURN(attr, f_modify_time, kZeroTime);
