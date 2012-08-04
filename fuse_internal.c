@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011 Anatol Pomozov
+ * Copyright (c) 2011-2012 Anatol Pomozov
  * Copyright (c) 2011-2012 Benjamin Fleischer
  * All rights reserved.
  */
@@ -51,11 +51,10 @@ __private_extern__
 int
 fuse_internal_access(vnode_t                   vp,
                      int                       action,
-                     vfs_context_t             context,
-                     struct fuse_access_param *facp)
+                     vfs_context_t             context)
 {
     int err = 0;
-    int default_error = 0;
+    int default_error = ENOTSUP;
     uint32_t mask = 0;
     int dataflags;
     mount_t mp;
@@ -75,10 +74,6 @@ fuse_internal_access(vnode_t                   vp,
         return 0;
     }
 
-    if (facp->facc_flags & FACCESS_FROM_VNOP) {
-        default_error = ENOTSUP;
-    }
-
     /*
      * (action & KAUTH_VNODE_GENERIC_WRITE_BITS) on a read-only file system
      * would have been handled by higher layers.
@@ -88,20 +83,8 @@ fuse_internal_access(vnode_t                   vp,
         return default_error;
     }
 
-    /* Unless explicitly permitted, deny everyone except the fs owner. */
-    if (!vnode_isvroot(vp) && !(facp->facc_flags & FACCESS_NOCHECKSPY)) {
-        if (!(dataflags & FSESS_ALLOW_OTHER)) {
-            int denied = fuse_match_cred(data->daemoncred,
-                                         vfs_context_ucred(context));
-            if (denied) {
-                return EPERM;
-            }
-        }
-        facp->facc_flags |= FACCESS_NOCHECKSPY;
-    }
-
-    if (!(facp->facc_flags & FACCESS_DO_ACCESS)) {
-        return default_error;
+    if (!vnode_isvroot(vp)) {
+        CHECK_BLANKET_DENIAL(vp, context, EPERM);
     }
 
     if (vnode_isdir(vp)) {
@@ -1194,7 +1177,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             buf_setcount(bp, (uint32_t)(fvdat->filesize - offset));
         }
 
-        if (buf_map(bp, &bufdat)) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        err = buf_map(bp, &bufdat);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+        if (err) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
             err = EFAULT;
             goto out;
@@ -1264,7 +1254,14 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         int merr = 0;
         off_t diff;
 
-        if (buf_map(bp, &bufdat)) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        err = buf_map(bp, &bufdat);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+        if (err) {
             IOLog("OSXFUSE: failed to map buffer in strategy\n");
             err = EFAULT;
             goto out;

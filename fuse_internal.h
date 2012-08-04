@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
+ * Copyright (c) 2011 Anatol Pomozov
  * Copyright (c) 2011-2012 Benjamin Fleischer
  * All rights reserved.
  */
@@ -463,24 +464,10 @@ fuse_blanket_deny(vnode_t vp, vfs_context_t context)
 
 /* access */
 
-/* FN_ACCESS_NOOP is in fuse_node.h */
-
-#define FACCESS_VA_VALID   0x00000001
-#define FACCESS_DO_ACCESS  0x00000002
-#define FACCESS_NOCHECKSPY 0x00000004
-#define FACCESS_FROM_VNOP  0x00000008
-
-struct fuse_access_param {
-    uid_t    xuid;
-    gid_t    xgid;
-    uint32_t facc_flags;
-};
-
 int
 fuse_internal_access(vnode_t                   vp,
                      int                       action,
-                     vfs_context_t             context,
-                     struct fuse_access_param *facp);
+                     vfs_context_t             context);
 
 /* attributes */
 
@@ -555,12 +542,6 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
     VATTR_RETURN(vap, va_uid, fat->uid);
     VATTR_RETURN(vap, va_gid, fat->gid);
     VATTR_RETURN(vap, va_rdev, fat->rdev);
-
-    /*
-     * If the file in question has ACLs, we record that knowledge here:
-     *
-     *    VTOFUD(vp)->flag |= FN_HAS_ACL;
-     */
 
     VATTR_RETURN(vap, va_type, IFTOVT(fat->mode));
 

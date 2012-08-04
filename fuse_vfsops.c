@@ -660,26 +660,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         return EBUSY;
     }
 
-    if (fdata_dead_get(data)) {
-        goto alreadydead;
-    }
-
-    fdisp_init(&fdi, 0 /* no data to send along */);
-    fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
-
-    err = fdisp_wait_answ(&fdi);
-    if (!err) {
-        fuse_ticket_release(fdi.tick);
-    }
-
-    /*
-     * Note that dounmount() signals a VQ_UNMOUNT VFS event.
-     */
-
-    fdata_set_dead(data);
-
-alreadydead:
-
     needsignal = data->dataflags & FSESS_KILL_ON_UNMOUNT;
     daemonpid = data->daemonpid;
 
@@ -700,6 +680,22 @@ alreadydead:
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
+
+    if (!fdata_dead_get(data)) {
+        fdisp_init(&fdi, 0 /* no data to send along */);
+        fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
+
+        err = fdisp_wait_answ(&fdi);
+        if (!err) {
+            fuse_ticket_release(fdi.tick);
+        }
+
+        /*
+         * Note that dounmount() signals a VQ_UNMOUNT VFS event.
+         */
+
+        fdata_set_dead(data);
+    }
 
     fuse_device_lock(fdev);
 
@@ -769,7 +765,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 
     struct fuse_data *data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("OSXFUSE: no private data for mount point?");
+        return;
     }
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_FORMAT] = 0
@@ -1030,9 +1026,11 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     }
 
     if (!(data->dataflags & FSESS_INITED)) {
-        // coreservices process requests ATTR_VOL_CAPABILITIES on the mountpoint right before
-        // returning from mount() syscall. We need to fake the output because daemon might
-        // not be ready to respond yet (and deadlock will happen).
+        /*
+         * coreservices process requests ATTR_VOL_CAPABILITIES on the mount
+         * point right before returning from syscall mount. We need to fake
+         * the output because the FUSE server might not be ready to respond yet.
+         */
         faking = true;
         goto dostatfs;
     }
@@ -1040,10 +1038,11 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     fdisp_init(&fdi, 0);
     fdisp_make(&fdi, FUSE_STATFS, mp, FUSE_ROOT_ID, context);
     if ((err = fdisp_wait_answ(&fdi))) {
-        // If we cannot communicate with the daemon (most likely because
-        // it's dead), we still want to portray that we are a bonafide
-        // file system so that we can be gracefully unmounted.
-
+        /*
+         * If we cannot communicate with the daemon (most likely because
+         * it's dead), we still want to portray that we are a bonafide
+         * file system so that we can be gracefully unmounted.
+         */
         if (err == ENOTCONN) {
             deading = faking = true;
             goto dostatfs;
@@ -1146,7 +1145,8 @@ dostatfs:
     /* f_fsid and f_owner handled elsewhere. */
 
     /* Handle capabilities and attributes. */
-    if (VFSATTR_IS_ACTIVE(attr, f_capabilities)) {
+    if (VFSATTR_IS_ACTIVE(attr, f_capabilities) ||
+        VFSATTR_IS_ACTIVE(attr, f_attributes)) {
         handle_capabilities_and_attributes(mp, attr);
     }
 

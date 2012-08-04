@@ -548,7 +548,14 @@ fdata_set_dead(struct fuse_data *data)
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
-    vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
+    if (data->mount_state & FM_MOUNTED) {
+        /*
+         * We might be called before the volume is mounted. In this case f_fsid
+         * is not set and signaling VD_DEAD causes a page fault kernel panic on
+         * OS X 10.8.
+         */
+        vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
+    }
 }
 
 static __inline__
