@@ -343,12 +343,12 @@ fuse_internal_fsync(vnode_t                 vp,
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         if ((err = fdisp_wait_answ(&fdi))) {
             if (err == ENOSYS) {
+                struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+
                 if (op == FUSE_FSYNC) {
-                    fuse_clear_implemented(fdi.tick->tk_data,
-                                           FSESS_NOIMPLBIT(FSYNC));
+                    fuse_clear_implemented(data, FSESS_NOIMPLBIT(FSYNC));
                 } else if (op == FUSE_FSYNCDIR) {
-                    fuse_clear_implemented(fdi.tick->tk_data,
-                                           FSESS_NOIMPLBIT(FSYNCDIR));
+                    fuse_clear_implemented(data, FSESS_NOIMPLBIT(FSYNCDIR));
                 }
             }
             goto out;
