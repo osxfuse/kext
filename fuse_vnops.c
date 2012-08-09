@@ -2061,16 +2061,28 @@ ok:
          * - nosyncwrites disabled FOR THE ENTIRE MOUNT
          * - no vncache for the vnode (handled in lookup)
          */
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
                   UBC_PUSHALL | UBC_INVALIDATE);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
         vnode_setnocache(vp);
         vnode_setnoreadahead(vp);
         fuse_clearnosyncwrites_mp(vnode_mount(vp));
         fvdat->flag |= FN_DIRECT_IO;
         goto out;
     } else if (fufh->fuse_open_flags & FOPEN_PURGE_UBC) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
                   UBC_PUSHALL | UBC_INVALIDATE);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
         fufh->fuse_open_flags &= ~FOPEN_PURGE_UBC;
         hint |= NOTE_WRITE;
         if (fufh->fuse_open_flags & FOPEN_PURGE_ATTR) {
