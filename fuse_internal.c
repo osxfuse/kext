@@ -216,10 +216,16 @@ fuse_internal_exchange(vnode_t       fvp,
     memcpy((char *)next + flen + 1, tname, tlen);
     ((char *)next)[flen + tlen + 1] = '\0';
 
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, (off_t*)0,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
     ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, (off_t*)0,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     if (!(err = fdisp_wait_answ(&fdi))) {
         fuse_ticket_release(fdi.tick);
@@ -339,11 +345,9 @@ fuse_internal_fsync(vnode_t                 vp,
         if ((err = fdisp_wait_answ(&fdi))) {
             if (err == ENOSYS) {
                 if (op == FUSE_FSYNC) {
-                    fuse_clear_implemented(fdi.tick->tk_data,
-                                           FSESS_NOIMPLBIT(FSYNC));
+                    fuse_clear_implemented(data, FSESS_NOIMPLBIT(FSYNC));
                 } else if (op == FUSE_FSYNCDIR) {
-                    fuse_clear_implemented(fdi.tick->tk_data,
-                                           FSESS_NOIMPLBIT(FSYNCDIR));
+                    fuse_clear_implemented(data, FSESS_NOIMPLBIT(FSYNCDIR));
                 }
             }
             goto out;
@@ -593,6 +597,7 @@ int
 fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
                          struct fuse_avfi_ioctl *avfi)
 {
+    int err = 0;
     int ret = 0;
     uint32_t hint = 0;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
@@ -613,14 +618,31 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     data = fuse_get_mpdata(vnode_mount(vp));
+    
+    /*
+     * We could have been called by fuse_vnop_ioctl (biglock locked) or
+     * by fuse_device_ioctl (biglock unlocked), therefore make sure
+     * biglock is locked before trying to unlock it.
+     */
+    boolean_t biglock_locked = fuse_biglock_have_lock(data->biglock);
 #endif
 
     /* The result of this /does/ alter our return value. */
     if (avfi->cmd & FUSE_AVFI_UBC) {
         int ubc_flags = avfi->ubc_flags & (UBC_PUSHDIRTY  | UBC_PUSHALL |
                                            UBC_INVALIDATE | UBC_SYNC);
-        if (ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
-                      ubc_flags) == 0) {
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        if (biglock_locked) {
+            fuse_biglock_unlock(data->biglock);
+        }
+#endif
+        err = ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0, ubc_flags);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        if (biglock_locked) {
+            fuse_biglock_lock(data->biglock);
+        }
+#endif
+        if (!err) {
             /* failed */
             ret = EINVAL; /* don't really have a good error to return */
         }
@@ -634,12 +656,6 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
             }
             VTOFUD(vp)->filesize = avfi->size;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-            /*
-             * We could have been called by fuse_vnop_ioctl (biglock locked) or
-             * by fuse_device_ioctl (biglock unlocked), therefore make sure
-             * biglock is locked before trying to unlock it.
-             */
-            boolean_t biglock_locked = fuse_biglock_have_lock(data->biglock);
             if (biglock_locked) {
                 fuse_biglock_unlock(data->biglock);
             }
@@ -1177,11 +1193,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             buf_setcount(bp, (uint32_t)(fvdat->filesize - offset));
         }
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         err = buf_map(bp, &bufdat);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
         if (err) {
@@ -1254,11 +1270,11 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         int merr = 0;
         off_t diff;
 
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
         err = buf_map(bp, &bufdat);
-#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+#if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
         if (err) {
