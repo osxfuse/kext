@@ -231,10 +231,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         return EINVAL;
     }
 
-    if (fusefs_args.altflags & FUSE_MOPT_NO_ALERTS) {
-        mntopts |= FSESS_NO_ALERTS;
-    }
-
     if (fusefs_args.altflags & FUSE_MOPT_SPARSE) {
         mntopts |= FSESS_SPARSE;
     }

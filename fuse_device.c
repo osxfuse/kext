@@ -655,9 +655,6 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
     case FUSEDEVIOCSETDAEMONDEAD:
         fdata_set_dead(data);
-        fuse_lck_mtx_lock(data->timeout_mtx);
-        data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
-        fuse_lck_mtx_unlock(data->timeout_mtx);
         ret = 0;
         break;
 

@@ -19,19 +19,6 @@
 
 #include <sys/ubc.h>
 
-#if M_OSXFUSE_ENABLE_KUNC
-#  include <UserNotification/KUNCUserNotifications.h>
-#endif
-
-#if !M_OSXFUSE_ENABLE_KUNC
-enum {
-    kKUNCDefaultResponse   = 0,
-    kKUNCAlternateResponse = 1,
-    kKUNCOtherResponse     = 2,
-    kKUNCCancelResponse    = 3
-};
-#endif /* !M_OSXFUSE_ENABLE_KUNC */
-
 struct fuse_attr;
 struct fuse_filehandle;
 

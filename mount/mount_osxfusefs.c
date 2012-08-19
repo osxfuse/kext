@@ -78,7 +78,6 @@ struct mntopt mopts[] = {
 
     /* negative ones */
 
-    { "alerts",              1, FUSE_MOPT_NO_ALERTS,              1 }, // kused
     { "appledouble",         1, FUSE_MOPT_NO_APPLEDOUBLE,         1 }, // kused
     { "applexattr",          1, FUSE_MOPT_NO_APPLEXATTR,          1 }, // kused
     { "attrcache",           1, FUSE_MOPT_NO_ATTRCACHE,           1 }, // kused
@@ -863,10 +862,6 @@ main(int argc, char **argv)
         (altflags & FUSE_MOPT_NATIVE_XATTR)) {
         errx(EX_USAGE,
              "'auto_xattr' can't be used with 'native_xattr'");
-    }
-
-    if (getenv("MOUNT_FUSEFS_NO_ALERTS")) {
-        altflags |= FUSE_MOPT_NO_ALERTS;
     }
 
     if (daemon_timeout < FUSE_MIN_DAEMON_TIMEOUT) {
