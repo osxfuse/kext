@@ -48,6 +48,8 @@
 
 /* Begin PBXBuildFile section */
 		435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435958DA15120F5500B4D7F5 /* CoreServices.framework */; };
+		437FB62F15E14EA700CFF17A /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 541780C00B6413CA003DE6C0 /* CoreFoundation.framework */; };
+		437FB63215E179A600CFF17A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 437FB63015E1798100CFF17A /* IOKit.framework */; };
 		43D6261A1538949F00303F1A /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D626181538949F00303F1A /* fuse_notify.c */; };
 		43D6261B1538949F00303F1A /* fuse_notify.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D626191538949F00303F1A /* fuse_notify.h */; };
 		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
@@ -148,6 +150,7 @@
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		435958DA15120F5500B4D7F5 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
 		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
+		437FB63015E1798100CFF17A /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
 		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
 		540965B70C33B17400F5E227 /* osxfusefs.fs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = osxfusefs.fs; sourceTree = "<group>"; };
@@ -216,7 +219,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				437FB62F15E14EA700CFF17A /* CoreFoundation.framework in Frameworks */,
 				435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */,
+				437FB63215E179A600CFF17A /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,6 +258,7 @@
 				541780C00B6413CA003DE6C0 /* CoreFoundation.framework */,
 				435958DA15120F5500B4D7F5 /* CoreServices.framework */,
 				54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */,
+				437FB63015E1798100CFF17A /* IOKit.framework */,
 				D27513B306A6225300ADB3A4 /* Kernel.framework */,
 			);
 			name = Frameworks;
@@ -867,7 +873,6 @@
 				GCC_WARN_MISSING_PARENTHESES = YES;
 				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
 				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
@@ -904,7 +909,6 @@
 				GCC_WARN_MISSING_PARENTHESES = YES;
 				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
 				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
 				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
