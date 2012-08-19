@@ -51,18 +51,18 @@ int32_t  fuse_tickets_current        = 0;                                  // r
 uint32_t fuse_userkernel_bufsize     = FUSE_DEFAULT_USERKERNEL_BUFSIZE;    // rw
 int32_t  fuse_vnodes_current         = 0;                                  // r
 
-SYSCTL_DECL(_osxfuse);
-SYSCTL_NODE(, OID_AUTO, osxfuse, CTLFLAG_RW, 0,
+SYSCTL_DECL(_vfs_generic);
+SYSCTL_NODE(_vfs_generic, OID_AUTO, osxfuse, CTLFLAG_RW, 0,
             "OSXFUSE Sysctl Interface");
-SYSCTL_NODE(_osxfuse, OID_AUTO, control, CTLFLAG_RW, 0,
+SYSCTL_NODE(_vfs_generic_osxfuse, OID_AUTO, control, CTLFLAG_RW, 0,
             "OSXFUSE Controls");
-SYSCTL_NODE(_osxfuse, OID_AUTO, counters, CTLFLAG_RW, 0,
+SYSCTL_NODE(_vfs_generic_osxfuse, OID_AUTO, counters, CTLFLAG_RW, 0,
             "OSXFUSE Monotonic Counters");
-SYSCTL_NODE(_osxfuse, OID_AUTO, resourceusage, CTLFLAG_RW, 0,
+SYSCTL_NODE(_vfs_generic_osxfuse, OID_AUTO, resourceusage, CTLFLAG_RW, 0,
             "OSXFUSE Resource Usage");
-SYSCTL_NODE(_osxfuse, OID_AUTO, tunables, CTLFLAG_RW, 0,
+SYSCTL_NODE(_vfs_generic_osxfuse, OID_AUTO, tunables, CTLFLAG_RW, 0,
             "OSXFUSE Tunables");
-SYSCTL_NODE(_osxfuse, OID_AUTO, version, CTLFLAG_RW, 0,
+SYSCTL_NODE(_vfs_generic_osxfuse, OID_AUTO, version, CTLFLAG_RW, 0,
             "OSXFUSE Version Information");
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
@@ -236,9 +236,9 @@ sysctl_osxfuse_tunables_userkernel_bufsize_handler SYSCTL_HANDLER_ARGS
     return error;
 }
 
-SYSCTL_PROC(_osxfuse_control, // our parent
-            OID_AUTO,         // automatically assign object ID
-            kill,             // our name
+SYSCTL_PROC(_vfs_generic_osxfuse_control, // our parent
+            OID_AUTO,                     // automatically assign object ID
+            kill,                         // our name
 
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_WR | CTLFLAG_ANYBODY),
@@ -252,9 +252,9 @@ SYSCTL_PROC(_osxfuse_control, // our parent
             "I",              // our data type (integer)
             "OSXFUSE Controls: Kill the Given File System");
 
-SYSCTL_PROC(_osxfuse_control,   // our parent
-            OID_AUTO,           // automatically assign object ID
-            print_vnodes,       // our name
+SYSCTL_PROC(_vfs_generic_osxfuse_control, // our parent
+            OID_AUTO,                     // automatically assign object ID
+            print_vnodes,                 // our name
 
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_WR),
@@ -270,9 +270,9 @@ SYSCTL_PROC(_osxfuse_control,   // our parent
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
 
-SYSCTL_PROC(_osxfuse_control,   // our parent
-            OID_AUTO,           // automatically assign object ID
-            macfuse_mode,       // our name
+SYSCTL_PROC(_vfs_generic_osxfuse_control, // our parent
+            OID_AUTO,                     // automatically assign object ID
+            macfuse_mode,                 // our name
 
             // type flag/access flag
             (CTLTYPE_INT | CTLFLAG_RW),
@@ -321,17 +321,17 @@ SYSCTL_PROC(_macfuse_control,   // our parent
 #endif
 
 /* fuse.counters */
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, filehandle_reuse, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, filehandle_reuse, CTLFLAG_RD,
            &fuse_fh_reuse_count, 0, "");
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, filehandle_upcalls, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, filehandle_upcalls, CTLFLAG_RD,
            &fuse_fh_upcall_count, 0, "");
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, lookup_cache_hits, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, lookup_cache_hits, CTLFLAG_RD,
            &fuse_lookup_cache_hits, 0, "");
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, lookup_cache_misses, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, lookup_cache_misses, CTLFLAG_RD,
            &fuse_lookup_cache_misses, 0, "");
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, lookup_cache_overrides,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, lookup_cache_overrides,
            CTLFLAG_RD, &fuse_lookup_cache_overrides, 0, "");
-SYSCTL_INT(_osxfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
            &fuse_realloc_count, 0, "");
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
@@ -352,19 +352,19 @@ SYSCTL_INT(_macfuse_counters, OID_AUTO, memory_reallocs, CTLFLAG_RD,
 #endif
 
 /* fuse.resourceusage */
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, filehandles, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, filehandles, CTLFLAG_RD,
            &fuse_fh_current, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, filehandles_zombies, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, filehandles_zombies, CTLFLAG_RD,
            &fuse_fh_zombies, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, ipc_iovs, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, ipc_iovs, CTLFLAG_RD,
            &fuse_iov_current, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, ipc_tickets, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, ipc_tickets, CTLFLAG_RD,
            &fuse_tickets_current, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, memory_bytes, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, memory_bytes, CTLFLAG_RD,
            &fuse_memory_allocated, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, mounts, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, mounts, CTLFLAG_RD,
            &fuse_mount_count, 0, "");
-SYSCTL_INT(_osxfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
            &fuse_vnodes_current, 0, "");
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
@@ -387,27 +387,27 @@ SYSCTL_INT(_macfuse_resourceusage, OID_AUTO, vnodes, CTLFLAG_RD,
 #endif
 
 /* fuse.tunables */
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, admin_group, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, admin_group, CTLFLAG_RW,
            &fuse_admin_group, 0, "");
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, allow_other, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, allow_other, CTLFLAG_RW,
            &fuse_allow_other, 0, "");
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, iov_credit, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, iov_credit, CTLFLAG_RW,
            &fuse_iov_credit, 0, "");
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, iov_permanent_bufsize, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, iov_permanent_bufsize, CTLFLAG_RW,
            &fuse_iov_permanent_bufsize, 0, "");
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, max_freetickets, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, max_freetickets, CTLFLAG_RW,
            &fuse_max_freetickets, 0, "");
-SYSCTL_INT(_osxfuse_tunables, OID_AUTO, max_tickets, CTLFLAG_RW,
+SYSCTL_INT(_vfs_generic_osxfuse_tunables, OID_AUTO, max_tickets, CTLFLAG_RW,
            &fuse_max_tickets, 0, "");
-SYSCTL_PROC(_osxfuse_tunables,          // our parent
-            OID_AUTO,                   // automatically assign object ID
-            userkernel_bufsize,         // our name
-            (CTLTYPE_INT | CTLFLAG_WR), // type flag/access flag
-            &fuse_userkernel_bufsize,   // location of our data
-            0,                          // argument passed to our handler
+SYSCTL_PROC(_vfs_generic_osxfuse_tunables, // our parent
+            OID_AUTO,                      // automatically assign object ID
+            userkernel_bufsize,            // our name
+            (CTLTYPE_INT | CTLFLAG_WR),    // type flag/access flag
+            &fuse_userkernel_bufsize,      // location of our data
+            0,                             // argument passed to our handler
             sysctl_osxfuse_tunables_userkernel_bufsize_handler,
-            "I",                        // our data type (integer)
-            "OSXFUSE Tunables");        // our description
+            "I",                           // our data type (integer)
+            "OSXFUSE Tunables");           // our description
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
 
@@ -436,13 +436,13 @@ SYSCTL_PROC(_macfuse_tunables,          // our parent
 #endif
 
 /* fuse.version */
-SYSCTL_INT(_osxfuse_version, OID_AUTO, abi_major, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_version, OID_AUTO, abi_major, CTLFLAG_RD,
            &fuse_abi_major, 0, "");
-SYSCTL_INT(_osxfuse_version, OID_AUTO, abi_minor, CTLFLAG_RD,
+SYSCTL_INT(_vfs_generic_osxfuse_version, OID_AUTO, abi_minor, CTLFLAG_RD,
            &fuse_abi_minor, 0, "");
-SYSCTL_STRING(_osxfuse_version, OID_AUTO, number, CTLFLAG_RD,
+SYSCTL_STRING(_vfs_generic_osxfuse_version, OID_AUTO, number, CTLFLAG_RD,
               OSXFUSE_VERSION, 0, "");
-SYSCTL_STRING(_osxfuse_version, OID_AUTO, string, CTLFLAG_RD,
+SYSCTL_STRING(_vfs_generic_osxfuse_version, OID_AUTO, string, CTLFLAG_RD,
               OSXFUSE_VERSION ", " OSXFUSE_TIMESTAMP, 0, "");
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
@@ -460,40 +460,40 @@ SYSCTL_STRING(_macfuse_version, OID_AUTO, string, CTLFLAG_RD,
 
 static struct sysctl_oid *fuse_sysctl_list[] =
 {
-    &sysctl__osxfuse_control,
-    &sysctl__osxfuse_counters,
-    &sysctl__osxfuse_resourceusage,
-    &sysctl__osxfuse_tunables,
-    &sysctl__osxfuse_version,
-    &sysctl__osxfuse_control_kill,
-    &sysctl__osxfuse_control_print_vnodes,
+    &sysctl__vfs_generic_osxfuse_control,
+    &sysctl__vfs_generic_osxfuse_counters,
+    &sysctl__vfs_generic_osxfuse_resourceusage,
+    &sysctl__vfs_generic_osxfuse_tunables,
+    &sysctl__vfs_generic_osxfuse_version,
+    &sysctl__vfs_generic_osxfuse_control_kill,
+    &sysctl__vfs_generic_osxfuse_control_print_vnodes,
 #if OSXFUSE_ENABLE_MACFUSE_MODE
-    &sysctl__osxfuse_control_macfuse_mode,
+    &sysctl__vfs_generic_osxfuse_control_macfuse_mode,
 #endif
-    &sysctl__osxfuse_counters_filehandle_reuse,
-    &sysctl__osxfuse_counters_filehandle_upcalls,
-    &sysctl__osxfuse_counters_lookup_cache_hits,
-    &sysctl__osxfuse_counters_lookup_cache_misses,
-    &sysctl__osxfuse_counters_lookup_cache_overrides,
-    &sysctl__osxfuse_counters_memory_reallocs,
-    &sysctl__osxfuse_resourceusage_filehandles,
-    &sysctl__osxfuse_resourceusage_filehandles_zombies,
-    &sysctl__osxfuse_resourceusage_ipc_iovs,
-    &sysctl__osxfuse_resourceusage_ipc_tickets,
-    &sysctl__osxfuse_resourceusage_memory_bytes,
-    &sysctl__osxfuse_resourceusage_mounts,
-    &sysctl__osxfuse_resourceusage_vnodes,
-    &sysctl__osxfuse_tunables_admin_group,
-    &sysctl__osxfuse_tunables_allow_other,
-    &sysctl__osxfuse_tunables_iov_credit,
-    &sysctl__osxfuse_tunables_iov_permanent_bufsize,
-    &sysctl__osxfuse_tunables_max_freetickets,
-    &sysctl__osxfuse_tunables_max_tickets,
-    &sysctl__osxfuse_tunables_userkernel_bufsize,
-    &sysctl__osxfuse_version_abi_major,
-    &sysctl__osxfuse_version_abi_minor,
-    &sysctl__osxfuse_version_number,
-    &sysctl__osxfuse_version_string,
+    &sysctl__vfs_generic_osxfuse_counters_filehandle_reuse,
+    &sysctl__vfs_generic_osxfuse_counters_filehandle_upcalls,
+    &sysctl__vfs_generic_osxfuse_counters_lookup_cache_hits,
+    &sysctl__vfs_generic_osxfuse_counters_lookup_cache_misses,
+    &sysctl__vfs_generic_osxfuse_counters_lookup_cache_overrides,
+    &sysctl__vfs_generic_osxfuse_counters_memory_reallocs,
+    &sysctl__vfs_generic_osxfuse_resourceusage_filehandles,
+    &sysctl__vfs_generic_osxfuse_resourceusage_filehandles_zombies,
+    &sysctl__vfs_generic_osxfuse_resourceusage_ipc_iovs,
+    &sysctl__vfs_generic_osxfuse_resourceusage_ipc_tickets,
+    &sysctl__vfs_generic_osxfuse_resourceusage_memory_bytes,
+    &sysctl__vfs_generic_osxfuse_resourceusage_mounts,
+    &sysctl__vfs_generic_osxfuse_resourceusage_vnodes,
+    &sysctl__vfs_generic_osxfuse_tunables_admin_group,
+    &sysctl__vfs_generic_osxfuse_tunables_allow_other,
+    &sysctl__vfs_generic_osxfuse_tunables_iov_credit,
+    &sysctl__vfs_generic_osxfuse_tunables_iov_permanent_bufsize,
+    &sysctl__vfs_generic_osxfuse_tunables_max_freetickets,
+    &sysctl__vfs_generic_osxfuse_tunables_max_tickets,
+    &sysctl__vfs_generic_osxfuse_tunables_userkernel_bufsize,
+    &sysctl__vfs_generic_osxfuse_version_abi_major,
+    &sysctl__vfs_generic_osxfuse_version_abi_minor,
+    &sysctl__vfs_generic_osxfuse_version_number,
+    &sysctl__vfs_generic_osxfuse_version_string,
     (struct sysctl_oid *)0
 };
 
@@ -581,7 +581,7 @@ fuse_sysctl_start(void)
     osxfuse_sysctl_lock = lck_mtx_alloc_init(osxfuse_lock_group, NULL);
 #endif
 
-    sysctl_register_oid(&sysctl__osxfuse);
+    sysctl_register_oid(&sysctl__vfs_generic_osxfuse);
     for (i = 0; fuse_sysctl_list[i]; i++) {
        sysctl_register_oid(fuse_sysctl_list[i]);
     }
@@ -595,7 +595,7 @@ fuse_sysctl_stop(void)
     for (i = 0; fuse_sysctl_list[i]; i++) {
        sysctl_unregister_oid(fuse_sysctl_list[i]);
     }
-    sysctl_unregister_oid(&sysctl__osxfuse);
+    sysctl_unregister_oid(&sysctl__vfs_generic_osxfuse);
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
     lck_mtx_lock(osxfuse_sysctl_lock);

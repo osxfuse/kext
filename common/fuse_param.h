@@ -57,8 +57,8 @@
 
 #define MACOSX_ADMIN_GROUP_NAME            "admin"
 
-#define SYSCTL_OSXFUSE_TUNABLES_ADMIN      "osxfuse.tunables.admin_group"
-#define SYSCTL_OSXFUSE_VERSION_NUMBER      "osxfuse.version.number"
+#define SYSCTL_OSXFUSE_TUNABLES_ADMIN      "vfs.generic.osxfuse.tunables.admin_group"
+#define SYSCTL_OSXFUSE_VERSION_NUMBER      "vfs.generic.osxfuse.version.number"
 
 /* Paths */
 

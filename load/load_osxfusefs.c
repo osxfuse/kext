@@ -49,7 +49,7 @@
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
 #  define OSXFUSE_MACFUSE_MODE_ENV  "OSXFUSE_MACFUSE_MODE"
-#  define OSXFUSE_KEXT_MACFUSE_MODE "osxfuse.control.macfuse_mode"
+#  define OSXFUSE_KEXT_MACFUSE_MODE "vfs.generic.osxfuse.control.macfuse_mode"
 #endif
 
 
