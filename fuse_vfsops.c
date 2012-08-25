@@ -588,7 +588,18 @@ out:
             goto out; /* go back and follow error path */
         }
         err = vnode_ref(fuse_rootvp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        /*
+         * Even though fuse_rootvp will not be reclaimed when calling vnode_put
+         * because we incremented its usecount by calling vnode_ref release
+         * biglock just to be safe.
+         */
+        fuse_biglock_unlock(biglock);
+#endif
         (void)vnode_put(fuse_rootvp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(biglock);
+#endif
         if (err) {
             goto out; /* go back and follow error path */
         } else {
@@ -1375,7 +1386,13 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
             fuse_ticket_release(fdi.tick);
         }
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         (void)vnode_put(root_vp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
 
         if (error) {
             if (error == ENOSYS) {

@@ -39,11 +39,9 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
                                uint32_t              *oflags)
 {
     int   err;
-    int   junk;
 
     vnode_t  vn    = NULLVP;
     HNodeRef hn    = NULL;
-    vnode_t  dirVN = NULLVP;
 
     struct fuse_vnode_data *fvdat   = NULL;
     struct fuse_data       *mntdata = NULL;
@@ -207,10 +205,10 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
+            vnode_put(vn);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
-            vnode_put(vn);
             err = EIO;
         } else if (VTOFUD(vn)->generation != generation) {
             IOLog("OSXFUSE: vnode changed generation\n");
@@ -218,10 +216,10 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fuse_biglock_unlock(mntdata->biglock);
 #endif
             fuse_internal_vnode_disappear(vn, context, REVOKE_SOFT);
+            vnode_put(vn);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
             fuse_biglock_lock(mntdata->biglock);
 #endif
-            vnode_put(vn);
             err = ESTALE;
         }
     }
@@ -230,11 +228,6 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
         *vnPtr = vn;
         /* Need VT_OSXFUSE from xnu */
         vnode_settag(vn, VT_OTHER);
-    }
-
-    if (dirVN != NULL) {
-        junk = vnode_put(dirVN);
-        /* assert(junk == 0); */
     }
 
     /* assert((err == 0) == (*vnPtr != NULL); */

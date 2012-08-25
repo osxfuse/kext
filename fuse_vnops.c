@@ -1281,6 +1281,10 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     bool isdotdot             = false;
     mount_t mp                = vnode_mount(dvp);
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data    = fuse_get_mpdata(mp);
+#endif
+
     int err                   = 0;
     int lookup_err            = 0;
     vnode_t vp                = NULL;
@@ -1344,7 +1348,13 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         case -1: /* positive match */
             if (fuse_isnovncache(*vpp)) {
                 fuse_vncache_purge(*vpp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                fuse_biglock_unlock(data->biglock);
+#endif
                 vnode_put(*vpp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                fuse_biglock_lock(data->biglock);
+#endif
                 *vpp = NULL;
                 FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_overrides);
                 err = 0;
@@ -1559,7 +1569,13 @@ out:
                 /* if (!err && !vnode_mountedhere(*vpp)) { ... */
 
                 if (err) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                    fuse_biglock_unlock(data->biglock);
+#endif
                     vnode_put(*vpp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+                    fuse_biglock_lock(data->biglock);
+#endif
                     *vpp = NULL;
                 }
             }

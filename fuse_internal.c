@@ -619,7 +619,7 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     data = fuse_get_mpdata(vnode_mount(vp));
-    
+
     /*
      * We could have been called by fuse_vnop_ioctl (biglock locked) or
      * by fuse_device_ioctl (biglock unlocked), therefore make sure
