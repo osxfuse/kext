@@ -222,9 +222,8 @@ fticket_wait_answer(struct fuse_ticket *ftick)
     err = fuse_msleep(ftick, ftick->tk_aw_mtx, PCATCH, "fu_ans",
                       data->daemon_timeout_p, data);
     if (err == EAGAIN) { /* same as EWOULDBLOCK */
-        if (!fdata_dead_get(data)) {
-            fdata_set_dead(data);
-        }
+        fdata_set_dead(data);
+
         err = ENOTCONN;
         fticket_set_answered(ftick);
 
@@ -419,19 +418,19 @@ fdata_destroy(struct fuse_data *data)
     FUSE_OSFree(data, sizeof(struct fuse_data), fuse_malloc_tag);
 }
 
-int
+bool
 fdata_dead_get(struct fuse_data *data)
 {
     return (data->dataflags & FSESS_DEAD);
 }
 
-void
+bool
 fdata_set_dead(struct fuse_data *data)
 {
     fuse_lck_mtx_lock(data->ms_mtx);
     if (fdata_dead_get(data)) {
         fuse_lck_mtx_unlock(data->ms_mtx);
-        return;
+        return false;
     }
 
     data->dataflags |= FSESS_DEAD;
@@ -453,6 +452,8 @@ fdata_set_dead(struct fuse_data *data)
          */
         vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
     }
+
+    return true;
 }
 
 static __inline__

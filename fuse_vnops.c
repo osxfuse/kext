@@ -1406,8 +1406,8 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     int flags                 = cnp->cn_flags;
     int wantparent            = flags & (LOCKPARENT|WANTPARENT);
     int islastcn              = flags & ISLASTCN;
-    int isdot                 = FALSE;
-    int isdotdot              = FALSE;
+    bool isdot                = false;
+    bool isdotdot             = false;
     mount_t mp                = vnode_mount(dvp);
 
     int err                   = 0;
@@ -1453,9 +1453,9 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     }
 
     if (flags & ISDOTDOT) {
-        isdotdot = TRUE;
+        isdotdot = true;
     } else if ((cnp->cn_nameptr[0] == '.') && (cnp->cn_namelen == 1)) {
-        isdot = TRUE;
+        isdot = true;
     }
 
     data = fuse_get_mpdata(mp);
@@ -1480,7 +1480,13 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         case -1: /* positive match */
             if (fuse_isnovncache(*vpp)) {
                 fuse_vncache_purge(*vpp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                fuse_biglock_unlock(data->biglock);
+#endif
                 vnode_put(*vpp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                fuse_biglock_lock(data->biglock);
+#endif
                 *vpp = NULL;
                 FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_overrides);
                 err = 0;
@@ -1690,7 +1696,13 @@ out:
                 /* if (!err && !vnode_mountedhere(*vpp)) { ... */
 
                 if (err) {
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                    fuse_biglock_unlock(data->biglock);
+#endif
                     vnode_put(*vpp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+                    fuse_biglock_lock(data->biglock);
+#endif
                     *vpp = NULL;
                 }
             }

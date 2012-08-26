@@ -351,8 +351,8 @@ void fuse_insert_message_head(struct fuse_ticket *ftick);
 
 struct fuse_data *fdata_alloc(struct proc *p);
 void fdata_destroy(struct fuse_data *data);
-int  fdata_dead_get(struct fuse_data *data);
-void fdata_set_dead(struct fuse_data *data);
+bool fdata_dead_get(struct fuse_data *data);
+bool fdata_set_dead(struct fuse_data *data);
 
 struct fuse_dispatcher {
 
