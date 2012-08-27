@@ -67,7 +67,6 @@ struct mntopt mopts[] = {
     { "init_timeout=",       0, FUSE_MOPT_INIT_TIMEOUT,           1 }, // kused
     { "iosize=",             0, FUSE_MOPT_IOSIZE,                 1 }, // kused
     { "jail_symlinks",       0, FUSE_MOPT_JAIL_SYMLINKS,          1 }, // kused
-    { "kill_on_unmount",     0, FUSE_MOPT_KILL_ON_UNMOUNT,        1 }, // kused
     { "local",               0, FUSE_MOPT_LOCALVOL,               1 }, // kused
     { "native_xattr",        0, FUSE_MOPT_NATIVE_XATTR,           1 }, // kused
     { "negative_vncache",    0, FUSE_MOPT_NEGATIVE_VNCACHE,       1 }, // kused
@@ -973,7 +972,6 @@ showhelp()
       "    -o fstypename=<name>   set the file system's type name\n"
       "    -o iosize=<size>       specify maximum I/O size in bytes\n"
       "    -o jail_symlinks       contain symbolic links within the mount\n"
-      "    -o kill_on_unmount     kernel will send a signal (SIGKILL by default) to the\n                           daemon after unmount finishes\n"
       "    -o local               mark the volume as \"local\" (default is \"nonlocal\")\n"
       "    -o negative_vncache    enable vnode name caching of non-existent objects\n"
       "    -o sparse              enable support for sparse files\n"
