@@ -19,6 +19,8 @@
 #  include "fuse_biglock_vnops.h"
 #endif
 
+#include <stdbool.h>
+
 #include <AvailabilityMacros.h>
 
 /* msleep */
@@ -30,7 +32,7 @@ fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
 {
     int ret;
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-    boolean_t biglock_locked = false;
+    bool biglock_locked = false;
 
     if (data != NULL && fuse_biglock_have_lock(data->biglock)) {
         biglock_locked = true;
@@ -625,7 +627,7 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
      * by fuse_device_ioctl (biglock unlocked), therefore make sure
      * biglock is locked before trying to unlock it.
      */
-    boolean_t biglock_locked = fuse_biglock_have_lock(data->biglock);
+    bool biglock_locked = fuse_biglock_have_lock(data->biglock);
 #endif
 
     /* The result of this /does/ alter our return value. */
