@@ -179,7 +179,9 @@ fticket_refresh(struct fuse_ticket *ftick)
     ftick->tk_aw_type = FT_A_FIOV;
 
     ftick->tk_flag = 0;
+#ifdef FUSE_TRACE_TICKET
     ftick->tk_age++;
+#endif
     ftick->tk_interrupt = NULL;
 }
 
@@ -1141,37 +1143,17 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     fuse_insert_message(fdip->tick);
 
     if ((err = fticket_wait_answer(fdip->tick))) { /* interrupted */
-
-#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
-        struct fuse_ticket *ftick;
-        unsigned            age;
-#endif
-
         fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
 
-        if (fticket_answered(fdip->tick)) {
-            /* IPC: already answered */
-            fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
-        } else {
-            /* IPC: explicitly setting to answered */
-            age = fdip->tick->tk_age;
+        /*
+         * We are no longer interested in an answer, therefore mark the ticket
+         * as answered.
+         */
+        if (!fticket_answered(fdip->tick)) {
             fticket_set_answered(fdip->tick);
-            fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
-
-#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
-            fuse_lck_mtx_lock(fdip->tick->tk_data->aw_mtx);
-            TAILQ_FOREACH(ftick, &fdip->tick->tk_data->aw_head, tk_aw_link) {
-                if (ftick == fdip->tick) {
-                    if (fdip->tick->tk_age == age) {
-                        /* Succeeded preventing I/O in vain */
-                        fdip->tick->tk_aw_handler = NULL;
-                    }
-                    break;
-                }
-            }
-            fuse_lck_mtx_unlock(fdip->tick->tk_data->aw_mtx);
-#endif
         }
+
+        fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
 
         goto out;
     }

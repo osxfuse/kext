@@ -1572,9 +1572,9 @@ fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
 
     if (ftick->tk_aw_ohead.error == EAGAIN) {
         bzero(&ftick->tk_aw_ohead, sizeof(struct fuse_out_header));
-        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
-
         ftick->tk_flag &= ~FT_DIRTY;
+
+        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
         fuse_insert_message_head(ftick);
     }
 

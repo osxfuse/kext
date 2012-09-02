@@ -62,7 +62,9 @@ struct fuse_ticket {
     uint64_t                     tk_unique;
     struct fuse_data            *tk_data;
     int                          tk_flag;
+#ifdef FUSE_TRACE_TICKET
     uint32_t                     tk_age;
+#endif
     uint32_t                     tk_ref_count;
     struct fuse_ticket          *tk_interrupt;
 
