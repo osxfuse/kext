@@ -355,12 +355,12 @@ alreadydead:
             fuse_internal_interrupt_send(ftick);
         }
     }
-#endif
+#endif /* M_OSXFUSE_ENABLE_INTERRUPT */
 
 out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
-    if (!(err || fticket_answered(ftick))) {
+    if (!err && !fticket_answered(ftick)) {
         IOLog("OSXFUSE: requester was woken up but still no answer");
         err = ENXIO;
     }

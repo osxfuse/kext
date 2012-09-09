@@ -729,6 +729,16 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     fuse_biglock_lock(data->biglock);
 #endif
 
+    /*
+     * Set mount state to FM_NOTMOUNTED.
+     *
+     * Note: fuse_device_read will call fdata_set_dead for us when sending the
+     * FUSE_DESTROY message. fdata_set_dead will signal VQ_DEAD if it is called
+     * for a volume, that is still mounted.
+     */
+    data->mount_state = FM_NOTMOUNTED;
+    OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
+
     if (!fdata_dead_get(data)) {
         fdisp_init(&fdi, 0 /* no data to send along */);
         fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
@@ -738,18 +748,12 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
             fuse_ticket_release(fdi.tick);
         }
 
-        /*
-         * Note that dounmount() signals a VQ_UNMOUNT VFS event.
-         */
-
-        fdata_set_dead(data);
+        /* Note that dounmount() signals a VQ_UNMOUNT VFS event */
     }
 
-    fuse_device_lock(fdev);
-
     vfs_setfsprivate(mp, NULL);
-    data->mount_state = FM_NOTMOUNTED;
-    OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
+
+    fuse_device_lock(fdev);
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
     fuse_biglock_unlock(data->biglock);

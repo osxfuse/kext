@@ -1627,11 +1627,14 @@ fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
     fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
 
     /*
-     * Note: Pending requests that are already marked as answered will not
-     * not be sent to user space. See fuse_device_read().
+     * Set interrupt ticket state to answered and remove the callback. Pending
+     * requests, that are already marked as answered, will not be sent to user
+     * space.
+     *
+     * Note: Simply removing the ticket from the message queue would break
+     * fuse_device_select.
      */
     fticket_set_answered(interrupt);
-
     fuse_remove_callback(interrupt);
 
     fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);

@@ -293,13 +293,15 @@ int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int err = 0;
+    bool force = false;
     int i;
+
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
-
+    
     struct fuse_device *fdev;
     struct fuse_data   *data;
-    struct fuse_ticket *ftick;
+    struct fuse_ticket *ftick = NULL;
 
     fuse_trace_printf_func();
 
@@ -310,94 +312,93 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     data = fdev->data;
 
-again:
     fuse_lck_mtx_lock(data->ms_mtx);
 
-    /* The read loop (outgoing messages to the user daemon). */
+    /* The (non-)blocking read loop */
+    while (!ftick) {
+        if (fdata_dead_get(data)) {
+            err = ENODEV;
+        }
+        if (err) {
+            fuse_lck_mtx_unlock(data->ms_mtx);
+            return err;
+        }
 
-again_locked:
-    if (fdata_dead_get(data)) {
-        fuse_lck_mtx_unlock(data->ms_mtx);
-        return ENODEV;
+        ftick = fuse_ms_pop(data);
+        if (!ftick) {
+            if (ioflag & IO_NDELAY) {
+                err = EAGAIN;
+            } else {
+                err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
+            }
+        }
     }
 
-    if (!(ftick = fuse_ms_pop(data))) {
-        if (ioflag & IO_NDELAY) {
-            fuse_lck_mtx_unlock(data->ms_mtx);
-            return EAGAIN;
-        }
-
-        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
-        if (err != 0) {
-            fuse_lck_mtx_unlock(data->ms_mtx);
-            return (fdata_dead_get(data) ? ENODEV : err);
-        }
-
-        goto again_locked;
+    if (fticket_opcode(ftick) == FUSE_DESTROY) {
+        /*
+         * The file system is in the process of being destroyed. We need to
+         * make sure no further messages are sent to the FUSE server, otherwise
+         * might crash due to a segementation fault.
+         */
+        force = fdata_set_dead(data);
     }
 
     fuse_lck_mtx_unlock(data->ms_mtx);
 
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-    if (fticket_answered(ftick)) {
-        fuse_remove_callback(ftick);
-
-        if (ftick->tk_interrupt) {
-            struct fuse_ticket *interrupt = ftick->tk_interrupt;
-
-            fuse_internal_interrupt_remove(interrupt);
-
-            /* Release interrupt ticket retained in fuse_internal_interrupt_send */
-            ftick->tk_interrupt = NULL;
-            fuse_ticket_release(interrupt);
-        }
-
-        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-        fuse_ticket_release(ftick);
-
-        goto again;
-    }
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-
-    if (fdata_dead_get(data)) {
-         if (ftick) {
-             fuse_ticket_release(ftick);
-         }
-         return ENODEV;
-    }
-
+    /* Handle different message types */
     switch (ftick->tk_ms_type) {
+        case FT_M_BUF:
+            buf[1]    = ftick->tk_ms_bufdata;
+            buflen[1] = ftick->tk_ms_bufsize;
 
-    case FT_M_FIOV:
-        buf[0]    = ftick->tk_ms_fiov.base;
-        buflen[0] = ftick->tk_ms_fiov.len;
-        break;
+        case FT_M_FIOV:
+            buf[0]    = ftick->tk_ms_fiov.base;
+            buflen[0] = ftick->tk_ms_fiov.len;
+            break;
 
-    case FT_M_BUF:
-        buf[0]    = ftick->tk_ms_fiov.base;
-        buflen[0] = ftick->tk_ms_fiov.len;
-        buf[1]    = ftick->tk_ms_bufdata;
-        buflen[1] = ftick->tk_ms_bufsize;
-        break;
-
-    default:
-        panic("OSXFUSE: unknown message type for ticket %p", ftick);
+        default:
+            panic("OSXFUSE: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
     }
 
+    /* Transfer the ticket's data to user space */
     for (i = 0; buf[i]; i++) {
         if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-            data->dataflags |= FSESS_DEAD;
+            fdata_set_dead(data);
             err = ENODEV;
-            break;
+            goto out;
         }
-
         err = uiomove(buf[i], (int)buflen[i], uio);
-
         if (err) {
             break;
         }
     }
 
+    if (force) {
+        /* Send message without performing additional checks */
+        goto out;
+    }
+
+    /*
+     * Filter out tickets, that have been marked as answered by returning EINTR.
+     * In case this ticket has been interrupted drop the interrrupt ticket.
+     */
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    if (fticket_answered(ftick)) {
+        fuse_remove_callback(ftick);
+        err = EINTR;
+
+        if (ftick->tk_interrupt) {
+            /* Set interrupt ticket to answered and remove its callback */
+            fuse_internal_interrupt_remove(ftick->tk_interrupt);
+        }
+    }
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+
+    if (fdata_dead_get(data)) {
+        err = ENODEV;
+    }
+
+out:
     fuse_ticket_release(ftick);
     return err;
 }
