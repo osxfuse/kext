@@ -131,7 +131,7 @@ fticket_opcode(struct fuse_ticket *ftick)
 
 int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
-enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
+enum mount_state { FM_NOTMOUNTED, FM_MOUNTED, FM_UNMOUNTING };
 
 struct fuse_data {
     fuse_device_t              fdev;

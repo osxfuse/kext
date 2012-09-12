@@ -267,7 +267,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
     selwakeup((struct selinfo*)&data->d_rsel);
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
-    if (data->mount_state != FM_MOUNTED) {
+    if (data->mount_state == FM_NOTMOUNTED) {
         /* We're not mounted. Can destroy mpdata. */
         fuse_device_close_final(fdev);
     }
