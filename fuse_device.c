@@ -298,7 +298,7 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
-    
+
     struct fuse_device *fdev;
     struct fuse_data   *data;
     struct fuse_ticket *ftick = NULL;
@@ -312,9 +312,8 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     data = fdev->data;
 
-    fuse_lck_mtx_lock(data->ms_mtx);
-
     /* The (non-)blocking read loop */
+    fuse_lck_mtx_lock(data->ms_mtx);
     while (!ftick) {
         if (fdata_dead_get(data)) {
             err = ENODEV;
@@ -333,6 +332,7 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             }
         }
     }
+    fuse_lck_mtx_unlock(data->ms_mtx);
 
     if (fticket_opcode(ftick) == FUSE_DESTROY) {
         /*
@@ -342,8 +342,6 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
          */
         force = fdata_set_dead(data);
     }
-
-    fuse_lck_mtx_unlock(data->ms_mtx);
 
     /* Handle different message types */
     switch (ftick->tk_ms_type) {
