@@ -156,16 +156,16 @@ static errno_t
 fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
                  vfs_context_t context)
 {
-    int err     = 0;
-    int mntopts = 0;
-    int mounted = 0;
+    int err      = 0;
+    int mntopts  = 0;
+    bool mounted = false;
 
     uint32_t drandom  = 0;
     uint32_t max_read = ~0;
 
     size_t len;
 
-    fuse_device_t      fdev = FUSE_DEVICE_NULL;
+    fuse_device_t      fdev = NULL;
     struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
@@ -448,7 +448,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     data->mount_state = FM_MOUNTED;
     OSAddAtomic(1, (SInt32 *)&fuse_mount_count);
-    mounted = 1;
+    mounted = true;
 
     if (fdata_dead_get(data)) {
         fuse_device_unlock(fdev);
@@ -679,6 +679,15 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     fuse_biglock_lock(data->biglock);
 #endif
 
+    /*
+     * Set mount state to FM_UNMOUNTING.
+     *
+     * Note: fuse_device_read will call fdata_set_dead for us when sending the
+     * FUSE_DESTROY message. fdata_set_dead will signal VQ_DEAD if it is called
+     * for a volume, that is still mounted.
+     */
+    data->mount_state = FM_UNMOUNTING;
+
     if (!fdata_dead_get(data)) {
         fdisp_init(&fdi, 0 /* no data to send along */);
         fdisp_make(&fdi, FUSE_DESTROY, mp, FUSE_ROOT_ID, context);
@@ -688,18 +697,15 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
             fuse_ticket_release(fdi.tick);
         }
 
-        /*
-         * Note that dounmount() signals a VQ_UNMOUNT VFS event.
-         */
-
-        fdata_set_dead(data);
+        /* Note that dounmount() signals a VQ_UNMOUNT VFS event */
     }
 
-    fuse_device_lock(fdev);
-
     vfs_setfsprivate(mp, NULL);
+
     data->mount_state = FM_NOTMOUNTED;
     OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
+
+    fuse_device_lock(fdev);
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);

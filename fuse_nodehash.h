@@ -28,6 +28,8 @@
 
 #include "fuse_device.h"
 
+#include <stdbool.h>
+
 typedef struct HNode * HNodeRef;
 
 extern errno_t HNodeInit(lck_grp_t   *lockGroup,
@@ -62,8 +64,8 @@ extern errno_t   HNodeLookupCreatingIfNecessary(fuse_device_t dev,
 extern void      HNodeAttachVNodeSucceeded(HNodeRef hnode,
                                            size_t   forkIndex,
                                            vnode_t  vn);
-extern boolean_t HNodeAttachVNodeFailed(HNodeRef hnode, size_t forkIndex);
-extern boolean_t HNodeDetachVNode(HNodeRef hnode, vnode_t vn);
+extern bool      HNodeAttachVNodeFailed(HNodeRef hnode, size_t forkIndex);
+extern bool      HNodeDetachVNode(HNodeRef hnode, vnode_t vn);
 extern void      HNodeScrubDone(HNodeRef hnode);
 
 void             HNodePrintState(void);

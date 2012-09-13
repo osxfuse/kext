@@ -17,6 +17,8 @@
 #  include "fuse_biglock_vnops.h"
 #endif
 
+#include <stdbool.h>
+
 #include <AvailabilityMacros.h>
 
 /* msleep */
@@ -28,7 +30,7 @@ fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
 {
     int ret;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-    boolean_t biglock_locked = false;
+    bool biglock_locked = false;
 
     if (data != NULL && fuse_biglock_have_lock(data->biglock)) {
         biglock_locked = true;
@@ -219,9 +221,9 @@ fuse_internal_exchange(vnode_t       fvp,
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
-    ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, (off_t*)0,
+    ubc_msync(fvp, (off_t)0, (off_t)ffud->filesize, NULL,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
-    ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, (off_t*)0,
+    ubc_msync(tvp, (off_t)0, (off_t)tfud->filesize, NULL,
               UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
@@ -574,6 +576,7 @@ fuse_internal_attr_vat2fsai(mount_t                 mp,
 
     if (VATTR_IS_ACTIVE(vap, va_mode)) {
         fsai->mode = vap->va_mode & ALLPERMS;
+        fsai->mode |= VTTOIF(vnode_vtype(vp));
         fsai->valid |= FATTR_MODE;
     }
     VATTR_SET_SUPPORTED(vap, va_mode);
@@ -624,7 +627,7 @@ fuse_internal_ioctl_avfi(vnode_t vp, __unused vfs_context_t context,
      * by fuse_device_ioctl (biglock unlocked), therefore make sure
      * biglock is locked before trying to unlock it.
      */
-    boolean_t biglock_locked = fuse_biglock_have_lock(data->biglock);
+    bool biglock_locked = fuse_biglock_have_lock(data->biglock);
 #endif
 
     /* The result of this /does/ alter our return value. */
@@ -825,11 +828,11 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_adjust(cookediov, bytesavail);
 
         de = (struct dirent *)cookediov->base;
-#if __DARWIN_64_BIT_INO_T
-        de->d_fileno = fudge->ino;
+#ifdef _DARWIN_FEATURE_64_BIT_INODE
+        de->d_ino = fudge->ino;
 #else
-        de->d_fileno = (ino_t)fudge->ino; /* XXX: truncation */
-#endif
+        de->d_ino = (ino_t)fudge->ino; /* XXX: truncation */
+#endif /* _DARWIN_FEATURE_64_BIT_INODE */
         de->d_reclen = bytesavail;
         de->d_type   = fudge->type;
         de->d_namlen = fudge->namelen;
@@ -1218,7 +1221,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             if (vtype == VDIR) {
                 op = FUSE_READDIR;
             }
-            fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
+            fdisp_make_vp(&fdi, op, vp, NULL);
 
             fri.fh = fufh->fh_id;
 
@@ -1301,7 +1304,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fdi.iosize = fuse_abi_sizeof(fuse_write_in, DTOABI(data));
             op = FUSE_WRITE;
 
-            fdisp_make_vp(&fdi, op, vp, (vfs_context_t)0);
+            fdisp_make_vp(&fdi, op, vp, NULL);
 
             /* Take the size of the write buffer into account */
             fdi.finh->len += (typeof(fdi.finh->len))chunksize;
@@ -1545,7 +1548,7 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
     fdi.tick = ftick;
 
-    fuse_internal_forget_send(ftick->tk_data->mp, (vfs_context_t)0,
+    fuse_internal_forget_send(ftick->tk_data->mp, NULL,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
     fuse_ticket_release(fdi.tick);
@@ -1590,9 +1593,9 @@ fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
 
     if (ftick->tk_aw_ohead.error == EAGAIN) {
         bzero(&ftick->tk_aw_ohead, sizeof(struct fuse_out_header));
-        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
-
         ftick->tk_flag &= ~FT_DIRTY;
+
+        fuse_insert_callback(ftick, &fuse_internal_interrupt_handler);
         fuse_insert_message_head(ftick);
     }
 
@@ -1615,8 +1618,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
     fii.unique = ftick->tk_unique;
 
     fdisp_init_abi(&fdi, fuse_interrupt_in, DTOABI(data));
-    fdisp_make(&fdi, FUSE_INTERRUPT, data->mp, (uint64_t)0,
-               (vfs_context_t)0);
+    fdisp_make(&fdi, FUSE_INTERRUPT, data->mp, (uint64_t)0, NULL);
     fuse_abi_in(fuse_interrupt_in, DTOABI(data), &fii, fdi.indata);
 
     /*
@@ -1649,11 +1651,14 @@ fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
     fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
 
     /*
-     * Note: Pending requests that are already marked as answered will not
-     * not be sent to user space. See fuse_device_read().
+     * Set interrupt ticket state to answered and remove the callback. Pending
+     * requests, that are already marked as answered, will not be sent to user
+     * space.
+     *
+     * Note: Simply removing the ticket from the message queue would break
+     * fuse_device_select.
      */
     fticket_set_answered(interrupt);
-
     fuse_remove_callback(interrupt);
 
     fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);

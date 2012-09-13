@@ -17,6 +17,7 @@
 
 #include <fuse_ioctl.h>
 
+#include <stdbool.h>
 #include <sys/ubc.h>
 
 struct fuse_attr;
@@ -112,28 +113,26 @@ fuse_isautocache_mp(mount_t mp)
     return (fuse_get_mpdata(mp)->dataflags & FSESS_AUTO_CACHE);
 }
 
-#define fuse_isdeadfs_nop(vp) 0
-
 static __inline__
-int
+bool
 fuse_isdeadfs_mp(mount_t mp)
 {
-    return (fuse_get_mpdata(mp)->dataflags & FSESS_DEAD);
+    return fdata_dead_get(fuse_get_mpdata(mp));
 }
 
 static __inline__
-int
+bool
 fuse_isdeadfs(vnode_t vp)
 {
     if (VTOFUD(vp)->flag & FN_REVOKED) {
-        return 1;
+        return true;
     }
 
     return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
 static __inline__
-int
+bool
 fuse_isdeadfs_fs(vnode_t vp)
 {
     return fuse_isdeadfs_mp(vnode_mount(vp));
@@ -598,7 +597,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
-            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, (off_t*)0,
+            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, NULL,
                             UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
@@ -640,9 +639,9 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
 
     /*
-     * When _DARWIN_USE_64_BIT_INODE is not enabled, the User library
-     * will set va_create_time to -1. In that case, we will have
-     * to ask for it separately, if necessary.
+     * When _DARWIN_FEATURE_64_BIT_INODE is not enabled, the User library will
+     * set va_create_time to -1. In that case, we will have to ask for it
+     * separately, if necessary.
      */
     if (in_vap->va_create_time.tv_sec != (int64_t)-1) {
         VATTR_RETURN(out_vap, va_create_time, in_vap->va_create_time);
@@ -657,7 +656,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
 #endif
-            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, (off_t*)0,
+            (void)ubc_msync(vp, (off_t)0, fvdat->filesize, NULL,
                             UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
@@ -782,25 +781,18 @@ fuse_internal_strategy(vnode_t vp, buf_t bp);
 errno_t
 fuse_internal_strategy_buf(struct vnop_strategy_args *ap);
 
-
 /* xattr */
 
+#define COM_APPLE_ "com.apple."
+
 static __inline__
-int
+bool
 fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
 {
-    int ismpoption = fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEXATTR;
-
-    if (ismpoption && name) {
-#define COM_APPLE_ "com.apple."
-        if (bcmp(name, COM_APPLE_, sizeof(COM_APPLE_) - 1) == 0) {
-            return 1;
-        }
-    }
-
-    return 0;
+    return name &&
+           (fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEXATTR) &&
+           (bcmp(name, COM_APPLE_, sizeof(COM_APPLE_) - 1) == 0);
 }
-
 
 /* entity creation */
 

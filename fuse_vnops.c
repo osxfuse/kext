@@ -317,7 +317,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     struct fuse_dispatcher *fdip = &fdi;
 
     int err;
-    int gone_good_old = 0;
+    bool gone_good_old = false;
     void *next;
 
     struct fuse_data *data;
@@ -377,7 +377,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     goto bringup;
 
 good_old:
-    gone_good_old = 1;
+    gone_good_old = true;
     fmni.mode = mode; /* fvdat->flags; */
     fmni.rdev = 0;
     fmni.umask = 0;
@@ -1979,7 +1979,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * I once noted that sync() is not going to help here, but I think
      * I've forgotten the context. Need to think about this again.
      *
-     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0, UBC_PUSHDIRTY);
+     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL, UBC_PUSHDIRTY);
      */
 
     /*
@@ -2217,7 +2217,7 @@ ok:
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
-        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL,
                   UBC_PUSHALL | UBC_INVALIDATE);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
@@ -2231,7 +2231,7 @@ ok:
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
 #endif
-        ubc_msync(vp, (off_t)0, ubc_getsize(vp), (off_t*)0,
+        ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL,
                   UBC_PUSHALL | UBC_INVALIDATE);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
@@ -2587,7 +2587,6 @@ fuse_vnop_read(struct vnop_read_args *ap)
         struct fuse_dispatcher  fdi;
         struct fuse_filehandle *fufh = NULL;
         struct fuse_read_in     fri;
-        off_t                   rounded_iolength;
 
         fufh = &(fvdat->fufh[fufh_type]);
 
@@ -2608,8 +2607,6 @@ fuse_vnop_read(struct vnop_read_args *ap)
             /* Using existing fufh of type fufh_type. */
         }
 
-        rounded_iolength = (off_t)round_page_64(uio_offset(uio) +
-                                                uio_resid(uio));
         fdisp_init(&fdi, 0);
 
         while (uio_resid(uio) > 0) {
@@ -3684,7 +3681,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
     offset = original_offset;
 
     if (original_resid == 0) {
-        return E_NONE;
+        return 0;
     }
 
     if (original_offset < 0) {

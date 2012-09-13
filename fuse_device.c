@@ -14,6 +14,8 @@
 #include <fuse_ioctl.h>
 
 #include <miscfs/devfs/devfs.h>
+#include <stdbool.h>
+#include <sys/queue.h>
 
 #if M_OSXFUSE_ENABLE_DSELECT
 #  include <sys/select.h>
@@ -23,11 +25,6 @@
 #define FUSE_DEVICE_GLOBAL_UNLOCK() fuse_lck_mtx_unlock(fuse_device_mutex)
 #define FUSE_DEVICE_LOCAL_LOCK(d)   fuse_lck_mtx_lock((d)->mtx)
 #define FUSE_DEVICE_LOCAL_UNLOCK(d) fuse_lck_mtx_unlock((d)->mtx)
-
-#define TAILQ_FOREACH_SAFE(var, head, field, tvar)           \
-        for ((var) = TAILQ_FIRST((head));                    \
-            (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
-            (var) = (tvar))
 
 static int    fuse_cdev_major          = -1;
 static UInt32 fuse_interface_available = FALSE;
@@ -55,7 +52,7 @@ fuse_device_get(dev_t dev)
     int unit = minor(dev);
 
     if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
-        return (fuse_device_t)0;
+        return NULL;
     }
 
     return FUSE_DEVICE_FROM_UNIT_FAST(unit);
@@ -102,6 +99,24 @@ fuse_device_close_final(fuse_device_t fdev)
         fdev->pid    = -1;
         fdev->random = 0;
     }
+}
+
+static __inline__
+void
+fuse_reject_answers(struct fuse_data *data)
+{
+    struct fuse_ticket *ftick;
+
+    fuse_lck_mtx_lock(data->aw_mtx);
+    while ((ftick = fuse_aw_pop(data))) {
+        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+        fticket_set_answered(ftick);
+        ftick->tk_aw_errno = ENOTCONN;
+        fuse_wakeup(ftick);
+        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+        fuse_ticket_release(ftick);
+    }
+    fuse_lck_mtx_unlock(data->aw_mtx);
 }
 
 /* /dev/osxfuseN implementation */
@@ -248,39 +263,15 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     data->dataflags &= ~FSESS_OPENED;
 
-    fuse_lck_mtx_lock(data->aw_mtx);
+    fuse_reject_answers(data);
 
 #if M_OSXFUSE_ENABLE_DSELECT
     selwakeup((struct selinfo*)&data->d_rsel);
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
-    if (data->mount_state == FM_MOUNTED) {
-
-        /* Uh-oh, the device is closing but we're still mounted. */
-
-        struct fuse_ticket *ftick;
-
-        while ((ftick = fuse_aw_pop(data))) {
-            fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-            fticket_set_answered(ftick);
-            ftick->tk_aw_errno = ENOTCONN;
-            fuse_wakeup(ftick);
-            fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-            fuse_ticket_release(ftick);
-        }
-
-        fuse_lck_mtx_unlock(data->aw_mtx);
-
-        /* Left mpdata for unmount to destroy. */
-
-    } else {
-
+    if (data->mount_state == FM_NOTMOUNTED) {
         /* We're not mounted. Can destroy mpdata. */
-
-        fdev->data   = NULL;
-        fdev->pid    = -1;
-        fdev->random = 0;
-        fdata_destroy(data);
+        fuse_device_close_final(fdev);
     }
 
     FUSE_DEVICE_LOCAL_UNLOCK(fdev);
@@ -304,13 +295,15 @@ int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int err = 0;
+    bool force = false;
     int i;
+
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
 
     struct fuse_device *fdev;
     struct fuse_data   *data;
-    struct fuse_ticket *ftick;
+    struct fuse_ticket *ftick = NULL;
 
     fuse_trace_printf_func();
 
@@ -321,96 +314,91 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     data = fdev->data;
 
-again:
+    /* The (non-)blocking read loop */
     fuse_lck_mtx_lock(data->ms_mtx);
-
-    /* The read loop (outgoing messages to the user daemon). */
-
-again_locked:
-    if (fdata_dead_get(data)) {
-        fuse_lck_mtx_unlock(data->ms_mtx);
-        return ENODEV;
-    }
-
-    if (!(ftick = fuse_ms_pop(data))) {
-        if (ioflag & IO_NDELAY) {
-            fuse_lck_mtx_unlock(data->ms_mtx);
-            return EAGAIN;
+    while (!ftick) {
+        if (fdata_dead_get(data)) {
+            err = ENODEV;
         }
-        err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
-        if (err != 0) {
+        if (err) {
             fuse_lck_mtx_unlock(data->ms_mtx);
-            return (fdata_dead_get(data) ? ENODEV : err);
+            return err;
         }
+
         ftick = fuse_ms_pop(data);
+        if (!ftick) {
+            if (ioflag & IO_NDELAY) {
+                err = EAGAIN;
+            } else {
+                err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
+            }
+        }
     }
-
-    if (!ftick) {
-        goto again_locked;
-    }
-
     fuse_lck_mtx_unlock(data->ms_mtx);
 
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-    if (fticket_answered(ftick)) {
-        fuse_remove_callback(ftick);
-
-        if (ftick->tk_interrupt) {
-            struct fuse_ticket *interrupt = ftick->tk_interrupt;
-
-            fuse_internal_interrupt_remove(interrupt);
-
-            /* Release interrupt ticket retained in fuse_internal_interrupt_send */
-            ftick->tk_interrupt = NULL;
-            fuse_ticket_release(interrupt);
-        }
-
-        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-        fuse_ticket_release(ftick);
-
-        goto again;
-    }
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-
-    if (fdata_dead_get(data)) {
-         if (ftick) {
-             fuse_ticket_release(ftick);
-         }
-         return ENODEV;
+    if (fticket_opcode(ftick) == FUSE_DESTROY) {
+        /*
+         * The file system is in the process of being destroyed. We need to
+         * make sure no further messages are sent to the FUSE server, otherwise
+         * might crash due to a segementation fault.
+         */
+        force = fdata_set_dead(data);
     }
 
+    /* Handle different message types */
     switch (ftick->tk_ms_type) {
+        case FT_M_BUF:
+            buf[1]    = ftick->tk_ms_bufdata;
+            buflen[1] = ftick->tk_ms_bufsize;
 
-    case FT_M_FIOV:
-        buf[0]    = ftick->tk_ms_fiov.base;
-        buflen[0] = ftick->tk_ms_fiov.len;
-        break;
+        case FT_M_FIOV:
+            buf[0]    = ftick->tk_ms_fiov.base;
+            buflen[0] = ftick->tk_ms_fiov.len;
+            break;
 
-    case FT_M_BUF:
-        buf[0]    = ftick->tk_ms_fiov.base;
-        buflen[0] = ftick->tk_ms_fiov.len;
-        buf[1]    = ftick->tk_ms_bufdata;
-        buflen[1] = ftick->tk_ms_bufsize;
-        break;
-
-    default:
-        panic("OSXFUSE: unknown message type for ticket %p", ftick);
+        default:
+            panic("OSXFUSE: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
     }
 
+    /* Transfer the ticket's data to user space */
     for (i = 0; buf[i]; i++) {
         if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-            data->dataflags |= FSESS_DEAD;
+            fdata_set_dead(data);
             err = ENODEV;
-            break;
+            goto out;
         }
-
         err = uiomove(buf[i], (int)buflen[i], uio);
-
         if (err) {
             break;
         }
     }
 
+    if (force) {
+        /* Send message without performing additional checks */
+        goto out;
+    }
+
+    /*
+     * Filter out tickets, that have been marked as answered by returning EINTR.
+     * In case this ticket has been interrupted drop the interrrupt ticket.
+     */
+    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    if (fticket_answered(ftick)) {
+        fuse_remove_callback(ftick);
+        err = EINTR;
+
+        if (ftick->tk_interrupt) {
+            /* Set interrupt ticket to answered and remove its callback */
+            fuse_internal_interrupt_remove(ftick->tk_interrupt);
+        }
+    }
+    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+
+    if (fdata_dead_get(data)) {
+        err = ENODEV;
+    }
+
+out:
     fuse_ticket_release(ftick);
     return err;
 }
@@ -438,9 +426,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return EINVAL;
     }
 
-    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header),
-                       uio))
-        != 0) {
+    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header), uio))) {
         return err;
     }
 
@@ -465,13 +451,13 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         err = fuse_ipc_notify_handler(data, ohead.error, uio);
     } else {
         struct fuse_ticket *x_ftick;
-        int found = 0;
+        bool found = false;
 
         fuse_lck_mtx_lock(data->aw_mtx);
 
         TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
             if (ftick->tk_unique == ohead.unique) {
-                found = 1;
+                found = true;
                 fuse_aw_remove(ftick);
                 break;
             }
@@ -770,7 +756,9 @@ int
 fuse_device_kill(int unit, struct proc *p)
 {
     int error = ENOENT;
+
     struct fuse_device *fdev;
+    struct fuse_data   *data;
 
     if ((unit < 0) || (unit >= OSXFUSE_NDEVICES)) {
         return EINVAL;
@@ -783,31 +771,19 @@ fuse_device_kill(int unit, struct proc *p)
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
-    if (fdev->data) {
+    data = fdev->data;
+    if (data) {
         error = EPERM;
         if (p) {
             kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
+                (fuse_match_cred(data->daemoncred, request_cred) == 0)) {
 
                 /* The following can block. */
-                fdata_set_dead(fdev->data);
+                fdata_set_dead(data);
 
+                fuse_reject_answers(data);
                 error = 0;
-
-                fuse_lck_mtx_lock(fdev->data->aw_mtx);
-                {
-                    struct fuse_ticket *ftick;
-                    while ((ftick = fuse_aw_pop(fdev->data))) {
-                        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
-                        fticket_set_answered(ftick);
-                        ftick->tk_aw_errno = ENOTCONN;
-                        fuse_wakeup(ftick);
-                        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
-                        fuse_ticket_release(ftick);
-                    }
-                }
-                fuse_lck_mtx_unlock(fdev->data->aw_mtx);
             }
             kauth_cred_unref(&request_cred);
         }
@@ -837,9 +813,9 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
 
-    if (fdev->data) {
-
-        mount_t mp = fdev->data->mp;
+    struct fuse_data *data = fdev->data;
+    if (data) {
+        mount_t mp = data->mp;
 
         if (vfs_busy(mp, LK_NOWAIT)) {
             FUSE_DEVICE_LOCAL_UNLOCK(fdev);
@@ -850,8 +826,8 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
         if (p) {
             kauth_cred_t request_cred = kauth_cred_proc_ref(p);
             if ((kauth_cred_getuid(request_cred) == 0) ||
-                (fuse_match_cred(fdev->data->daemoncred, request_cred) == 0)) {
-                fuse_internal_print_vnodes(fdev->data->mp);
+                (fuse_match_cred(data->daemoncred, request_cred) == 0)) {
+                fuse_internal_print_vnodes(mp);
                 error = 0;
             }
             kauth_cred_unref(&request_cred);

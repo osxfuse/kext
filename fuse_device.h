@@ -15,8 +15,6 @@ struct fuse_data;
 struct fuse_device;
 typedef struct fuse_device *fuse_device_t;
 
-#define FUSE_DEVICE_NULL (fuse_device_t)0
-
 /* Global */
 
 int fuse_devices_start(void);

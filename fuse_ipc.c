@@ -181,7 +181,9 @@ fticket_refresh(struct fuse_ticket *ftick)
     ftick->tk_aw_type = FT_A_FIOV;
 
     ftick->tk_flag = 0;
+#ifdef FUSE_TRACE_TICKET
     ftick->tk_age++;
+#endif
     ftick->tk_interrupt = NULL;
 }
 
@@ -262,12 +264,12 @@ fticket_wait_answer(struct fuse_ticket *ftick)
             fuse_internal_interrupt_send(ftick);
         }
     }
-#endif
+#endif /* M_OSXFUSE_ENABLE_INTERRUPT */
 
 out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
-    if (!(err || fticket_answered(ftick))) {
+    if (!err && !fticket_answered(ftick)) {
         IOLog("OSXFUSE: requester was woken up but still no answer");
         err = ENXIO;
     }
@@ -444,7 +446,7 @@ fdata_set_dead(struct fuse_data *data)
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
-    if (data->mount_state & FM_MOUNTED) {
+    if (data->mount_state == FM_MOUNTED) {
         /*
          * We might be called before the volume is mounted. In this case f_fsid
          * is not set and signaling VD_DEAD causes a page fault kernel panic on
@@ -558,13 +560,13 @@ fuse_ticket_fetch(struct fuse_data *data)
 void
 fuse_ticket_drop(struct fuse_ticket *ftick)
 {
-    int die = 0;
+    bool die = false;
 
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||
         (ftick->tk_flag & FT_KILLL)) {
-        die = 1;
+        die = true;
     } else {
         fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
         fticket_refresh(ftick);
@@ -846,9 +848,9 @@ fuse_setup_ihead(struct fuse_in_header *ihead,
         ihead->gid = kauth_cred_getgid(vfs_context_ucred(context));
     } else {
         /* XXX: could use more thought */
-        ihead->pid = proc_pid((proc_t)current_proc());
-        ihead->uid = kauth_cred_getuid(kauth_cred_get());
-        ihead->gid = kauth_cred_getgid(kauth_cred_get());
+        ihead->pid = proc_selfpid();
+        ihead->uid = kauth_getuid();
+        ihead->gid = kauth_getgid();
     }
 }
 
@@ -1002,39 +1004,17 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     fuse_insert_message(fdip->tick);
 
     if ((err = fticket_wait_answer(fdip->tick))) { /* interrupted */
-
-#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
-        struct fuse_ticket *ftick;
-        unsigned            age;
-#endif
-
         fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
 
-        if (fticket_answered(fdip->tick)) {
-            /* IPC: already answered */
-            fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
-        } else {
-            /* IPC: explicitly setting to answered */
-#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
-            age = fdip->tick->tk_age;
-#endif
+        /*
+         * We are no longer interested in an answer, therefore mark the ticket
+         * as answered.
+         */
+        if (!fticket_answered(fdip->tick)) {
             fticket_set_answered(fdip->tick);
-            fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
-
-#ifndef DONT_TRY_HARD_PREVENT_IO_IN_VAIN
-            fuse_lck_mtx_lock(fdip->tick->tk_data->aw_mtx);
-            TAILQ_FOREACH(ftick, &fdip->tick->tk_data->aw_head, tk_aw_link) {
-                if (ftick == fdip->tick) {
-                    if (fdip->tick->tk_age == age) {
-                        /* Succeeded preventing I/O in vain */
-                        fdip->tick->tk_aw_handler = NULL;
-                    }
-                    break;
-                }
-            }
-            fuse_lck_mtx_unlock(fdip->tick->tk_data->aw_mtx);
-#endif /* DONT_TRY_HARD_PREVENT_IO_IN_VAIN */
         }
+
+        fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
 
         goto out;
     }

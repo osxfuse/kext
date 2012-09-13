@@ -31,6 +31,8 @@
 #  include <sys/ubc.h>
 #endif
 
+#include <stdbool.h>
+
 lck_attr_t     *fuse_lock_attr    = NULL;
 lck_grp_attr_t *fuse_group_attr   = NULL;
 lck_grp_t      *fuse_lock_group   = NULL;
@@ -124,11 +126,11 @@ fusefs_isordered(fusenode_t cp1, fusenode_t cp2)
         return 0;
     }
 
-    if (cp1 == NULL || cp2 == (fusenode_t )0xffffffff) {
+    if (cp1 == NULL || cp2 == (fusenode_t)0xffffffff) {
         return 1;
     }
 
-    if (cp2 == NULL || cp1 == (fusenode_t )0xffffffff) {
+    if (cp2 == NULL || cp1 == (fusenode_t)0xffffffff) {
         return 0;
     }
 
@@ -175,8 +177,8 @@ fusefs_lockfour(fusenode_t cp1, fusenode_t cp2, fusenode_t cp3, fusenode_t cp4,
         b[0] = cp4; b[1] = cp3;
     }
 
-    a[2] = (fusenode_t )0xffffffff;  /* sentinel value */
-    b[2] = (fusenode_t )0xffffffff;  /* sentinel value */
+    a[2] = (fusenode_t)0xffffffff;  /* sentinel value */
+    b[2] = (fusenode_t)0xffffffff;  /* sentinel value */
 
     /*
      * Build the lock list, skipping over duplicates
@@ -442,7 +444,7 @@ void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock)
 /* Currently not exported in header as we don't use it anywhere. */
 /* Can't find lck_mtx_try_lock in headers, so this function can't compile. */
 #if 0
-boolean_t fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
+bool fusefs_recursive_lock_try_lock(fusefs_recursive_lock *lock)
 {
     if (lock->thread == current_thread()) {
         if (lock->maxcount > 0 && lock->count >= lock->maxcount) {
@@ -476,7 +478,7 @@ void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock)
     }
 }
 
-boolean_t fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock)
+bool fusefs_recursive_lock_have_lock(fusefs_recursive_lock *lock)
 {
     return lock->thread == current_thread();
 }

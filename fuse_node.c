@@ -25,7 +25,6 @@ FSNodeScrub(struct fuse_vnode_data *fvdat)
     lck_rw_free(fvdat->nodelock, fuse_lock_group);
     lck_rw_free(fvdat->truncatelock, fuse_lock_group);
 #endif
-    fvdat->fMagic = kFSNodeBadMagic;
 }
 
 errno_t
@@ -52,9 +51,9 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
         return EINVAL;
     }
 
-    int      markroot   = (flags & FN_IS_ROOT) ? TRUE : FALSE;
-    uint64_t size       = (flags & FN_IS_ROOT) ? 0    : feo->attr.size;
-    uint32_t rdev       = (flags & FN_IS_ROOT) ? 0    : feo->attr.rdev;
+    int      markroot   = (flags & FN_IS_ROOT) ? 1 : 0;
+    uint64_t size       = (flags & FN_IS_ROOT) ? 0 : feo->attr.size;
+    uint32_t rdev       = (flags & FN_IS_ROOT) ? 0 : feo->attr.rdev;
     uint64_t generation = feo->generation;
 
     mntdata = fuse_get_mpdata(mp);
@@ -70,9 +69,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
         if (!fvdat->fInitialised) {
 
-            /* check */
-            fvdat->fMagic       = kFSNodeMagic;
-            fvdat->fInitialised = TRUE;
+            fvdat->fInitialised = true;
 
             /* self */
             fvdat->vp           = NULLVP; /* hold on */
@@ -161,7 +158,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
                 (void)rdev;
             }
 
-            params.vnfs_marksystem = FALSE;
+            params.vnfs_marksystem = 0;
             params.vnfs_cnp        = NULL;
             params.vnfs_flags      = VNFS_NOCACHE | VNFS_CANTCACHE;
             params.vnfs_filesize   = size;
@@ -178,7 +175,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
         }
 
         if (err == 0) {
-            if (markroot == TRUE) {
+            if (markroot) {
                 fvdat->parentvp = vn;
             } else {
                 fvdat->parentvp = dvp;

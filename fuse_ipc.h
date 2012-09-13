@@ -60,7 +60,9 @@ struct fuse_ticket {
     uint64_t                     tk_unique;
     struct fuse_data            *tk_data;
     int                          tk_flag;
+#ifdef FUSE_TRACE_TICKET
     uint32_t                     tk_age;
+#endif
     uint32_t                     tk_ref_count;
     struct fuse_ticket          *tk_interrupt;
 
@@ -127,7 +129,7 @@ fticket_opcode(struct fuse_ticket *ftick)
 
 int fticket_pull(struct fuse_ticket *ftick, uio_t uio);
 
-enum mount_state { FM_NOTMOUNTED, FM_MOUNTED };
+enum mount_state { FM_NOTMOUNTED, FM_MOUNTED, FM_UNMOUNTING };
 
 struct fuse_abi_version {
     uint32_t major;
