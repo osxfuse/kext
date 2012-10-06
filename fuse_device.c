@@ -293,7 +293,6 @@ int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int err = 0;
-    bool force = false;
     int i;
 
     size_t buflen[3];
@@ -334,15 +333,6 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
     }
     fuse_lck_mtx_unlock(data->ms_mtx);
 
-    if (fticket_opcode(ftick) == FUSE_DESTROY) {
-        /*
-         * The file system is in the process of being destroyed. We need to
-         * make sure no further messages are sent to the FUSE server, otherwise
-         * might crash due to a segementation fault.
-         */
-        force = fdata_set_dead(data);
-    }
-
     /* Handle different message types */
     switch (ftick->tk_ms_type) {
         case FT_M_BUF:
@@ -369,11 +359,6 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
         if (err) {
             break;
         }
-    }
-
-    if (force) {
-        /* Send message without performing additional checks */
-        goto out;
     }
 
     /*
@@ -420,6 +405,11 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return ENXIO;
     }
 
+    data = fdev->data;
+    if (fdata_dead_get(data)) {
+        return ENOTCONN;
+    }
+    
     if (uio_resid(uio) < (user_ssize_t)sizeof(struct fuse_out_header)) {
         return EINVAL;
     }
@@ -444,10 +434,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 
     /* end audit */
 
-    data = fdev->data;
-
     fuse_lck_mtx_lock(data->aw_mtx);
-
     TAILQ_FOREACH_SAFE(ftick, &data->aw_head, tk_aw_link, x_ftick) {
         if (ftick->tk_unique == ohead.unique) {
             found = true;
@@ -455,7 +442,6 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
             break;
         }
     }
-
     fuse_lck_mtx_unlock(data->aw_mtx);
 
     if (found) {
@@ -463,9 +449,8 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
             memcpy(&ftick->tk_aw_ohead, &ohead, sizeof(ohead));
             err = ftick->tk_aw_handler(ftick, uio);
         }
+
         fuse_ticket_release(ftick);
-    } else {
-        /* ticket has no response handler */
     }
 
     return err;
