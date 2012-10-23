@@ -1126,8 +1126,9 @@ fuse_vnop_link(struct vnop_link_args *ap)
 
     struct vnode_attr *vap = VTOVA(vp);
 
+    vnode_t tvp = NULL;
+
     struct fuse_dispatcher fdi;
-    struct fuse_entry_out *feo;
     struct fuse_link_in    fli;
 
     int err;
@@ -1154,21 +1155,23 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_internal_newentry_makerequest(vnode_mount(tdvp), VTOI(tdvp), cnp,
                                        FUSE_LINK, &fli, sizeof(fli), &fdi,
                                        context);
-    if ((err = fdisp_wait_answ(&fdi))) {
-        return err;
-    }
-
-    feo = fdi.answ;
-
-    err = fuse_internal_checkentry(feo, vnode_vtype(vp));
-    fuse_ticket_release(fdi.tick);
+    err = fuse_internal_newentry_core(tdvp, &tvp, cnp, vnode_vtype(vp), &fdi,
+                                      context);
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
 
-    if (err == 0) {
+    if (!err) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+        fuse_biglock_unlock(data->biglock);
+#endif
+        vnode_put(tvp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+
         FUSE_KNOTE(vp, NOTE_LINK);
         FUSE_KNOTE(tdvp, NOTE_WRITE);
-        VTOFUD(vp)->nlookup++;
     }
 
     return err;
@@ -1509,8 +1512,8 @@ calldaemon:
                 *vpp = dvp;
             }
         } else {
-            if ((err  = fuse_vget_i(&vp, 0 /* flags */, feo, cnp, dvp,
-                                    mp, context))) {
+            if ((err = fuse_vget_i(&vp, 0 /* flags */, feo, cnp, dvp,
+                                   mp, context))) {
                 goto out;
             }
             *vpp = vp;
