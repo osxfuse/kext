@@ -50,7 +50,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     enum vtype vtyp = IFTOVT(feo->attr.mode);
 
-    if ((vtyp >= VBAD) || (vtyp < 0) || (vtyp == VNON)) {
+    if ((vtyp >= VBAD) || (vtyp == VNON)) {
         return EINVAL;
     }
 

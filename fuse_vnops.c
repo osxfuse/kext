@@ -394,9 +394,8 @@ bringup:
         goto undo;
     }
 
-    err = FSNodeGetOrCreateFileVNodeByID(
-              vpp, (gone_good_old) ? 0 : FN_CREATING,
-              feo, mp, dvp, context, NULL /* oflags */);
+    err = fuse_vget_i(vpp, (gone_good_old) ? 0 : FN_CREATING, feo, cnp, dvp, mp,
+                      context);
     if (err) {
         if (gone_good_old) {
             fuse_internal_forget_send(mp, context, feo->nodeid, 1, fdip);
