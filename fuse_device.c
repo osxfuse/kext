@@ -409,7 +409,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     if (fdata_dead_get(data)) {
         return ENOTCONN;
     }
-    
+
     if (uio_resid(uio) < (user_ssize_t)sizeof(struct fuse_out_header)) {
         return EINVAL;
     }
