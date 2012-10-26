@@ -275,7 +275,7 @@ fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 #endif
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
     bool biglock_locked = fuse_biglock_have_lock(data->biglock);
 
     if (biglock_locked) {
