@@ -399,9 +399,8 @@ bringup:
         goto undo;
     }
 
-    err = FSNodeGetOrCreateFileVNodeByID(
-              vpp, (gone_good_old) ? 0 : FN_CREATING,
-              &feo, mp, dvp, context, NULL /* oflags */);
+    err = fuse_vget_i(vpp, (gone_good_old) ? 0 : FN_CREATING, &feo, cnp, dvp,
+                      mp, context);
     if (err) {
         if (gone_good_old) {
             fuse_internal_forget_send(mp, context, feo.nodeid, 1, fdip);
@@ -1250,8 +1249,9 @@ fuse_vnop_link(struct vnop_link_args *ap)
 
     struct vnode_attr *vap = VTOVA(vp);
 
+    vnode_t tvp = NULL;
+
     struct fuse_dispatcher  fdi;
-    struct fuse_entry_out   feo;
     struct fuse_link_in     fli;
     struct fuse_data       *data;
 
@@ -1283,21 +1283,22 @@ fuse_vnop_link(struct vnop_link_args *ap)
                                        fuse_abi_sizeof_p(fuse_link_in),
                                        fuse_abi_in_p(fuse_link_in),
                                        &fdi, context);
-    if ((err = fdisp_wait_answ(&fdi))) {
-        return err;
-    }
-
-    fuse_abi_out(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
-
-    err = fuse_internal_checkentry(&feo, vnode_vtype(vp));
-    fuse_ticket_release(fdi.tick);
+    err = fuse_internal_newentry_core(tdvp, &tvp, cnp, vnode_vtype(vp), &fdi,
+                                      context);
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
 
-    if (err == 0) {
+    if (!err) {
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
+        vnode_put(tvp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
+
         FUSE_KNOTE(vp, NOTE_LINK);
         FUSE_KNOTE(tdvp, NOTE_WRITE);
-        VTOFUD(vp)->nlookup++;
     }
 
     return err;

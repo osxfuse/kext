@@ -682,9 +682,8 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     /*
      * Set mount state to FM_UNMOUNTING.
      *
-     * Note: fuse_device_read will call fdata_set_dead for us when sending the
-     * FUSE_DESTROY message. fdata_set_dead will signal VQ_DEAD if it is called
-     * for a volume, that is still mounted.
+     * Note: fdata_set_dead will signal VQ_DEAD if it is called for a volume,
+     * that is still mounted.
      */
     data->mount_state = FM_UNMOUNTING;
 
@@ -698,6 +697,8 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         }
 
         /* Note that dounmount() signals a VQ_UNMOUNT VFS event */
+
+        fdata_set_dead(data);
     }
 
     vfs_setfsprivate(mp, NULL);

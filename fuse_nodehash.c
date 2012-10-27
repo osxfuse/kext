@@ -1006,7 +1006,7 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
     assert(gHashMutex != NULL);
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-    bool bl_locked;
+    bool biglock_locked;
     mntdata = fuse_device_get_mpdata(dev);
 #endif
     needsUnlock = true;
@@ -1047,14 +1047,14 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
              * called by notification handlers that do not hold biglock.
              * Trying to unlock it in this case would result in a kernel panic.
              */
-            bl_locked = fuse_biglock_have_lock(mntdata->biglock);
-            if (bl_locked) {
+            biglock_locked = fuse_biglock_have_lock(mntdata->biglock);
+            if (biglock_locked) {
                 fuse_biglock_unlock(mntdata->biglock);
             }
-#endif
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
             err = vnode_getwithvid(candidateVN, vid);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-            if (bl_locked) {
+            if (biglock_locked) {
                 fuse_biglock_lock(mntdata->biglock);
             }
 #endif

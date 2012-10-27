@@ -698,11 +698,6 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
     enum fuse_opcode opcode;
 
     data = ftick->tk_data;
-
-    if (fdata_dead_get(data)) {
-        return ENOTCONN;
-    }
-
     opcode = fticket_opcode(ftick);
 
     switch (opcode) {

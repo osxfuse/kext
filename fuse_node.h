@@ -158,25 +158,13 @@ fuse_vget_i(vnode_t               *vpp,
 
 /* Name cache wrappers */
 
-static __inline__
+__inline__
 void
-fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
-{
-#if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
-#endif
-    return cache_enter(dvp, vp, cnp);
-}
+fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp);
 
-static __inline__
+__inline__
 void
-fuse_vncache_purge(vnode_t vp)
-{
-#if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache purge vp=%p\n", vp);
-#endif
-    return cache_purge(vp);
-}
+fuse_vncache_purge(vnode_t vp);
 
 __inline__
 int

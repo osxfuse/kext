@@ -47,7 +47,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
     enum vtype vtyp = IFTOVT(feo->attr.mode);
 
-    if ((vtyp >= VBAD) || (vtyp < 0) || (vtyp == VNON)) {
+    if ((vtyp >= VBAD) || (vtyp == VNON)) {
         return EINVAL;
     }
 
@@ -264,27 +264,75 @@ fuse_vget_i(vnode_t               *vpp,
 }
 
 __inline__
+void
+fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
+{
+#if FUSE_TRACE_VNCACHE
+    IOLog("OSXFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
+#endif
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
+    bool biglock_locked = fuse_biglock_have_lock(data->biglock);
+
+    if (biglock_locked) {
+        fuse_biglock_unlock(data->biglock);
+    }
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
+    cache_enter(dvp, vp, cnp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    if (biglock_locked) {
+        fuse_biglock_lock(data->biglock);
+    }
+#endif
+}
+
+__inline__
+void
+fuse_vncache_purge(vnode_t vp)
+{
+#if FUSE_TRACE_VNCACHE
+    IOLog("OSXFUSE: cache purge vp=%p\n", vp);
+#endif
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    bool biglock_locked = fuse_biglock_have_lock(data->biglock);
+
+    if (biglock_locked) {
+        fuse_biglock_unlock(data->biglock);
+    }
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
+    cache_purge(vp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    if (biglock_locked) {
+        fuse_biglock_lock(data->biglock);
+    }
+#endif
+}
+
+__inline__
 int
 fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 {
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-    struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
-    bool bl_locked;
-
     /*
      * Make sure that biglock is actually held by the thread calling us before
      * trying to unlock it. fuse_vncache_lookup is called by notification
      * handlers that do not hold biglock. Trying to unlock it in this case would
      * result in a kernel panic.
      */
-    bl_locked = fuse_biglock_have_lock(data->biglock);
-    if (bl_locked) {
+
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(dvp));
+    bool biglock_locked = fuse_biglock_have_lock(data->biglock);
+
+    if (biglock_locked) {
         fuse_biglock_unlock(data->biglock);
     }
-#endif
+#endif /* M_OSXFUSE_ENABLE_BIG_LOCK */
     int ret = cache_lookup(dvp, vpp, cnp);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-    if (bl_locked) {
+    if (biglock_locked) {
         fuse_biglock_lock(data->biglock);
     }
 #endif
