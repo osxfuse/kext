@@ -548,8 +548,9 @@ fuse_devices_stop(void)
             fuse_interface_available = TRUE;
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
-            IOLog("OSXFUSE: /dev/osxfuse%d is still active (pid=%d %s)\n",
-                  i, fuse_device_table[i].pid, p_comm);
+
+            IOLog("OSXFUSE: /dev/" OSXFUSE_DEVICE_BASENAME "%d is still active "
+                  "(pid=%d %s)\n", i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
 
@@ -558,8 +559,8 @@ fuse_devices_stop(void)
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
             /* The pid can't possibly be active here. */
-            IOLog("OSXFUSE: /dev/osxfuse%d has a lingering mount (pid=%d, %s)\n",
-                  i, fuse_device_table[i].pid, p_comm);
+            IOLog("OSXFUSE: /dev/" OSXFUSE_DEVICE_BASENAME "%d has a lingering "
+                  "mount (pid=%d, %s)\n", i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
     }

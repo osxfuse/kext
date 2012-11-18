@@ -453,9 +453,9 @@ enum osxfuse_notification {
 typedef enum osxfuse_notification osxfuse_notification_t;
 
 const char * const osxfuse_notification_names[] = {
-    "kOSXFUSEInitCompleted", // NOTIFICATION_INIT_COMPLETED
-    "kOSXFUSEInitTimedOut",  // NOTIFICATION_INIT_TIMED_OUT
-    "kOSXFUSEMount"          // NOTIFICATION_MOUNT
+    "k" OSXFUSE_DISPLAY_NAME "InitCompleted", // NOTIFICATION_INIT_COMPLETED
+    "k" OSXFUSE_DISPLAY_NAME "InitTimedOut",  // NOTIFICATION_INIT_TIMED_OUT
+    "k" OSXFUSE_DISPLAY_NAME "Mount"          // NOTIFICATION_MOUNT
 };
 
 const char * const osxfuse_notification_object = OSXFUSE_IDENTIFIER;
@@ -464,7 +464,7 @@ const char * const osxfuse_notification_object = OSXFUSE_IDENTIFIER;
 #define OSXFUSE_MACFUSE_MODE_ENV "OSXFUSE_MACFUSE_MODE"
 
 #define MACFUSE_NOTIFICATION_OBJECT \
-"com.google.filesystems.fusefs.unotifications"
+    "com.google.filesystems.fusefs.unotifications"
 
 const char * const macfuse_notification_names[] = {
     MACFUSE_NOTIFICATION_OBJECT ".inited",       // NOTIFICATION_INIT_COMPLETED
@@ -881,7 +881,8 @@ main(int argc, char **argv)
 
     result = ioctl(fd, FUSEDEVIOCGETRANDOM, &drandom);
     if (result) {
-        errx(EX_UNAVAILABLE, "failed to negotiate with /dev/osxfuse%d", dindex);
+        errx(EX_UNAVAILABLE, "failed to negotiate with /dev/"
+             OSXFUSE_DEVICE_BASENAME "%d", dindex);
     }
 
     args.altflags       = altflags;
@@ -901,9 +902,11 @@ main(int argc, char **argv)
 
     if (!fsname) {
         if (daemon_name) {
-            snprintf(args.fsname, MAXPATHLEN, "%s@osxfuse%d", daemon_name, dindex);
+            snprintf(args.fsname, MAXPATHLEN, "%s@" OSXFUSE_DEVICE_BASENAME
+                     "%d", daemon_name, dindex);
         } else {
-            snprintf(args.fsname, MAXPATHLEN, "instance@osxfuse%d", dindex);
+            snprintf(args.fsname, MAXPATHLEN, "instance@"
+                     OSXFUSE_DEVICE_BASENAME "%d", dindex);
         }
     } else {
         snprintf(args.fsname, MAXPATHLEN, "%s", fsname);
@@ -933,7 +936,8 @@ main(int argc, char **argv)
     result = mount(OSXFUSE_FS_TYPE, mntpath, mntflags, (void *)&args);
 
     if (result < 0) {
-        err(EX_OSERR, "failed to mount %s@/dev/osxfuse%d", mntpath, dindex);
+        err(EX_OSERR, "failed to mount %s@/dev/" OSXFUSE_DEVICE_BASENAME "%d",
+            mntpath, dindex);
     } else {
         const char *dict[][2] = { { kFUSEMountPathKey, mntpath } };
         post_notification(NOTIFICATION_MOUNT, dict, 1);

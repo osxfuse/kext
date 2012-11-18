@@ -1,4 +1,4 @@
-#include "common/fuse_version.h"
+#include <fuse_version.h>
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -10,7 +10,7 @@
 	<key>CFBundleVersion</key>
 	<string>OSXFUSE_VERSION_LITERAL</string>
 	<key>ProjectName</key>
-	<string>OSXFUSE_FS_TYPE_LITERAL</string>
+	<string>OSXFUSE_DISPLAY_NAME_LITERAL</string>
 	<key>SourceVersion</key>
 	<string>10000</string>
 </dict>

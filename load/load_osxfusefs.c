@@ -49,7 +49,6 @@
 
 #if OSXFUSE_ENABLE_MACFUSE_MODE
 #  define OSXFUSE_MACFUSE_MODE_ENV  "OSXFUSE_MACFUSE_MODE"
-#  define OSXFUSE_KEXT_MACFUSE_MODE "vfs.generic.osxfuse.control.macfuse_mode"
 #endif
 
 
@@ -228,7 +227,7 @@ kext_loaded:
             int32_t enabled = 1;
             size_t  length = 4;
 
-            (void)sysctlbyname(OSXFUSE_KEXT_MACFUSE_MODE, NULL, 0, &enabled,
+            (void)sysctlbyname(SYSCTL_OSXFUSE_MACFUSE_MODE, NULL, 0, &enabled,
                                length);
         }
     }

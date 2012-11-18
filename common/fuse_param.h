@@ -8,6 +8,8 @@
 #ifndef _FUSE_PARAM_H_
 #define _FUSE_PARAM_H_
 
+#include <fuse_version.h>
+
 #include <AvailabilityMacros.h>
 
 /* Compile-time tunables (M_OSXFUSE*) */
@@ -38,7 +40,7 @@
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
    /*
-    * The options M_OSXFUSE_ENABLE_BIG_LOCK and M_OSXFUSE_ENABLE_HUGE_LOCK are
+    * Options M_OSXFUSE_ENABLE_BIG_LOCK and M_OSXFUSE_ENABLE_HUGE_LOCK are
     * mutually exclusive.
     */
 #  define M_OSXFUSE_ENABLE_HUGE_LOCK           0
@@ -56,8 +58,12 @@
 
 #define MACOSX_ADMIN_GROUP_NAME            "admin"
 
-#define SYSCTL_OSXFUSE_TUNABLES_ADMIN      "vfs.generic.osxfuse.tunables.admin_group"
-#define SYSCTL_OSXFUSE_VERSION_NUMBER      "vfs.generic.osxfuse.version.number"
+#define SYSCTL_OSXFUSE_TUNABLES_ADMIN      "vfs.generic." OSXFUSE_NAME ".tunables.admin_group"
+#define SYSCTL_OSXFUSE_VERSION_NUMBER      "vfs.generic." OSXFUSE_NAME ".version.number"
+
+#if OSXFUSE_ENABLE_MACFUSE_MODE
+#  define SYSCTL_OSXFUSE_MACFUSE_MODE      "vfs.generic." OSXFUSE_NAME ".control.macfuse_mode"
+#endif
 
 /* Paths */
 
@@ -81,7 +87,7 @@
  * device by default. If you change the prefix from the default to something
  * else, the user-space FUSE library will need to know about it too.
  */
-#define OSXFUSE_DEVICE_BASENAME            "osxfuse"
+#define OSXFUSE_DEVICE_BASENAME            OSXFUSE_NAME
 
 /*
  * This is the number of /dev/osxfuse<n> nodes we will create. <n> goes from

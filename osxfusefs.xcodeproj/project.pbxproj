@@ -508,7 +508,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "xcrun cpp -DOSXFUSE_BUILD_FLAVOR=\"$OSXFUSE_BUILD_FLAVOR\" -I\"$SRCROOT/common\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\nxcrun cpp -I\"$SRCROOT\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
+			shellScript = "xcrun cpp -DOSXFUSE_BUILD_FLAVOR=\"$OSXFUSE_BUILD_FLAVOR\" -I\"$SRCROOT/common\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\nxcrun cpp -I\"$SRCROOT/common\" -P \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -618,7 +618,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon -std=c99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
@@ -665,7 +665,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -Icommon -std=c99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
@@ -690,7 +690,7 @@
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
+				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=0";
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -707,7 +707,7 @@
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
+				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=0";
 				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
 			};
@@ -854,6 +854,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -892,6 +893,7 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_SHORT_ENUMS = NO;
