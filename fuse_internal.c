@@ -1706,6 +1706,22 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 
 /* fuse start/stop */
 
+static void
+fuse_internal_update_vfsstat(void *parameter, __unused wait_result_t wait_result)
+{
+    int err = 0;
+    struct fuse_data *data = (struct fuse_data *)parameter;
+
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
+    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
+    if (err) {
+        IOLog("OSXFUSE: failed to update vfsstat (err=%d)\n", err);
+    }
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
+    thread_terminate(current_thread());
+}
+
 __private_extern__
 int
 fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
@@ -1714,6 +1730,9 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     struct fuse_init_out fio;
     struct fuse_data *data = ftick->tk_data;
     struct fuse_abi_version *abi_version = DTOABI(data);
+
+    kern_return_t kr;
+    thread_t vfsstat_thread;
 
     fuse_trace_printf_func();
 
@@ -1764,12 +1783,18 @@ out:
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
-#if M_OSXFUSE_ENABLE_UNSUPPORTED
-    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
-    if (err) {
-        IOLog("OSXFUSE: failed to update vfsstat (err=%d)\n", err);
+    /*
+     * Update cached filesystem status information.
+     *
+     * Note: This needs to be done in a separate thread to prevent a deadlock
+     * in case FUSE server running in single-threaded mode.
+     */
+    kr = kernel_thread_start(fuse_internal_update_vfsstat, data, &vfsstat_thread);
+    if (kr != KERN_SUCCESS) {
+        IOLog("OSXFUSE: could not update cached filesystem status information\n");
+    } else {
+        thread_deallocate(vfsstat_thread);
     }
-#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
     return 0;
 }
