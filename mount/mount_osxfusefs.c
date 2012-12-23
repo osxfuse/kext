@@ -314,7 +314,7 @@ out:
 static __inline__ int
 fuse_to_fssubtype(void **target, void *value, void *fallback)
 {
-    char *name = getenv("MOUNT_FUSEFS_DAEMON_PATH");
+    char *name = getenv("MOUNT_OSXFUSEFS_DAEMON_PATH");
 
     *(uint32_t *)target = (uint32_t)FUSE_FSSUBTYPE_INVALID;
 
