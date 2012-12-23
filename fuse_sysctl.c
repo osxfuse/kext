@@ -18,7 +18,6 @@
 static lck_grp_t *osxfuse_lock_group  = NULL;
 static lck_mtx_t *osxfuse_sysctl_lock = NULL;
 
-static thread_t osxfuse_sysctl_macfuse_thread;
 static void osxfuse_thread_macfuse_mode(void *, wait_result_t);
 
 #endif /* OSXFUSE_ENABLE_MACFUSE_MODE */
@@ -211,12 +210,17 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
             if (fuse_macfuse_mode == val) {
                 lck_mtx_unlock(osxfuse_sysctl_lock);
             } else {
+                thread_t macfuse_mode_thread;
+
                 fuse_macfuse_mode = val;
 
                 kern_return_t kr;
-                kr = kernel_thread_start(osxfuse_thread_macfuse_mode, NULL, &osxfuse_sysctl_macfuse_thread);
+                kr = kernel_thread_start(osxfuse_thread_macfuse_mode, NULL,
+                                         &macfuse_mode_thread);
                 if (kr != KERN_SUCCESS) {
                     IOLog("OSXFUSE: could not change status of MacFUSE mode\n");
+                } else {
+                    thread_deallocate(thread);
                 }
 
                 // osxfuse_sysctl_lock is unlocked in osxfuse_thread_macfuse_mode
@@ -591,7 +595,7 @@ fuse_sysctl_macfuse_stop(void)
 }
 
 static void
-osxfuse_thread_macfuse_mode(__unused void * parameter, __unused wait_result_t wait_result)
+osxfuse_thread_macfuse_mode(__unused void *parameter, __unused wait_result_t wait_result)
 {
     if (fuse_macfuse_mode) {
         fuse_sysctl_macfuse_start();
@@ -633,7 +637,6 @@ fuse_sysctl_stop(void)
 #if OSXFUSE_ENABLE_MACFUSE_MODE
     lck_mtx_lock(osxfuse_sysctl_lock);
 
-    thread_deallocate(osxfuse_sysctl_macfuse_thread);
     if (fuse_macfuse_mode) {
         fuse_sysctl_macfuse_stop();
     }
