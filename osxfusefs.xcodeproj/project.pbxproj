@@ -6,57 +6,9 @@
 	objectVersion = 45;
 	objects = {
 
-/* Begin PBXAggregateTarget section */
-		435958D11511A2BA00B4D7F5 /* Helpers */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 435958D41511A2BA00B4D7F5 /* Build configuration list for PBXAggregateTarget "Helpers" */;
-			buildPhases = (
-			);
-			dependencies = (
-				435958DF15121DB300B4D7F5 /* PBXTargetDependency */,
-				435958D71511A2C500B4D7F5 /* PBXTargetDependency */,
-				435958D91511A2C800B4D7F5 /* PBXTargetDependency */,
-			);
-			name = Helpers;
-			productName = Helpers;
-		};
-		54C6DD290B5EE606002D9FD9 /* All */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 54C6DD330B5EE623002D9FD9 /* Build configuration list for PBXAggregateTarget "All" */;
-			buildPhases = (
-			);
-			dependencies = (
-				435958E115121DBE00B4D7F5 /* PBXTargetDependency */,
-				435958DD15121BB900B4D7F5 /* PBXTargetDependency */,
-			);
-			name = All;
-			productName = All;
-		};
-		54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 54C6DE680B5EEDBC002D9FD9 /* Build configuration list for PBXAggregateTarget "osxfusefs.fs" */;
-			buildPhases = (
-				54C6DE640B5EED9E002D9FD9 /* CopyFiles */,
-				54C6DE890B5F7315002D9FD9 /* ShellScript */,
-			);
-			dependencies = (
-			);
-			name = osxfusefs.fs;
-			productName = fusefs.fs;
-		};
-/* End PBXAggregateTarget section */
-
 /* Begin PBXBuildFile section */
-		435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435958DA15120F5500B4D7F5 /* CoreServices.framework */; };
-		437FB62F15E14EA700CFF17A /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 541780C00B6413CA003DE6C0 /* CoreFoundation.framework */; };
-		437FB63215E179A600CFF17A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 437FB63015E1798100CFF17A /* IOKit.framework */; };
 		43D6261A1538949F00303F1A /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D626181538949F00303F1A /* fuse_notify.c */; };
 		43D6261B1538949F00303F1A /* fuse_notify.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D626191538949F00303F1A /* fuse_notify.h */; };
-		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
-		540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966620C33B60B00F5E227 /* mount_osxfusefs.c */; };
-		540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966670C33B61A00F5E227 /* load_osxfusefs.c */; };
-		540966950C33B99A00F5E227 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 541780C00B6413CA003DE6C0 /* CoreFoundation.framework */; };
-		540966990C33B9A300F5E227 /* DiskArbitration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */; };
 		5409669F0C33BA2600F5E227 /* fuse_ioctl.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966520C33B5F500F5E227 /* fuse_ioctl.h */; };
 		540966A00C33BA2600F5E227 /* fuse_mount.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966530C33B5F500F5E227 /* fuse_mount.h */; };
 		540966A10C33BA2600F5E227 /* fuse_param.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966540C33B5F500F5E227 /* fuse_param.h */; };
@@ -88,87 +40,24 @@
 		540966BD0C33BA3900F5E227 /* fuse_vfsops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */; };
 		540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */; };
 		540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */; };
-		540966D20C33BB2700F5E227 /* osxfusefs.fs in CopyFiles */ = {isa = PBXBuildFile; fileRef = 540965B70C33B17400F5E227 /* osxfusefs.fs */; };
 		54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */; };
 		54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		435958D61511A2C500B4D7F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 54D47B7F0B4F610000A8FE1C;
-			remoteInfo = load_osxfusefs;
-		};
-		435958D81511A2C800B4D7F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 540966160C33B4CB00F5E227;
-			remoteInfo = mount_osxfusefs;
-		};
-		435958DC15121BB900B4D7F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 435958D11511A2BA00B4D7F5;
-			remoteInfo = Helpers;
-		};
-		435958DE15121DB300B4D7F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 54C6DE650B5EED9E002D9FD9;
-			remoteInfo = osxfusefs.fs;
-		};
-		435958E015121DBE00B4D7F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 32A4FEB80562C75700D090E7;
-			remoteInfo = osxfusefs;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		54C6DE640B5EED9E002D9FD9 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 16;
-			files = (
-				540966D20C33BB2700F5E227 /* osxfusefs.fs in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		433E5DC213B2D1B300A523B2 /* load_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = load_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
-		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
-		435958DA15120F5500B4D7F5 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
 		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
-		437FB63015E1798100CFF17A /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
 		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
-		540965B70C33B17400F5E227 /* osxfusefs.fs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = osxfusefs.fs; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
 		540966530C33B5F500F5E227 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_mount.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		540966540C33B5F500F5E227 /* fuse_param.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_param.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		540966550C33B5F500F5E227 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_version.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		5409665F0C33B60B00F5E227 /* getmntopts.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = getmntopts.c; sourceTree = "<group>"; };
-		540966610C33B60B00F5E227 /* mntopts.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mntopts.h; sourceTree = "<group>"; };
-		540966620C33B60B00F5E227 /* mount_osxfusefs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = mount_osxfusefs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		540966670C33B61A00F5E227 /* load_osxfusefs.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = load_osxfusefs.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		541780C00B6413CA003DE6C0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
 		5434066A0B79C3AA00471672 /* fuse_knote.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_knote.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		5434066B0B79C3AA00471672 /* fuse_knote.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_knote.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		549960D00EC093D800DDFCAD /* osxfusefs.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfusefs.exports; sourceTree = "<group>"; };
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DiskArbitration.framework; path = /System/Library/Frameworks/DiskArbitration.framework; sourceTree = "<absolute>"; };
 		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
 		54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_device.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_device.h; sourceTree = "<group>"; };
@@ -195,7 +84,6 @@
 		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = Info.plist; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kludges.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		D27513B306A6225300ADB3A4 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = /System/Library/Frameworks/Kernel.framework; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -203,25 +91,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		540966150C33B4CB00F5E227 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				540966950C33B99A00F5E227 /* CoreFoundation.framework in Frameworks */,
-				540966990C33B9A300F5E227 /* DiskArbitration.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		54D47B7E0B4F610000A8FE1C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				437FB62F15E14EA700CFF17A /* CoreFoundation.framework in Frameworks */,
-				435958DB15120F5500B4D7F5 /* CoreServices.framework in Frameworks */,
-				437FB63215E179A600CFF17A /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,19 +104,24 @@
 				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
 				540966510C33B5F500F5E227 /* Common */,
 				54C6DD780B5EEB44002D9FD9 /* Kernel Extension */,
-				540966330C33B54F00F5E227 /* Helpers */,
 				5409662C0C33B54300F5E227 /* Frameworks */,
 				433E5DC813B2D21900A523B2 /* Products */,
 			);
 			name = fusefs;
 			sourceTree = "<group>";
 		};
+		4331900E1693E27000DE73A9 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				54C6DDD80B5EEB44002D9FD9 /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		433E5DC813B2D21900A523B2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				433E5DC113B2D1B300A523B2 /* osxfusefs.kext */,
-				433E5DC213B2D1B300A523B2 /* load_osxfusefs */,
-				433E5DC413B2D1B300A523B2 /* mount_osxfusefs */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -255,23 +129,8 @@
 		5409662C0C33B54300F5E227 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				541780C00B6413CA003DE6C0 /* CoreFoundation.framework */,
-				435958DA15120F5500B4D7F5 /* CoreServices.framework */,
-				54BBC8F50B4C379500A17C8A /* DiskArbitration.framework */,
-				437FB63015E1798100CFF17A /* IOKit.framework */,
-				D27513B306A6225300ADB3A4 /* Kernel.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		540966330C33B54F00F5E227 /* Helpers */ = {
-			isa = PBXGroup;
-			children = (
-				540966660C33B61A00F5E227 /* load */,
-				5409665E0C33B60B00F5E227 /* mount */,
-				540965B70C33B17400F5E227 /* osxfusefs.fs */,
-			);
-			name = Helpers;
 			sourceTree = "<group>";
 		};
 		540966510C33B5F500F5E227 /* Common */ = {
@@ -286,30 +145,11 @@
 			path = ../common;
 			sourceTree = "<group>";
 		};
-		5409665E0C33B60B00F5E227 /* mount */ = {
-			isa = PBXGroup;
-			children = (
-				5409665F0C33B60B00F5E227 /* getmntopts.c */,
-				540966610C33B60B00F5E227 /* mntopts.h */,
-				540966620C33B60B00F5E227 /* mount_osxfusefs.c */,
-			);
-			path = mount;
-			sourceTree = "<group>";
-		};
-		540966660C33B61A00F5E227 /* load */ = {
-			isa = PBXGroup;
-			children = (
-				540966670C33B61A00F5E227 /* load_osxfusefs.c */,
-			);
-			path = load;
-			sourceTree = "<group>";
-		};
 		54C6DD780B5EEB44002D9FD9 /* Kernel Extension */ = {
 			isa = PBXGroup;
 			children = (
 				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
 				54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */,
-				54C6DDD80B5EEB44002D9FD9 /* Info.plist */,
 				54C6DDB70B5EEB44002D9FD9 /* fuse.h */,
 				54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */,
 				54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */,
@@ -339,6 +179,7 @@
 				54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */,
 				54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */,
 				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
+				4331900E1693E27000DE73A9 /* Supporting Files */,
 			);
 			name = "Kernel Extension";
 			sourceTree = "<group>";
@@ -398,40 +239,6 @@
 			productReference = 433E5DC113B2D1B300A523B2 /* osxfusefs.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
-		540966160C33B4CB00F5E227 /* mount_osxfusefs */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 540966210C33B4F800F5E227 /* Build configuration list for PBXNativeTarget "mount_osxfusefs" */;
-			buildPhases = (
-				540966140C33B4CB00F5E227 /* Sources */,
-				540966150C33B4CB00F5E227 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			comments = "Command-line utility that mounts MacFUSE file systems";
-			dependencies = (
-			);
-			name = mount_osxfusefs;
-			productName = mount_fusefs;
-			productReference = 433E5DC413B2D1B300A523B2 /* mount_osxfusefs */;
-			productType = "com.apple.product-type.tool";
-		};
-		54D47B7F0B4F610000A8FE1C /* load_osxfusefs */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 54D47B900B4F614B00A8FE1C /* Build configuration list for PBXNativeTarget "load_osxfusefs" */;
-			buildPhases = (
-				54D47B7D0B4F610000A8FE1C /* Sources */,
-				54D47B7E0B4F610000A8FE1C /* Frameworks */,
-			);
-			buildRules = (
-			);
-			comments = "Command-line utility that loads the MacFUSE kernel extension";
-			dependencies = (
-			);
-			name = load_osxfusefs;
-			productName = load_fusefs;
-			productReference = 433E5DC213B2D1B300A523B2 /* load_osxfusefs */;
-			productType = "com.apple.product-type.tool";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -453,12 +260,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				54C6DD290B5EE606002D9FD9 /* All */,
 				32A4FEB80562C75700D090E7 /* osxfusefs */,
-				435958D11511A2BA00B4D7F5 /* Helpers */,
-				54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */,
-				54D47B7F0B4F610000A8FE1C /* load_osxfusefs */,
-				540966160C33B4CB00F5E227 /* mount_osxfusefs */,
 			);
 		};
 /* End PBXProject section */
@@ -497,19 +299,6 @@
 			shellPath = /bin/sh;
 			shellScript = "if [[ \"${DEPLOYMENT_POSTPROCESSING}\" == \"YES\" ]]\nthen\n    source=\"${CONFIGURATION_BUILD_DIR}/${WRAPPER_NAME}\"\n    target=\"${CONFIGURATION_BUILD_DIR}/Debug/${WRAPPER_NAME}\"\n\n    if [[ -e \"${target}\" ]]\n    then\n        rm -rf \"${target}\"\n    fi\n    cp -PpR \"${source}\" \"${target}\"\nfi";
 		};
-		54C6DE890B5F7315002D9FD9 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "xcrun gcc -E -DOSXFUSE_BUILD_FLAVOR=\"$OSXFUSE_BUILD_FLAVOR\" -I\"$SRCROOT/common\" -P -x c \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist | $SED -e '/^#.*$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/Info.plist\nxcrun gcc -E -I\"$SRCROOT/common\" -P -x c \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist | $SED -e '/^#.*$/d' > \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new\n/bin/mv \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist.new \"$BUILT_PRODUCTS_DIR\"/\"$TARGET_NAME\"/Contents/version.plist";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -535,52 +324,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		540966140C33B4CB00F5E227 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				540966630C33B60B00F5E227 /* getmntopts.c in Sources */,
-				540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		54D47B7D0B4F610000A8FE1C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		435958D71511A2C500B4D7F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 54D47B7F0B4F610000A8FE1C /* load_osxfusefs */;
-			targetProxy = 435958D61511A2C500B4D7F5 /* PBXContainerItemProxy */;
-		};
-		435958D91511A2C800B4D7F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 540966160C33B4CB00F5E227 /* mount_osxfusefs */;
-			targetProxy = 435958D81511A2C800B4D7F5 /* PBXContainerItemProxy */;
-		};
-		435958DD15121BB900B4D7F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 435958D11511A2BA00B4D7F5 /* Helpers */;
-			targetProxy = 435958DC15121BB900B4D7F5 /* PBXContainerItemProxy */;
-		};
-		435958DF15121DB300B4D7F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 54C6DE650B5EED9E002D9FD9 /* osxfusefs.fs */;
-			targetProxy = 435958DE15121DB300B4D7F5 /* PBXContainerItemProxy */;
-		};
-		435958E115121DBE00B4D7F5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 32A4FEB80562C75700D090E7 /* osxfusefs */;
-			targetProxy = 435958E015121DBE00B4D7F5 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1DEB91C408733DAC0010E9CD /* Debug */ = {
@@ -713,219 +457,6 @@
 			};
 			name = Release;
 		};
-		435958D21511A2BA00B4D7F5 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Debug;
-		};
-		435958D31511A2BA00B4D7F5 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
-		540966220C33B4F800F5E227 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INSTALL_PATH = "$(HOME)/bin";
-				PRODUCT_NAME = mount_osxfusefs;
-			};
-			name = Debug;
-		};
-		540966230C33B4F800F5E227 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INSTALL_PATH = "$(HOME)/bin";
-				LINK_WITH_STANDARD_LIBRARIES = YES;
-				PRODUCT_NAME = mount_osxfusefs;
-				STRIP_INSTALLED_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		54C6DD340B5EE623002D9FD9 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				PRODUCT_NAME = All;
-				VERSIONING_SYSTEM = "";
-			};
-			name = Debug;
-		};
-		54C6DD350B5EE623002D9FD9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = "";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				PRODUCT_NAME = All;
-				VERSIONING_SYSTEM = "";
-			};
-			name = Release;
-		};
-		54C6DE690B5EEDBC002D9FD9 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				PRODUCT_NAME = osxfusefs.fs;
-			};
-			name = Debug;
-		};
-		54C6DE6A0B5EEDBC002D9FD9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				PRODUCT_NAME = osxfusefs.fs;
-			};
-			name = Release;
-		};
-		54D47B910B4F614B00A8FE1C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_SHORT_ENUMS = NO;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INSTALL_PATH = "$(HOME)/bin";
-				PRODUCT_NAME = load_osxfusefs;
-			};
-			name = Debug;
-		};
-		54D47B920B4F614B00A8FE1C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_C_LANGUAGE_STANDARD = c99;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_SHORT_ENUMS = NO;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = YES;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INSTALL_PATH = "$(HOME)/bin";
-				PRODUCT_NAME = load_osxfusefs;
-				STRIP_INSTALLED_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -943,51 +474,6 @@
 			buildConfigurations = (
 				1DEB91C808733DAC0010E9CD /* Debug */,
 				1DEB91C908733DAC0010E9CD /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		435958D41511A2BA00B4D7F5 /* Build configuration list for PBXAggregateTarget "Helpers" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				435958D21511A2BA00B4D7F5 /* Debug */,
-				435958D31511A2BA00B4D7F5 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		540966210C33B4F800F5E227 /* Build configuration list for PBXNativeTarget "mount_osxfusefs" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				540966220C33B4F800F5E227 /* Debug */,
-				540966230C33B4F800F5E227 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		54C6DD330B5EE623002D9FD9 /* Build configuration list for PBXAggregateTarget "All" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				54C6DD340B5EE623002D9FD9 /* Debug */,
-				54C6DD350B5EE623002D9FD9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		54C6DE680B5EEDBC002D9FD9 /* Build configuration list for PBXAggregateTarget "osxfusefs.fs" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				54C6DE690B5EEDBC002D9FD9 /* Debug */,
-				54C6DE6A0B5EEDBC002D9FD9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		54D47B900B4F614B00A8FE1C /* Build configuration list for PBXNativeTarget "load_osxfusefs" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				54D47B910B4F614B00A8FE1C /* Debug */,
-				54D47B920B4F614B00A8FE1C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
