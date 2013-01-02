@@ -1,4 +1,4 @@
-Of the 40 FUSE methods in FUSE API version 7.12, the following methods are
+Of the 40 FUSE methods in FUSE ABI version 7.12, the following methods are
 currently not supported at all on OSXFUSE:
 
 FUSE_GETLK	We use VFS-provided file locking instead.
