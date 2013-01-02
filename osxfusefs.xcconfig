@@ -1,4 +1,0 @@
-VALID_ARCHS[sdk=macosx10.5] = ppc i386
-VALID_ARCHS[sdk=macosx10.6] = i386 x86_64
-VALID_ARCHS[sdk=macosx10.7] = i386 x86_64
-VALID_ARCHS[sdk=macosx10.8] = x86_64

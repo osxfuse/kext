@@ -46,7 +46,6 @@
 
 /* Begin PBXFileReference section */
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		437490F413B190D9009EAA5E /* osxfusefs.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = osxfusefs.xcconfig; sourceTree = "<group>"; };
 		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
 		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
@@ -81,7 +80,7 @@
 		54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vfsops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDD80B5EEB44002D9FD9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = Info.plist; sourceTree = "<group>"; };
+		54C6DDD80B5EEB44002D9FD9 /* osxfusefs-Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = "osxfusefs-Info.plist"; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kludges.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 /* End PBXFileReference section */
@@ -100,10 +99,8 @@
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
-				437490F413B190D9009EAA5E /* osxfusefs.xcconfig */,
-				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
 				540966510C33B5F500F5E227 /* Common */,
-				54C6DD780B5EEB44002D9FD9 /* Kernel Extension */,
+				54C6DD780B5EEB44002D9FD9 /* osxfusefs */,
 				5409662C0C33B54300F5E227 /* Frameworks */,
 				433E5DC813B2D21900A523B2 /* Products */,
 			);
@@ -113,7 +110,8 @@
 		4331900E1693E27000DE73A9 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				54C6DDD80B5EEB44002D9FD9 /* Info.plist */,
+				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
+				54C6DDD80B5EEB44002D9FD9 /* osxfusefs-Info.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -145,7 +143,7 @@
 			path = ../common;
 			sourceTree = "<group>";
 		};
-		54C6DD780B5EEB44002D9FD9 /* Kernel Extension */ = {
+		54C6DD780B5EEB44002D9FD9 /* osxfusefs */ = {
 			isa = PBXGroup;
 			children = (
 				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
@@ -181,7 +179,7 @@
 				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
 				4331900E1693E27000DE73A9 /* Supporting Files */,
 			);
-			name = "Kernel Extension";
+			name = osxfusefs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -329,7 +327,6 @@
 /* Begin XCBuildConfiguration section */
 		1DEB91C408733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -361,8 +358,8 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=c99";
+				INFOPLIST_FILE = "osxfusefs-Info.plist";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
@@ -370,13 +367,16 @@
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				PRODUCT_NAME = osxfusefs;
+				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
+				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
+				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
+				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
 		};
 		1DEB91C508733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -408,8 +408,8 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=c99";
+				INFOPLIST_FILE = "osxfusefs-Info.plist";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
@@ -419,6 +419,10 @@
 				PRODUCT_NAME = osxfusefs;
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
+				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
+				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
+				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
+				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
