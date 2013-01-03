@@ -8,44 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		43D6261A1538949F00303F1A /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D626181538949F00303F1A /* fuse_notify.c */; };
-		43D6261B1538949F00303F1A /* fuse_notify.h in Headers */ = {isa = PBXBuildFile; fileRef = 43D626191538949F00303F1A /* fuse_notify.h */; };
-		5409669F0C33BA2600F5E227 /* fuse_ioctl.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966520C33B5F500F5E227 /* fuse_ioctl.h */; };
-		540966A00C33BA2600F5E227 /* fuse_mount.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966530C33B5F500F5E227 /* fuse_mount.h */; };
-		540966A10C33BA2600F5E227 /* fuse_param.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966540C33B5F500F5E227 /* fuse_param.h */; };
-		540966A20C33BA2600F5E227 /* fuse_version.h in Headers */ = {isa = PBXBuildFile; fileRef = 540966550C33B5F500F5E227 /* fuse_version.h */; };
-		540966A50C33BA3900F5E227 /* fuse.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDB70B5EEB44002D9FD9 /* fuse.h */; };
 		540966A60C33BA3900F5E227 /* fuse_device.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */; };
-		540966A70C33BA3900F5E227 /* fuse_device.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */; };
 		540966A80C33BA3900F5E227 /* fuse_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBA0B5EEB44002D9FD9 /* fuse_file.c */; };
-		540966A90C33BA3900F5E227 /* fuse_file.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDBB0B5EEB44002D9FD9 /* fuse_file.h */; };
 		540966AA0C33BA3900F5E227 /* fuse_internal.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBC0B5EEB44002D9FD9 /* fuse_internal.c */; };
-		540966AB0C33BA3900F5E227 /* fuse_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDBD0B5EEB44002D9FD9 /* fuse_internal.h */; };
 		540966AC0C33BA3900F5E227 /* fuse_ipc.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */; };
-		540966AD0C33BA3900F5E227 /* fuse_ipc.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDBF0B5EEB44002D9FD9 /* fuse_ipc.h */; };
-		540966AE0C33BA3900F5E227 /* fuse_kernel.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */; };
 		540966AF0C33BA3900F5E227 /* fuse_kludges.c in Sources */ = {isa = PBXBuildFile; fileRef = 54F862610B8029A400416A6F /* fuse_kludges.c */; };
-		540966B00C33BA3900F5E227 /* fuse_kludges.h in Headers */ = {isa = PBXBuildFile; fileRef = 54F862620B8029A400416A6F /* fuse_kludges.h */; };
 		540966B10C33BA3900F5E227 /* fuse_knote.c in Sources */ = {isa = PBXBuildFile; fileRef = 5434066A0B79C3AA00471672 /* fuse_knote.c */; };
-		540966B20C33BA3900F5E227 /* fuse_knote.h in Headers */ = {isa = PBXBuildFile; fileRef = 5434066B0B79C3AA00471672 /* fuse_knote.h */; };
 		540966B30C33BA3900F5E227 /* fuse_locking.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */; };
-		540966B40C33BA3900F5E227 /* fuse_locking.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */; };
 		540966B50C33BA3900F5E227 /* fuse_main.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */; };
 		540966B60C33BA3900F5E227 /* fuse_node.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC40B5EEB44002D9FD9 /* fuse_node.c */; };
-		540966B70C33BA3900F5E227 /* fuse_node.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDC50B5EEB44002D9FD9 /* fuse_node.h */; };
 		540966B80C33BA3900F5E227 /* fuse_nodehash.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC60B5EEB44002D9FD9 /* fuse_nodehash.c */; };
-		540966B90C33BA3900F5E227 /* fuse_nodehash.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDC70B5EEB44002D9FD9 /* fuse_nodehash.h */; };
 		540966BA0C33BA3900F5E227 /* fuse_sysctl.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC80B5EEB44002D9FD9 /* fuse_sysctl.c */; };
-		540966BB0C33BA3900F5E227 /* fuse_sysctl.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDC90B5EEB44002D9FD9 /* fuse_sysctl.h */; };
 		540966BC0C33BA3900F5E227 /* fuse_vfsops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCA0B5EEB44002D9FD9 /* fuse_vfsops.c */; };
-		540966BD0C33BA3900F5E227 /* fuse_vfsops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */; };
 		540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */; };
-		540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */; };
 		54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */; };
-		54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		433E5DC113B2D1B300A523B2 /* osxfuse.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfuse.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
 		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
@@ -54,7 +34,7 @@
 		540966550C33B5F500F5E227 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_version.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		5434066A0B79C3AA00471672 /* fuse_knote.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_knote.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		5434066B0B79C3AA00471672 /* fuse_knote.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_knote.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		549960D00EC093D800DDFCAD /* osxfusefs.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfusefs.exports; sourceTree = "<group>"; };
+		549960D00EC093D800DDFCAD /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
@@ -80,27 +60,17 @@
 		54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vfsops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDD80B5EEB44002D9FD9 /* osxfusefs-Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = "osxfusefs-Info.plist"; sourceTree = "<group>"; };
+		54C6DDD80B5EEB44002D9FD9 /* osxfuse-Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = "osxfuse-Info.plist"; sourceTree = "<group>"; };
 		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
 		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kludges.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		32A4FEBF0562C75700D090E7 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
 				540966510C33B5F500F5E227 /* Common */,
-				54C6DD780B5EEB44002D9FD9 /* osxfusefs */,
+				54C6DD780B5EEB44002D9FD9 /* osxfuse */,
 				5409662C0C33B54300F5E227 /* Frameworks */,
 				433E5DC813B2D21900A523B2 /* Products */,
 			);
@@ -110,8 +80,8 @@
 		4331900E1693E27000DE73A9 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
-				54C6DDD80B5EEB44002D9FD9 /* osxfusefs-Info.plist */,
+				549960D00EC093D800DDFCAD /* osxfuse.exports */,
+				54C6DDD80B5EEB44002D9FD9 /* osxfuse-Info.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -119,7 +89,7 @@
 		433E5DC813B2D21900A523B2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				433E5DC113B2D1B300A523B2 /* osxfusefs.kext */,
+				433E5DC113B2D1B300A523B2 /* osxfuse.kext */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -143,7 +113,7 @@
 			path = ../common;
 			sourceTree = "<group>";
 		};
-		54C6DD780B5EEB44002D9FD9 /* osxfusefs */ = {
+		54C6DD780B5EEB44002D9FD9 /* osxfuse */ = {
 			isa = PBXGroup;
 			children = (
 				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
@@ -179,51 +149,17 @@
 				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
 				4331900E1693E27000DE73A9 /* Supporting Files */,
 			);
-			name = osxfusefs;
+			name = osxfuse;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
-/* Begin PBXHeadersBuildPhase section */
-		32A4FEBA0562C75700D090E7 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5409669F0C33BA2600F5E227 /* fuse_ioctl.h in Headers */,
-				540966A00C33BA2600F5E227 /* fuse_mount.h in Headers */,
-				540966A10C33BA2600F5E227 /* fuse_param.h in Headers */,
-				540966A20C33BA2600F5E227 /* fuse_version.h in Headers */,
-				540966A50C33BA3900F5E227 /* fuse.h in Headers */,
-				540966A70C33BA3900F5E227 /* fuse_device.h in Headers */,
-				540966A90C33BA3900F5E227 /* fuse_file.h in Headers */,
-				540966AB0C33BA3900F5E227 /* fuse_internal.h in Headers */,
-				540966AD0C33BA3900F5E227 /* fuse_ipc.h in Headers */,
-				540966AE0C33BA3900F5E227 /* fuse_kernel.h in Headers */,
-				540966B00C33BA3900F5E227 /* fuse_kludges.h in Headers */,
-				540966B20C33BA3900F5E227 /* fuse_knote.h in Headers */,
-				540966B40C33BA3900F5E227 /* fuse_locking.h in Headers */,
-				540966B70C33BA3900F5E227 /* fuse_node.h in Headers */,
-				540966B90C33BA3900F5E227 /* fuse_nodehash.h in Headers */,
-				540966BB0C33BA3900F5E227 /* fuse_sysctl.h in Headers */,
-				540966BD0C33BA3900F5E227 /* fuse_vfsops.h in Headers */,
-				540966BF0C33BA3900F5E227 /* fuse_vnops.h in Headers */,
-				54B05C2E0EB5AD8200C02D6D /* fuse_biglock_vnops.h in Headers */,
-				43D6261B1538949F00303F1A /* fuse_notify.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXHeadersBuildPhase section */
-
 /* Begin PBXNativeTarget section */
-		32A4FEB80562C75700D090E7 /* osxfusefs */ = {
+		32A4FEB80562C75700D090E7 /* osxfuse */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfusefs" */;
+			buildConfigurationList = 1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfuse" */;
 			buildPhases = (
-				32A4FEBA0562C75700D090E7 /* Headers */,
-				32A4FEBB0562C75700D090E7 /* Resources */,
 				32A4FEBD0562C75700D090E7 /* Sources */,
-				32A4FEBF0562C75700D090E7 /* Frameworks */,
-				32A4FEC00562C75700D090E7 /* Rez */,
 				432D7C891556EAE800E82CC8 /* ShellScript */,
 			);
 			buildRules = (
@@ -231,10 +167,10 @@
 			comments = "MacFUSE: An implementation of the FUSE API for Mac OS X (Kernel Extension)";
 			dependencies = (
 			);
-			name = osxfusefs;
+			name = osxfuse;
 			productInstallPath = "$(SYSTEM_LIBRARY_DIR)/Extensions";
 			productName = fusefs;
-			productReference = 433E5DC113B2D1B300A523B2 /* osxfusefs.kext */;
+			productReference = 433E5DC113B2D1B300A523B2 /* osxfuse.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
 /* End PBXNativeTarget section */
@@ -242,7 +178,7 @@
 /* Begin PBXProject section */
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfusefs" */;
+			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfuse" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -258,30 +194,10 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				32A4FEB80562C75700D090E7 /* osxfusefs */,
+				32A4FEB80562C75700D090E7 /* osxfuse */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXResourcesBuildPhase section */
-		32A4FEBB0562C75700D090E7 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXRezBuildPhase section */
-		32A4FEC00562C75700D090E7 /* Rez */ = {
-			isa = PBXRezBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXRezBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		432D7C891556EAE800E82CC8 /* ShellScript */ = {
@@ -358,15 +274,15 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = "osxfusefs-Info.plist";
+				INFOPLIST_FILE = "osxfuse-Info.plist";
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
+				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				PRODUCT_NAME = osxfusefs;
+				PRODUCT_NAME = osxfuse;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
@@ -382,7 +298,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
-				EXPORTED_SYMBOLS_FILE = osxfusefs.exports;
+				EXPORTED_SYMBOLS_FILE = osxfuse.exports;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -408,15 +324,15 @@
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = "osxfusefs-Info.plist";
+				INFOPLIST_FILE = "osxfuse-Info.plist";
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				MODULE_NAME = com.github.osxfuse.filesystems.osxfusefs;
+				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				PRODUCT_NAME = osxfusefs;
+				PRODUCT_NAME = osxfuse;
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
@@ -464,7 +380,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfusefs" */ = {
+		1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfuse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1DEB91C408733DAC0010E9CD /* Debug */,
@@ -473,7 +389,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfusefs" */ = {
+		1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfuse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1DEB91C808733DAC0010E9CD /* Debug */,
