@@ -27,15 +27,13 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>OSXFUSE (Filesystem in Userspace)</string>
+	<string>OSXFUSE_DISPLAY_NAME</string>
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleSignature</key>
 	<string>FUSE</string>
 	<key>CFBundleVersion</key>
 	<string>OSXFUSE_VERSION_LITERAL</string>
-	<key>BuildFlavor</key>
-	<string>${OSXFUSE_BUILD_FLAVOR}</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.kpi.bsd</key>

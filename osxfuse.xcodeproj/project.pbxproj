@@ -160,7 +160,7 @@
 			buildConfigurationList = 1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfuse" */;
 			buildPhases = (
 				32A4FEBD0562C75700D090E7 /* Sources */,
-				432D7C891556EAE800E82CC8 /* ShellScript */,
+				432D7C891556EAE800E82CC8 /* Copy Unstripped Kernel Extension */,
 			);
 			buildRules = (
 			);
@@ -200,18 +200,21 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		432D7C891556EAE800E82CC8 /* ShellScript */ = {
+		432D7C891556EAE800E82CC8 /* Copy Unstripped Kernel Extension */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
+				"$(CONFIGURATION_BUILD_DIR)/$(WRAPPER_NAME)",
 			);
+			name = "Copy Unstripped Kernel Extension";
 			outputPaths = (
+				"$(CONFIGURATION_BUILD_DIR)/Debug/$(WRAPPER_NAME)",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [[ \"${DEPLOYMENT_POSTPROCESSING}\" == \"YES\" ]]\nthen\n    source=\"${CONFIGURATION_BUILD_DIR}/${WRAPPER_NAME}\"\n    target=\"${CONFIGURATION_BUILD_DIR}/Debug/${WRAPPER_NAME}\"\n\n    if [[ -e \"${target}\" ]]\n    then\n        rm -rf \"${target}\"\n    fi\n    cp -PpR \"${source}\" \"${target}\"\nfi";
+			shellScript = "for (( i=0 ; i < ${SCRIPT_INPUT_FILE_COUNT} && i < ${SCRIPT_OUTPUT_FILE_COUNT}; i++ ))\ndo\n    input_file_p=\"SCRIPT_INPUT_FILE_${i}\"\n    output_file_p=\"SCRIPT_OUTPUT_FILE_${i}\"\n\n    if [[ -e \"${!output_file_p}\" ]]\n    then\n        rm -rf \"${!output_file_p}\"\n    fi\n    cp -PpR \"${!input_file_p}\" \"${!output_file_p}\"\ndone";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -282,7 +285,7 @@
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				PRODUCT_NAME = osxfuse;
+				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
@@ -332,7 +335,7 @@
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
-				PRODUCT_NAME = osxfuse;
+				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
@@ -347,6 +350,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ENABLE_MACFUSE_MODE = 1;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -354,7 +358,8 @@
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=0";
+				OSXFUSE_NAME = osxfuse;
+				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -364,6 +369,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
+				ENABLE_MACFUSE_MODE = 1;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -371,7 +377,8 @@
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=0";
+				OSXFUSE_NAME = osxfuse;
+				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
 				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
 			};
