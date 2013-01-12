@@ -218,7 +218,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
             return EINVAL;
         }
         snprintf(vfsstatfsp->f_fstypename, MFSTYPENAMELEN, "%s%s",
-                 FUSE_FSTYPENAME_PREFIX, fusefs_args.fstypename);
+                 OSXFUSE_FSTYPENAME_PREFIX, fusefs_args.fstypename);
     }
 
     if ((fusefs_args.daemon_timeout > FUSE_MAX_DAEMON_TIMEOUT) ||

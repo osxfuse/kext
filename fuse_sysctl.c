@@ -220,7 +220,7 @@ sysctl_osxfuse_control_macfuse_mode_handler SYSCTL_HANDLER_ARGS
                 if (kr != KERN_SUCCESS) {
                     IOLog("OSXFUSE: could not change status of MacFUSE mode\n");
                 } else {
-                    thread_deallocate(thread);
+                    thread_deallocate(macfuse_mode_thread);
                 }
 
                 // osxfuse_sysctl_lock is unlocked in osxfuse_thread_macfuse_mode
