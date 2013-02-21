@@ -1039,11 +1039,16 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
             vid = vnode_vid(candidateVN);
             lck_mtx_unlock(gHashMutex);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-            fuse_biglock_unlock(mntdata->biglock);
+            bool biglock_locked = fuse_biglock_have_lock(mntdata->biglock);
+            if (biglock_locked) {
+                fuse_biglock_unlock(mntdata->biglock);
+            }
 #endif
             err = vnode_getwithvid(candidateVN, vid);
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
-            fuse_biglock_lock(mntdata->biglock);
+            if (biglock_locked) {
+                fuse_biglock_lock(mntdata->biglock);
+            }
 #endif
             needsUnlock = false;
             if (err == 0) {
