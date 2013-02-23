@@ -182,7 +182,7 @@ struct fuse_data {
 
     struct timespec            daemon_timeout;
     struct timespec           *daemon_timeout_p;
-    struct timespec            init_timeout;
+
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t            *biglock;
 #endif

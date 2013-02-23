@@ -229,11 +229,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         return EINVAL;
     }
 
-    if ((fusefs_args.init_timeout > FUSE_MAX_INIT_TIMEOUT) ||
-        (fusefs_args.init_timeout < FUSE_MIN_INIT_TIMEOUT)) {
-        return EINVAL;
-    }
-
     if (fusefs_args.altflags & FUSE_MOPT_SPARSE) {
         mntopts |= FSESS_SPARSE;
     }
@@ -481,9 +476,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     } else {
         data->daemon_timeout_p = (struct timespec *)0;
     }
-
-    data->init_timeout.tv_sec = fusefs_args.init_timeout;
-    data->init_timeout.tv_nsec = 0;
 
     data->max_read = max_read;
     data->fssubtype = fusefs_args.fssubtype;
