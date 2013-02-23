@@ -405,9 +405,9 @@ fdisp_simple_putget_vp(struct fuse_dispatcher *fdip, enum fuse_opcode op,
 #define FUSE_ABI_711 711
 #define FUSE_ABI_712 712
 
-#define ABITOI(abi_version) 100 * abi_version->major + abi_version->minor
+#define ABITOI(abi_version) (100 * (abi_version)->major + (abi_version)->minor)
 
-#define DTOABI(data) &(data->abi_version)
+#define DTOABI(data) (&((data)->abi_version))
 
 /*
  * Returns true, if the specified FUSE operation is supported in the ABI version

@@ -872,8 +872,7 @@ enum {
 
 /* fuse start/stop */
 
-int fuse_internal_init_handler(struct fuse_ticket *ftick, uio_t uio);
-int fuse_internal_send_init(struct fuse_data *data, vfs_context_t context);
+void fuse_internal_init(void *parameter, __unused wait_result_t wait_result);
 
 /* other */
 

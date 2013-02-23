@@ -1706,58 +1706,49 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 
 /* fuse start/stop */
 
-static void
-fuse_internal_update_vfsstat(void *parameter, __unused wait_result_t wait_result)
-{
-    int err = 0;
-    struct fuse_data *data = (struct fuse_data *)parameter;
-
-#if M_OSXFUSE_ENABLE_UNSUPPORTED
-    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
-    if (err) {
-        IOLog("OSXFUSE: failed to update vfsstat (err=%d)\n", err);
-    }
-#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
-
-    thread_terminate(current_thread());
-}
+#define FIO ((struct fuse_init_out *)fticket_resp(fdi.tick)->base)
 
 __private_extern__
-int
-fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
+void
+fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
 {
     int err = 0;
-    struct fuse_init_out fio;
-    struct fuse_data *data = ftick->tk_data;
-    struct fuse_abi_version *abi_version = DTOABI(data);
+    struct fuse_data      *data = (struct fuse_data *)parameter;
+    struct fuse_init_in   *fiii;
+    struct fuse_init_out   fio;
+    struct fuse_dispatcher fdi;
 
-    kern_return_t kr;
-    thread_t vfsstat_thread;
+    fdisp_init(&fdi, sizeof(*fiii));
+    fdisp_make(&fdi, FUSE_INIT, data->mp, 0, vfs_context_current());
+    fiii = fdi.indata;
+    fiii->major = FUSE_KERNEL_VERSION;
+    fiii->minor = FUSE_KERNEL_MINOR_VERSION;
+    fiii->max_readahead = data->iosize * 16;
+    fiii->flags = 0;
 
-    fuse_trace_printf_func();
-
-    if ((err = ftick->tk_aw_ohead.error)) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
         IOLog("OSXFUSE: user space initialization failed (%d)\n", err);
         goto out;
     }
 
-    if ((err = fticket_pull(ftick, uio))) {
-        goto out;
+    err = fdi.tick->tk_aw_ohead.error;
+    if (err) {
+        IOLog("OSXFUSE: user space initialization failed (%d)\n", err);
+        goto out_ticket;
     }
 
-#define FIO ((struct fuse_init_out *)fticket_resp(ftick)->base)
-    abi_version->major = FIO->major;
-    abi_version->minor = FIO->minor;
-#undef FIO
+    DTOABI(data)->major = FIO->major;
+    DTOABI(data)->minor = FIO->minor;
 
-    if (ABITOI(abi_version) < OSXFUSE_MIN_ABI_VERSION){
+    if (ABITOI(DTOABI(data)) < OSXFUSE_MIN_ABI_VERSION){
         IOLog("OSXFUSE: ABI version of user space library too low\n");
         err = EPROTONOSUPPORT;
-        goto out;
+        goto out_ticket;
     }
 
     fuse_abi_out(fuse_init_out, DTOABI(data),
-                 fticket_resp(ftick)->base, &fio);
+                 fticket_resp(fdi.tick)->base, &fio);
 
     data->max_write = fio.max_write;
 
@@ -1777,52 +1768,27 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
         data->dataflags |= FSESS_ATOMIC_O_TRUNC;
     }
 
-out:
-    if (err) {
-        fdata_set_dead(data);
-    }
-
     fuse_lck_mtx_lock(data->ticket_mtx);
     data->dataflags |= FSESS_INITED;
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
-    /*
-     * Update cached filesystem status information.
-     *
-     * Note: This needs to be done in a separate thread to prevent a deadlock
-     * in case FUSE server running in single-threaded mode.
-     */
-    kr = kernel_thread_start(fuse_internal_update_vfsstat, data, &vfsstat_thread);
-    if (kr != KERN_SUCCESS) {
-        IOLog("OSXFUSE: could not update cached filesystem status information\n");
-    } else {
-        thread_deallocate(vfsstat_thread);
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
+    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
+    if (err) {
+        IOLog("OSXFUSE: failed to update vfsstat (err=%d)\n", err);
+    }
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
+out_ticket:
+    fuse_ticket_release(fdi.tick);
+
+out:
+    if (err) {
+        fdata_set_dead(data);
     }
 
-    return 0;
-}
-
-__private_extern__
-int
-fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
-{
-    struct fuse_init_in   *fiii;
-    struct fuse_dispatcher fdi;
-
-    fdisp_init(&fdi, sizeof(*fiii));
-    fdisp_make(&fdi, FUSE_INIT, data->mp, 0, context);
-    fiii = fdi.indata;
-    fiii->major = FUSE_KERNEL_VERSION;
-    fiii->minor = FUSE_KERNEL_MINOR_VERSION;
-    fiii->max_readahead = data->iosize * 16;
-    fiii->flags = 0;
-
-    fuse_insert_callback(fdi.tick, fuse_internal_init_handler);
-    fuse_insert_message(fdi.tick);
-
-    fuse_ticket_release(fdi.tick);
-    return 0;
+    thread_terminate(current_thread());
 }
 
 /* other */

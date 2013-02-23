@@ -170,6 +170,9 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
 
+    kern_return_t kr;
+    thread_t      init_thread;
+    
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t    *biglock;
 #endif
@@ -513,7 +516,13 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_device_unlock(fdev);
 
     /* Send a handshake message to the daemon. */
-    fuse_internal_send_init(data, context);
+    kr = kernel_thread_start(fuse_internal_init, data, &init_thread);
+    if (kr != KERN_SUCCESS) {
+        IOLog("OSXFUSE: could not start init thread\n");
+        err = ENOTCONN;
+    } else {
+        thread_deallocate(init_thread);
+    }
 
 out:
     if (err) {
