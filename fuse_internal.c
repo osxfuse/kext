@@ -1735,7 +1735,7 @@ out:
     fuse_ticket_release(ftick);
 
     if (err) {
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
     }
 
     fuse_lck_mtx_lock(data->ticket_mtx);

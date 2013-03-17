@@ -255,9 +255,9 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         panic("OSXFUSE: no device private data in device_close");
     }
 
-    fdata_set_dead(data);
-
     FUSE_DEVICE_LOCAL_LOCK(fdev);
+
+    fdata_set_dead(data, true);
 
     data->dataflags &= ~FSESS_OPENED;
 
@@ -351,7 +351,8 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
     /* Transfer the ticket's data to user space */
     for (i = 0; buf[i]; i++) {
         if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-            fdata_set_dead(data);
+            fdata_set_dead(data, false);
+
             err = ENODEV;
             goto out;
         }
@@ -615,7 +616,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
         break;
 
     case FUSEDEVIOCSETDAEMONDEAD:
-        fdata_set_dead(data);
+        fdata_set_dead(data, true);
         fuse_lck_mtx_lock(data->timeout_mtx);
         data->timeout_status = FUSE_DAEMON_TIMEOUT_DEAD;
         fuse_lck_mtx_unlock(data->timeout_mtx);
@@ -758,7 +759,7 @@ fuse_device_kill(int unit, struct proc *p)
                 (fuse_match_cred(data->daemoncred, request_cred) == 0)) {
 
                 /* The following can block. */
-                fdata_set_dead(data);
+                fdata_set_dead(data, true);
 
                 fuse_reject_answers(data);
                 error = 0;

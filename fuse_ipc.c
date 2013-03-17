@@ -315,7 +315,7 @@ again:
         }
 
 alreadydead:
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
 
         err = ENOTCONN;
         fticket_set_answered(ftick);
@@ -524,7 +524,7 @@ fdata_dead_get(struct fuse_data *data)
 }
 
 bool
-fdata_set_dead(struct fuse_data *data)
+fdata_set_dead(struct fuse_data *data, bool fdev_locked)
 {
     fuse_lck_mtx_lock(data->ms_mtx);
     if (fdata_dead_get(data)) {
@@ -543,6 +543,9 @@ fdata_set_dead(struct fuse_data *data)
     fuse_wakeup(&data->ticketer);
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
+    if (!fdev_locked) {
+        fuse_device_lock(data->fdev);
+    }
     if (data->mount_state == FM_MOUNTED) {
         /*
          * We might be called before the volume is mounted. In this case f_fsid
@@ -550,6 +553,9 @@ fdata_set_dead(struct fuse_data *data)
          * OS X 10.8.
          */
         vfs_event_signal(&vfs_statfs(data->mp)->f_fsid, VQ_DEAD, 0);
+    }
+    if (!fdev_locked) {
+        fuse_device_unlock(data->fdev);
     }
 
     return true;
@@ -648,7 +654,7 @@ fuse_ticket_fetch(struct fuse_data *data)
     }
 
     if (err) {
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
     }
 
     return ftick;

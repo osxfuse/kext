@@ -364,7 +364,7 @@ fuse_libabi_geq(struct fuse_data *data, uint32_t abi_maj, uint32_t abi_min)
 struct fuse_data *fdata_alloc(struct proc *p);
 void fdata_destroy(struct fuse_data *data);
 bool fdata_dead_get(struct fuse_data *data);
-bool fdata_set_dead(struct fuse_data *data);
+bool fdata_set_dead(struct fuse_data *data, bool fdev_locked);
 
 struct fuse_dispatcher {
 
