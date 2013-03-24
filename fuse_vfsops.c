@@ -636,7 +636,7 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
         IOLog("OSXFUSE: forcing unmount on not-yet-alive file system\n");
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
     }
 
     fuse_rootvp = data->rootvp;
@@ -686,7 +686,9 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
      * Note: fdata_set_dead will signal VQ_DEAD if it is called for a volume,
      * that is still mounted.
      */
+    fuse_device_lock(fdev);
     data->mount_state = FM_UNMOUNTING;
+    fuse_device_unlock(fdev);
 
     if (!fdata_dead_get(data)) {
         fdisp_init(&fdi, 0 /* no data to send along */);
@@ -699,15 +701,14 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
         /* Note that dounmount() signals a VQ_UNMOUNT VFS event */
 
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
     }
 
-    vfs_setfsprivate(mp, NULL);
+    fuse_device_lock(fdev);
 
+    vfs_setfsprivate(mp, NULL);
     data->mount_state = FM_NOTMOUNTED;
     OSAddAtomic(-1, (SInt32 *)&fuse_mount_count);
-
-    fuse_device_lock(fdev);
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);

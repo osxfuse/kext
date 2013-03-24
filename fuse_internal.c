@@ -1785,7 +1785,7 @@ out_ticket:
 
 out:
     if (err) {
-        fdata_set_dead(data);
+        fdata_set_dead(data, false);
     }
 
     thread_terminate(current_thread());
