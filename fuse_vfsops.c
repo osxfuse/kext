@@ -1268,7 +1268,13 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     args = (struct fuse_sync_cargs *)cargs;
     fvdat = VTOFUD(vp);
 
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     cluster_push(vp, 0);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);

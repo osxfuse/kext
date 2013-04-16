@@ -1388,15 +1388,24 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
 
     if (!(bflags & B_CLUSTER)) {
 
+        data = fuse_get_mpdata(vnode_mount(vp));
+
         if (bupl) {
-            return cluster_bp(bp);
+            int retval;
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
+            retval = cluster_bp(bp);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
+            return retval;
         }
 
         if (blkno == lblkno) {
             off_t  f_offset;
             size_t contig_bytes;
-
-            data = fuse_get_mpdata(vnode_mount(vp));
 
             // Still think this is a kludge?
             f_offset = lblkno * data->blocksize;

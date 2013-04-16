@@ -238,6 +238,8 @@ fuse_vnop_close(struct vnop_close_args *ap)
         goto skipdir;
     }
 
+    data = fuse_get_mpdata(vnode_mount(vp));
+
     /*
      * Enforce sync-on-close unless explicitly told not to.
      *
@@ -249,10 +251,15 @@ fuse_vnop_close(struct vnop_close_args *ap)
      * be doomed.
      */
     if (vnode_hasdirtyblks(vp) && !fuse_isnosynconclose(vp)) {
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         (void)cluster_push(vp, IO_SYNC | IO_CLOSE);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
     if (fuse_implemented(data, FSESS_NOIMPLBIT(FLUSH))) {
 
         struct fuse_dispatcher  fdi;
@@ -602,7 +609,16 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
         return 0;
     }
 
+    mount_t mp = vnode_mount(vp);
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(mp);
+    fuse_biglock_unlock(data->biglock);
+#endif
     cluster_push(vp, 0);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     /*
      * struct timeval tv;
@@ -620,8 +636,6 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
      * - Can call vnode_isinuse().
      * - Can call ubc_msync().
      */
-
-    mount_t mp = vnode_mount(vp);
 
     if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
                 FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
