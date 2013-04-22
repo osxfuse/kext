@@ -300,7 +300,7 @@ fuse_internal_exchange(vnode_t       fvp,
 
 __private_extern__
 int
-fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
+fuse_internal_fsync_fh_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 {
     fuse_trace_printf_func();
 
@@ -319,10 +319,10 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
 __private_extern__
 int
-fuse_internal_fsync(vnode_t                 vp,
-                    vfs_context_t           context,
-                    struct fuse_filehandle *fufh,
-                    fuse_op_waitfor_t       waitfor)
+fuse_internal_fsync_fh(vnode_t                 vp,
+                       vfs_context_t           context,
+                       struct fuse_filehandle *fufh,
+                       fuse_op_waitfor_t       waitfor)
 {
     int err = 0;
     int op = FUSE_FSYNC;
@@ -356,12 +356,74 @@ fuse_internal_fsync(vnode_t                 vp,
             goto out;
         }
     } else {
-        fuse_insert_callback(fdi.tick, fuse_internal_fsync_callback);
+        fuse_insert_callback(fdi.tick, fuse_internal_fsync_fh_callback);
         fuse_insert_message(fdi.tick);
     }
     fuse_ticket_release(fdi.tick);
 
 out:
+    return err;
+}
+
+__private_extern__
+int
+fuse_internal_fsync_vp(vnode_t vp, vfs_context_t context)
+{
+    struct fuse_filehandle *fufh;
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+    int type, err = 0, tmp_err = 0;
+
+    mount_t mp = vnode_mount(vp);
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    struct fuse_data *data = fuse_get_mpdata(mp);
+    fuse_biglock_unlock(data->biglock);
+#endif
+    cluster_push(vp, 0);
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
+
+    /*
+     * struct timeval tv;
+     * int wait = (waitfor == MNT_WAIT)
+     *
+     * In another world, we could be doing something like:
+     *
+     * buf_flushdirtyblks(vp, wait, 0, (char *)"fuse_fsync");
+     * microtime(&tv);
+     * ...
+     */
+
+    /*
+     * - UBC and vnode are in lock-step.
+     * - Can call vnode_isinuse().
+     * - Can call ubc_msync().
+     */
+
+    if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
+                                                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
+        err = ENOSYS;
+        goto out;
+    }
+
+    for (type = 0; type < FUFH_MAXTYPE; type++) {
+        fufh = &(fvdat->fufh[type]);
+        if (FUFH_IS_VALID(fufh)) {
+            tmp_err = fuse_internal_fsync_fh(vp, context, fufh,
+                                             FUSE_OP_FOREGROUNDED);
+            if (tmp_err) {
+                err = tmp_err;
+            }
+        }
+    }
+
+out:
+    if ((err == ENOSYS) && !fuse_isnosyncwrites_mp(mp)) {
+        err = 0;
+    }
+
     return err;
 }
 

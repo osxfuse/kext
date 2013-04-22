@@ -1279,8 +1279,8 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
         if (FUFH_IS_VALID(fufh)) {
-            (void)fuse_internal_fsync(vp, args->context, fufh,
-                                      FUSE_OP_FOREGROUNDED);
+            (void)fuse_internal_fsync_fh(vp, args->context, fufh,
+                                         FUSE_OP_FOREGROUNDED);
         }
     }
 
