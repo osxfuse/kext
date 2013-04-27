@@ -1829,6 +1829,12 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
         data->dataflags |= FSESS_ATOMIC_O_TRUNC;
     }
 
+    /*
+     * Ignore the congestion_threshold field of struct fuse_init_out because
+     * there is no equivalent to the Linux backing device info concept (struct
+     * backing_dev_info) on OS X.
+     */
+
     fuse_lck_mtx_lock(data->ticket_mtx);
     data->dataflags |= FSESS_INITED;
     fuse_wakeup(&data->ticketer);
