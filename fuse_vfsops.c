@@ -1088,7 +1088,8 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
         goto dostatfs;
     }
 
-    if ((err = fdisp_simple_vfs_getattr(&fdi, mp, context))) {
+    err = fdisp_simple_vfs_getattr(&fdi, mp, context);
+    if (err) {
         /*
          * If we cannot communicate with the daemon (most likely because
          * it's dead), we still want to portray that we are a bonafide
@@ -1225,7 +1226,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_signature, OSSwapBigToHostInt16(FUSEFS_SIGNATURE));
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
-    if (faking == 0) {
+    if (fdi.tick) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -1396,7 +1397,8 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
         memcpy((char *)fdi.indata, fsap->f_vol_name, namelen);
         ((char *)fdi.indata)[namelen] = '\0';
 
-        if (!(error = fdisp_wait_answ(&fdi))) {
+        error = fdisp_wait_answ(&fdi);
+        if (!error) {
             fuse_ticket_release(fdi.tick);
         }
 

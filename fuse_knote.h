@@ -147,7 +147,7 @@ extern struct filterops fusevnode_filtops;
 #define FUSE_KNOTE(vp, hint)    KNOTE(&VTOFUD(vp)->c_knotes, (hint))
 
 #else /* !M_OSXFUSE_ENABLE_KQUEUE */
-#define FUSE_KNOTE(vp, hint)    {}
+#define FUSE_KNOTE(vp, hint)    do {} while(0)
 #endif /* M_OSXFUSE_ENABLE_KQUEUE */
 
 #endif /* _FUSE_KNOTE_H_ */

@@ -275,14 +275,11 @@ fuse_vnop_close(struct vnop_close_args *ap)
         ffi->lock_owner = 0;
 
         err = fdisp_wait_answ(&fdi);
-
         if (!err) {
             fuse_ticket_release(fdi.tick);
-        } else {
-            if (err == ENOSYS) {
-                fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
-                err = 0;
-            }
+        } else if (err == ENOSYS) {
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
+            err = 0;
         }
     }
 
@@ -345,9 +342,9 @@ fuse_vnop_create(struct vnop_create_args *ap)
         return EPERM;
     }
 
-    bzero(&fdi, sizeof(fdi));
-
     data = fuse_get_mpdata(mp);
+
+    fdisp_init(fdip, 0);
 
     if (!fuse_implemented(data, FSESS_NOIMPLBIT(CREATE)) ||
         (vap->va_type != VREG)) {
@@ -357,7 +354,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
         goto good_old;
     }
 
-    fdisp_init(fdip, sizeof(*foi) + cnp->cn_namelen + 1);
+    fdi.iosize = sizeof(*foi) + cnp->cn_namelen + 1;
     fdisp_make(fdip, FUSE_CREATE, mp, parent_nodeid, context);
 
     foi = fdip->indata;
@@ -374,7 +371,6 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     if (err == ENOSYS) {
         fuse_clear_implemented(data, FSESS_NOIMPLBIT(CREATE));
-        fdip->tick = NULL;
         goto good_old;
     } else if (err) {
         goto undo;
@@ -396,7 +392,8 @@ good_old:
 bringup:
     feo = fdip->answ;
 
-    if ((err = fuse_internal_checkentry(feo, VREG))) { // VBLK/VCHR not allowed
+    err = fuse_internal_checkentry(feo, VREG);
+    if (err) { // VBLK/VCHR not allowed
         fuse_ticket_release(fdip->tick);
         goto undo;
     }
@@ -669,7 +666,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         }
     }
 
-    if ((err = fdisp_simple_putget_vp(&fdi, FUSE_GETATTR, vp, context))) {
+    err = fdisp_simple_putget_vp(&fdi, FUSE_GETATTR, vp, context);
+    if (err) {
         if ((err == ENOTCONN) && vnode_isvroot(vp)) {
             /* see comment at similar place in fuse_statfs() */
             goto fake;
@@ -1118,8 +1116,11 @@ fuse_vnop_link(struct vnop_link_args *ap)
     fuse_internal_newentry_makerequest(vnode_mount(tdvp), VTOI(tdvp), cnp,
                                        FUSE_LINK, &fli, sizeof(fli), &fdi,
                                        context);
+
+    /* Note: fuse_internal_newentry_core releases fdi.tick */
     err = fuse_internal_newentry_core(tdvp, &tvp, cnp, vnode_vtype(vp), &fdi,
                                       context);
+
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
 
@@ -1360,8 +1361,14 @@ calldaemon:
         if (!nodeid) {
             fdi.answ_stat = ENOENT; /* XXX: negative_timeout case */
             lookup_err = ENOENT;
+
+            fuse_ticket_release(fdi.tick);
+            fdi.tick = NULL;
         } else if (nodeid == FUSE_ROOT_ID) {
             lookup_err = EINVAL;
+
+            fuse_ticket_release(fdi.tick);
+            fdi.tick = NULL;
         }
     }
 
@@ -2435,7 +2442,8 @@ fuse_vnop_read(struct vnop_read_args *ap)
             fri->offset = uio_offset(uio);
             fri->size = (uint32_t)min((size_t)uio_resid(uio), data->iosize);
 
-            if ((err = fdisp_wait_answ(&fdi))) {
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 return err;
             }
 
@@ -2456,8 +2464,10 @@ fuse_vnop_read(struct vnop_read_args *ap)
             }
         }
 
-        fuse_ticket_release(fdi.tick);
-
+        if (fdi.tick) {
+            fuse_ticket_release(fdi.tick);
+        }
+            
     } /* direct_io */
 
     return ((err == -1) ? 0 : err);
@@ -2586,7 +2596,8 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
         return EINVAL;
     }
 
-    if ((err = fdisp_simple_putget_vp(&fdi, FUSE_READLINK, vp, context))) {
+    err = fdisp_simple_putget_vp(&fdi, FUSE_READLINK, vp, context);
+    if (err) {
         return err;
     }
 
@@ -3116,7 +3127,8 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
         goto out;
     }
 
-    if ((err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
         fuse_invalidate_attr(vp);
         return err;
     }
@@ -3565,7 +3577,9 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fuse_invalidate_attr(vp);
         }
 
-        fuse_ticket_release(fdi.tick);
+        if (fdi.tick) {
+            fuse_ticket_release(fdi.tick);
+        }
 
         return error;
 

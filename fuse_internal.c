@@ -122,8 +122,6 @@ fuse_internal_access(vnode_t                   vp,
         mask |= W_OK;
     }
 
-    bzero(&fdi, sizeof(fdi));
-
     fdisp_init(&fdi, sizeof(*fai));
     fdisp_make_vp(&fdi, FUSE_ACCESS, vp, context);
 
@@ -131,7 +129,8 @@ fuse_internal_access(vnode_t                   vp,
     fai->mask = F_OK;
     fai->mask |= mask;
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -230,11 +229,10 @@ fuse_internal_exchange(vnode_t       fvp,
     fuse_biglock_lock(data->biglock);
 #endif
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
-    }
 
-    if (err == 0) {
         if (fdvp) {
             fuse_invalidate_attr(fdvp);
         }
@@ -343,7 +341,8 @@ fuse_internal_fsync_fh(vnode_t                 vp,
     ffsi->fsync_flags = 1; /* datasync */
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
-        if ((err = fdisp_wait_answ(&fdi))) {
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
             if (err == ENOSYS) {
                 struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
@@ -359,6 +358,7 @@ fuse_internal_fsync_fh(vnode_t                 vp,
         fuse_insert_callback(fdi.tick, fuse_internal_fsync_fh_callback);
         fuse_insert_message(fdi.tick);
     }
+
     fuse_ticket_release(fdi.tick);
 
 out:
@@ -793,24 +793,24 @@ fuse_internal_readdir(vnode_t                 vp,
         data = fuse_get_mpdata(vnode_mount(vp));
         fri->size = (typeof(fri->size))min((size_t)uio_resid(uio), data->iosize);
 
-        if ((err = fdisp_wait_answ(&fdi))) {
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
             goto out;
         }
 
-        if ((err = fuse_internal_readdir_processdata(vp,
-                                                     uio,
-                                                     fri->size,
-                                                     fdi.answ,
-                                                     fdi.iosize,
-                                                     cookediov,
-                                                     numdirent))) {
+        err = fuse_internal_readdir_processdata(vp, uio, fri->size, fdi.answ,
+                                                fdi.iosize, cookediov,
+                                                numdirent);
+        if (err) {
             break;
         }
     }
 
 /* done: */
 
-    fuse_ticket_release(fdi.tick);
+    if (fdi.tick) {
+        fuse_ticket_release(fdi.tick);
+    }
 
 out:
     return ((err == -1) ? 0 : err);
@@ -978,7 +978,8 @@ fuse_internal_remove(vnode_t               dvp,
         target_nlink = vap->va_nlink;
     }
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -1044,11 +1045,10 @@ fuse_internal_rename(vnode_t               fdvp,
     ((char *)fdi.indata)[sizeof(*fri) + fcnp->cn_namelen +
                          tcnp->cn_namelen + 1] = '\0';
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
-    }
 
-    if (err == 0) {
         fuse_invalidate_attr(fdvp);
         if (tdvp != fdvp) {
             fuse_invalidate_attr(tdvp);
@@ -1295,7 +1295,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             fdi.tick->tk_aw_type = FT_A_BUF;
             fdi.tick->tk_aw_bufdata = bufdat;
 
-            if ((err = fdisp_wait_answ(&fdi))) {
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 /* There was a problem with reading. */
                 goto out;
             }
@@ -1324,7 +1325,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         /* write */
         struct fuse_write_in  *fwi;
         struct fuse_write_out *fwo;
-        int merr = 0;
         off_t diff;
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK && !M_OSXFUSE_ENABLE_HUGE_LOCK
@@ -1374,8 +1374,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
             /* About to write <chunksize> at <offset> */
 
-            if ((err = fdisp_wait_answ(&fdi))) {
-                merr = 1;
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 break;
             }
 
@@ -1390,10 +1390,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             bufdat += fwo->size;
             offset += fwo->size;
             buf_setresid(bp, buf_resid(bp) - fwo->size);
-        }
-
-        if (merr) {
-            goto out;
         }
     }
 
@@ -1539,13 +1535,15 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     struct fuse_entry_out *feo;
     mount_t mp = vnode_mount(dvp);
 
-    if ((err = fdisp_wait_answ(fdip))) {
+    err = fdisp_wait_answ(fdip);
+    if (err) {
         return err;
     }
 
     feo = fdip->answ;
 
-    if ((err = fuse_internal_checkentry(feo, vtyp))) {
+    err = fuse_internal_checkentry(feo, vtyp);
+    if (err) {
         goto out;
     }
 
@@ -1605,7 +1603,6 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
     fuse_internal_forget_send(ftick->tk_data->mp, NULL,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
-    fuse_ticket_release(fdi.tick);
     return 0;
 }
 
@@ -1841,13 +1838,12 @@ fuse_internal_send_init(struct fuse_data *data, vfs_context_t context)
         return err;
     }
 
+    /* Note: fdi.tick is released in fuse_internal_init_synchronous */
     err = fuse_internal_init_synchronous(fdi.tick);
     if (err) {
         IOLog("OSXFUSE: in-kernel initialization failed (%d)\n", err);
         return err;
     }
-
-    /* fuse_ticket_release is called in fuse_internal_init_synchronous */
 
     return 0;
 }
