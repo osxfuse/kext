@@ -1132,18 +1132,12 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
 
     err = fticket_wait_answer(fdip->tick);
     if (err) {
-        /* Wait has been interrupted */
-
-        fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
-
         /*
          * We are no longer interested in an answer, therefore mark the ticket
          * as answered.
          */
-        if (!fticket_answered(fdip->tick)) {
-            fticket_set_answered(fdip->tick);
-        }
-
+        fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
+        fticket_set_answered(fdip->tick);
         fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
 
         goto out;

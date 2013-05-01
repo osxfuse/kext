@@ -348,26 +348,15 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             panic("OSXFUSE: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
     }
 
-    /* Transfer the ticket's data to user space */
-    for (i = 0; buf[i]; i++) {
-        if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-            fdata_set_dead(data, false);
-
-            err = ENODEV;
-            goto out;
-        }
-        err = uiomove(buf[i], (int)buflen[i], uio);
-        if (err) {
-            break;
-        }
-    }
-
-    /*
-     * Filter out tickets, that have been marked as answered by returning EINTR.
-     * In case this ticket has been interrupted drop the interrrupt ticket.
-     */
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+
     if (fticket_answered(ftick)) {
+        /*
+         * Filter out tickets, that have been marked as answered by returning
+         * EINTR. In case this ticket has been interrupted drop the interrrupt
+         * ticket.
+         */
+
         fuse_remove_callback(ftick);
         err = EINTR;
 
@@ -375,14 +364,34 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             /* Set interrupt ticket to answered and remove its callback */
             fuse_internal_interrupt_remove(ftick->tk_interrupt);
         }
+    } else {
+        /*
+         * Transfer the ticket's data to user space.
+         *
+         * Note: This needs to be done while holding tk_aw_mtx. Otherwise the
+         * ticket's data buffer tk_ms_bufdata might disappear on us, resulting
+         * in a kernel panic
+         */
+
+        for (i = 0; buf[i]; i++) {
+            if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
+                fdata_set_dead(data, false);
+                break;
+            }
+
+            err = uiomove(buf[i], (int)buflen[i], uio);
+            if (err) {
+                break;
+            }
+        }
     }
+
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (fdata_dead_get(data)) {
         err = ENODEV;
     }
 
-out:
     fuse_ticket_release(ftick);
     return err;
 }

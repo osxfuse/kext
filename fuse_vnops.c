@@ -2467,7 +2467,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
         if (fdi.tick) {
             fuse_ticket_release(fdi.tick);
         }
-            
+
     } /* direct_io */
 
     return ((err == -1) ? 0 : err);
