@@ -403,8 +403,8 @@ fuse_internal_fsync_vp(vnode_t vp, vfs_context_t context)
      * - Can call ubc_msync().
      */
 
-    if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
-                                                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
+    if (!fuse_implemented(fuse_get_mpdata(mp), (vnode_isdir(vp) ?
+                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
         err = ENOSYS;
         goto out;
     }

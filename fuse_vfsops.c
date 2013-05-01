@@ -172,7 +172,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     kern_return_t kr;
     thread_t      init_thread;
-    
+
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t    *biglock;
 #endif
@@ -1177,7 +1177,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_signature, OSSwapBigToHostInt16(FUSEFS_SIGNATURE));
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
-    if (fdi.tick) {
+    if (!faking) {
         fuse_ticket_release(fdi.tick);
     }
 
