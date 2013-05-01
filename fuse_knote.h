@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 Amit Singh/Google Inc.
- * Copyright (c) 2012 Benjamin Fleischer
+ * Copyright (c) 2012-2013 Benjamin Fleischer
  * All rights reserved.
  */
 

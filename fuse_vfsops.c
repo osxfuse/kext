@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011 Anatol Pomozov
- * Copyright (c) 2012 Benjamin Fleischer
+ * Copyright (c) 2012-2013 Benjamin Fleischer
  * All rights reserved.
  */
 
