@@ -1226,7 +1226,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_signature, OSSwapBigToHostInt16(FUSEFS_SIGNATURE));
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
-    if (fdi.tick) {
+    if (!faking) {
         fuse_ticket_release(fdi.tick);
     }
 
