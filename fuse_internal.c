@@ -129,7 +129,8 @@ fuse_internal_access(vnode_t                   vp,
     fdisp_make_vp(&fdi, FUSE_ACCESS, vp, context);
     fuse_abi_in(fuse_access_in, DTOABI(data), &fai, fdi.indata);
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -229,11 +230,10 @@ fuse_internal_exchange(vnode_t       fvp,
     fuse_biglock_lock(data->biglock);
 #endif
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
-    }
 
-    if (err == 0) {
         if (fdvp) {
             fuse_invalidate_attr(fdvp);
         }
@@ -299,7 +299,7 @@ fuse_internal_exchange(vnode_t       fvp,
 
 __private_extern__
 int
-fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
+fuse_internal_fsync_fh_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 {
     fuse_trace_printf_func();
 
@@ -318,10 +318,10 @@ fuse_internal_fsync_callback(struct fuse_ticket *ftick, __unused uio_t uio)
 
 __private_extern__
 int
-fuse_internal_fsync(vnode_t                 vp,
-                    vfs_context_t           context,
-                    struct fuse_filehandle *fufh,
-                    fuse_op_waitfor_t       waitfor)
+fuse_internal_fsync_fh(vnode_t                 vp,
+                       vfs_context_t           context,
+                       struct fuse_filehandle *fufh,
+                       fuse_op_waitfor_t       waitfor)
 {
     int err = 0;
     int op = FUSE_FSYNC;
@@ -344,7 +344,8 @@ fuse_internal_fsync(vnode_t                 vp,
     fuse_abi_in(fuse_fsync_in, DTOABI(data), &ffsi, fdi.indata);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
-        if ((err = fdisp_wait_answ(&fdi))) {
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
             if (err == ENOSYS) {
                 if (op == FUSE_FSYNC) {
                     fuse_clear_implemented(data, FSESS_NOIMPLBIT(FSYNC));
@@ -355,12 +356,75 @@ fuse_internal_fsync(vnode_t                 vp,
             goto out;
         }
     } else {
-        fuse_insert_callback(fdi.tick, fuse_internal_fsync_callback);
+        fuse_insert_callback(fdi.tick, fuse_internal_fsync_fh_callback);
         fuse_insert_message(fdi.tick);
     }
+
     fuse_ticket_release(fdi.tick);
 
 out:
+    return err;
+}
+
+__private_extern__
+int
+fuse_internal_fsync_vp(vnode_t vp, vfs_context_t context)
+{
+    struct fuse_filehandle *fufh;
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+    int type, err = 0, tmp_err = 0;
+
+    mount_t mp = vnode_mount(vp);
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data = fuse_get_mpdata(mp);
+    fuse_biglock_unlock(data->biglock);
+#endif
+    cluster_push(vp, 0);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
+
+    /*
+     * struct timeval tv;
+     * int wait = (waitfor == MNT_WAIT)
+     *
+     * In another world, we could be doing something like:
+     *
+     * buf_flushdirtyblks(vp, wait, 0, (char *)"fuse_fsync");
+     * microtime(&tv);
+     * ...
+     */
+
+    /*
+     * - UBC and vnode are in lock-step.
+     * - Can call vnode_isinuse().
+     * - Can call ubc_msync().
+     */
+
+    if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
+                                                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
+        err = ENOSYS;
+        goto out;
+    }
+
+    for (type = 0; type < FUFH_MAXTYPE; type++) {
+        fufh = &(fvdat->fufh[type]);
+        if (FUFH_IS_VALID(fufh)) {
+            tmp_err = fuse_internal_fsync_fh(vp, context, fufh,
+                                             FUSE_OP_FOREGROUNDED);
+            if (tmp_err) {
+                err = tmp_err;
+            }
+        }
+    }
+
+out:
+    if ((err == ENOSYS) && !fuse_isnosyncwrites_mp(mp)) {
+        err = 0;
+    }
+
     return err;
 }
 
@@ -731,24 +795,24 @@ fuse_internal_readdir(vnode_t                 vp,
         fdisp_make_vp(&fdi, FUSE_READDIR, vp, context);
         fuse_abi_in(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
-        if ((err = fdisp_wait_answ(&fdi))) {
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
             goto out;
         }
 
-        if ((err = fuse_internal_readdir_processdata(vp,
-                                                     uio,
-                                                     fri.size,
-                                                     fdi.answ,
-                                                     fdi.iosize,
-                                                     cookediov,
-                                                     numdirent))) {
+        err = fuse_internal_readdir_processdata(vp, uio, fri.size, fdi.answ,
+                                                fdi.iosize, cookediov,
+                                                numdirent);
+        if (err) {
             break;
         }
     }
 
 /* done: */
 
-    fuse_ticket_release(fdi.tick);
+    if (fdi.tick) {
+        fuse_ticket_release(fdi.tick);
+    }
 
 out:
     return ((err == -1) ? 0 : err);
@@ -916,7 +980,8 @@ fuse_internal_remove(vnode_t               dvp,
         target_nlink = vap->va_nlink;
     }
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -988,11 +1053,10 @@ fuse_internal_rename(vnode_t               fdvp,
            tcnp->cn_namelen);
     ((char *)next)[fcnp->cn_namelen + tcnp->cn_namelen + 1] = '\0';
 
-    if (!(err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (!err) {
         fuse_ticket_release(fdi.tick);
-    }
 
-    if (err == 0) {
         fuse_invalidate_attr(fdvp);
         if (tdvp != fdvp) {
             fuse_invalidate_attr(tdvp);
@@ -1241,7 +1305,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
             fuse_abi_in(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
-            if ((err = fdisp_wait_answ(&fdi))) {
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 /* There was a problem with reading. */
                 goto out;
             }
@@ -1270,7 +1335,6 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         /* write */
         struct fuse_write_in  fwi;
         struct fuse_write_out fwo;
-        int merr = 0;
         off_t diff;
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
@@ -1322,8 +1386,8 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
             /* About to write <chunksize> at <offset> */
 
-            if ((err = fdisp_wait_answ(&fdi))) {
-                merr = 1;
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 break;
             }
 
@@ -1339,16 +1403,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             offset += fwo.size;
             buf_setresid(bp, buf_resid(bp) - fwo.size);
         }
-
-        if (merr) {
-            goto out;
-        }
     }
 
     if (fdi.tick) {
         fuse_ticket_release(fdi.tick);
-    } else {
-        /* No ticket upon leaving */
     }
 
 out:
@@ -1398,15 +1456,24 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
 
     if (!(bflags & B_CLUSTER)) {
 
+        data = fuse_get_mpdata(vnode_mount(vp));
+
         if (bupl) {
-            return cluster_bp(bp);
+            int retval;
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
+            retval = cluster_bp(bp);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
+            return retval;
         }
 
         if (blkno == lblkno) {
             off_t  f_offset;
             size_t contig_bytes;
-
-            data = fuse_get_mpdata(vnode_mount(vp));
 
             // Still think this is a kludge?
             f_offset = lblkno * data->blocksize;
@@ -1484,13 +1551,15 @@ fuse_internal_newentry_core(vnode_t                 dvp,
     mount_t mp = vnode_mount(dvp);
     struct fuse_data *data = fuse_get_mpdata(mp);
 
-    if ((err = fdisp_wait_answ(fdip))) {
+    err = fdisp_wait_answ(fdip);
+    if (err) {
         return err;
     }
 
     fuse_abi_out(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
 
-    if ((err = fuse_internal_checkentry(&feo, vtyp))) {
+    err = fuse_internal_checkentry(&feo, vtyp);
+    if (err) {
         goto out;
     }
 
@@ -1551,7 +1620,6 @@ fuse_internal_forget_callback(struct fuse_ticket *ftick, __unused uio_t uio)
     fuse_internal_forget_send(ftick->tk_data->mp, NULL,
         ((struct fuse_in_header *)ftick->tk_ms_fiov.base)->nodeid, 1, &fdi);
 
-    fuse_ticket_release(fdi.tick);
     return 0;
 }
 

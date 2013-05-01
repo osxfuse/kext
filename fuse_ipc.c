@@ -601,14 +601,6 @@ fuse_ticket_kill(struct fuse_ticket *ftick)
 }
 
 void
-fuse_ticket_drop_invalid(struct fuse_ticket *ftick)
-{
-    if (ftick->tk_flag & FT_INVAL) {
-        fuse_ticket_release(ftick);
-    }
-}
-
-void
 fuse_insert_callback(struct fuse_ticket *ftick, fuse_handler_t *handler)
 {
     if (fdata_dead_get(ftick->tk_data)) {
@@ -901,10 +893,6 @@ fdisp_make(struct fuse_dispatcher *fdip,
         fdip->tick = fuse_ticket_fetch(data);
     }
 
-    if (fdip->tick == 0) {
-        panic("OSXFUSE: fuse_ticket_fetch() failed");
-    }
-
 #ifdef FUSE_TRACE_TICKET
     if (fdip->tick->tk_age == 1) {
         int aw_count = 0;
@@ -954,10 +942,6 @@ fdisp_make_canfail(struct fuse_dispatcher *fdip,
         fdip->tick = fuse_ticket_fetch(data);
     }
 
-    if (fdip->tick == 0) {
-        panic("OSXFUSE: fuse_ticket_fetch() failed");
-    }
-
     fiov = &fdip->tick->tk_ms_fiov;
 
     failed = fiov_adjust_canfail(fiov,
@@ -965,6 +949,8 @@ fdisp_make_canfail(struct fuse_dispatcher *fdip,
 
     if (failed) {
         fuse_ticket_kill(fdip->tick);
+        fuse_ticket_release(fdip->tick);
+        fdip->tick = NULL;
         return failed;
     }
 
@@ -1004,7 +990,10 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     fuse_insert_callback(fdip->tick, fuse_standard_handler);
     fuse_insert_message(fdip->tick);
 
-    if ((err = fticket_wait_answer(fdip->tick))) { /* interrupted */
+    err = fticket_wait_answer(fdip->tick);
+    if (err) {
+        /* Wait has been interrupted */
+
         fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
 
         /*
@@ -1020,18 +1009,15 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
         goto out;
     }
 
-    /* IPC was NOT interrupt */
-
     if (fdip->tick->tk_aw_errno) {
-
         /* Explicitly EIO-ing */
 
         err = EIO;
         goto out;
     }
 
-    if ((err = fdip->tick->tk_aw_ohead.error)) {
-
+    err = fdip->tick->tk_aw_ohead.error;
+    if (err) {
         /* Explicitly setting status */
 
         fdip->answ_stat = err;
@@ -1045,6 +1031,9 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
 
 out:
     fuse_ticket_release(fdip->tick);
+
+    /* We must not reuse this ticket. */
+    fdip->tick = NULL;
 
     return err;
 }

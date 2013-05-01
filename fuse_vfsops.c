@@ -1040,7 +1040,8 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 
     fdisp_init(&fdi, 0);
     fdisp_make(&fdi, FUSE_STATFS, mp, FUSE_ROOT_ID, context);
-    if ((err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
         /*
          * If we cannot communicate with the daemon (most likely because
          * it's dead), we still want to portray that we are a bonafide
@@ -1176,7 +1177,7 @@ dostatfs:
     VFSATTR_RETURN(attr, f_signature, OSSwapBigToHostInt16(FUSEFS_SIGNATURE));
     VFSATTR_RETURN(attr, f_carbon_fsid, 0);
 
-    if (!faking) {
+    if (fdi.tick) {
         fuse_ticket_release(fdi.tick);
     }
 
@@ -1219,13 +1220,19 @@ fuse_sync_callback(vnode_t vp, void *cargs)
     args = (struct fuse_sync_cargs *)cargs;
     fvdat = VTOFUD(vp);
 
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
     cluster_push(vp, 0);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
 
     for (type = 0; type < FUFH_MAXTYPE; type++) {
         fufh = &(fvdat->fufh[type]);
         if (FUFH_IS_VALID(fufh)) {
-            (void)fuse_internal_fsync(vp, args->context, fufh,
-                                      FUSE_OP_FOREGROUNDED);
+            (void)fuse_internal_fsync_fh(vp, args->context, fufh,
+                                         FUSE_OP_FOREGROUNDED);
         }
     }
 
@@ -1341,7 +1348,8 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
         memcpy((char *)fdi.indata, fsap->f_vol_name, namelen);
         ((char *)fdi.indata)[namelen] = '\0';
 
-        if (!(error = fdisp_wait_answ(&fdi))) {
+        error = fdisp_wait_answ(&fdi);
+        if (!error) {
             fuse_ticket_release(fdi.tick);
         }
 

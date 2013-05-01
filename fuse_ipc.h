@@ -289,7 +289,6 @@ fuse_aw_pop(struct fuse_data *data)
 
 struct fuse_ticket *fuse_ticket_fetch(struct fuse_data *data);
 void fuse_ticket_drop(struct fuse_ticket *ftick);
-void fuse_ticket_drop_invalid(struct fuse_ticket *ftick);
 void fuse_ticket_kill(struct fuse_ticket *ftick);
 
 #ifndef OSCompareAndSwap

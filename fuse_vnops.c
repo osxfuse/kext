@@ -236,6 +236,8 @@ fuse_vnop_close(struct vnop_close_args *ap)
         goto skipdir;
     }
 
+    data = fuse_get_mpdata(vnode_mount(vp));
+
     /*
      * Enforce sync-on-close unless explicitly told not to.
      *
@@ -247,10 +249,15 @@ fuse_vnop_close(struct vnop_close_args *ap)
      * be doomed.
      */
     if (vnode_hasdirtyblks(vp) && !fuse_isnosynconclose(vp)) {
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_unlock(data->biglock);
+#endif
         (void)cluster_push(vp, IO_SYNC | IO_CLOSE);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+        fuse_biglock_lock(data->biglock);
+#endif
     }
 
-    data = fuse_get_mpdata(vnode_mount(vp));
     if (fuse_implemented(data, FSESS_NOIMPLBIT(FLUSH))) {
 
         struct fuse_dispatcher fdi;
@@ -266,14 +273,11 @@ fuse_vnop_close(struct vnop_close_args *ap)
         fuse_abi_in(fuse_flush_in, DTOABI(data), &ffi, fdi.indata);
 
         err = fdisp_wait_answ(&fdi);
-
         if (!err) {
             fuse_ticket_release(fdi.tick);
-        } else {
-            if (err == ENOSYS) {
-                fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
-                err = 0;
-            }
+        } else if (err == ENOSYS) {
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(FLUSH));
+            err = 0;
         }
     }
 
@@ -338,9 +342,9 @@ fuse_vnop_create(struct vnop_create_args *ap)
         return EPERM;
     }
 
-    bzero(&fdi, sizeof(fdi));
-
     data = fuse_get_mpdata(mp);
+
+    fdisp_init(fdip, 0);
 
     if (!fuse_implemented(data, FSESS_NOIMPLBIT(CREATE)) ||
         (vap->va_type != VREG)) {
@@ -356,8 +360,8 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fci.mode = mode;
     fci.umask = 0;
 
-    fdisp_init(fdip, fuse_abi_sizeof(fuse_create_in, DTOABI(data)) +
-               cnp->cn_namelen + 1);
+    fdi.iosize = fuse_abi_sizeof(fuse_create_in, DTOABI(data)) +
+                 cnp->cn_namelen + 1;
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
     next = fuse_abi_in(fuse_create_in, DTOABI(data), &fci, fdip->indata);
 
@@ -368,7 +372,6 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     if (err == ENOSYS) {
         fuse_clear_implemented(data, FSESS_NOIMPLBIT(CREATE));
-        fdip->tick = NULL;
         goto good_old;
     } else if (err) {
         goto undo;
@@ -394,7 +397,8 @@ good_old:
 bringup:
     next = fuse_abi_out(fuse_entry_out, DTOABI(data), fdip->answ, &feo);
 
-    if ((err = fuse_internal_checkentry(&feo, VREG))) { // VBLK/VCHR not allowed
+    err = fuse_internal_checkentry(&feo, VREG);
+    if (err) { // VBLK/VCHR not allowed
         fuse_ticket_release(fdip->tick);
         goto undo;
     }
@@ -595,10 +599,6 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
     int           waitfor = ap->a_waitfor;
     vfs_context_t context = ap->a_context;
 
-    struct fuse_filehandle *fufh;
-    struct fuse_vnode_data *fvdat = VTOFUD(vp);
-
-    int type, err = 0, tmp_err = 0;
     (void)waitfor;
 
     fuse_trace_printf_vnop();
@@ -607,50 +607,7 @@ fuse_vnop_fsync(struct vnop_fsync_args *ap)
         return 0;
     }
 
-    cluster_push(vp, 0);
-
-    /*
-     * struct timeval tv;
-     * int wait = (waitfor == MNT_WAIT)
-     *
-     * In another world, we could be doing something like:
-     *
-     * buf_flushdirtyblks(vp, wait, 0, (char *)"fuse_fsync");
-     * microtime(&tv);
-     * ...
-     */
-
-    /*
-     * - UBC and vnode are in lock-step.
-     * - Can call vnode_isinuse().
-     * - Can call ubc_msync().
-     */
-
-    mount_t mp = vnode_mount(vp);
-
-    if (!fuse_implemented(fuse_get_mpdata(mp), ((vnode_isdir(vp)) ?
-                FSESS_NOIMPLBIT(FSYNCDIR) : FSESS_NOIMPLBIT(FSYNC)))) {
-        err = ENOSYS;
-        goto out;
-    }
-
-    for (type = 0; type < FUFH_MAXTYPE; type++) {
-        fufh = &(fvdat->fufh[type]);
-        if (FUFH_IS_VALID(fufh)) {
-            tmp_err = fuse_internal_fsync(vp, context, fufh,
-                                          FUSE_OP_FOREGROUNDED);
-            if (tmp_err) {
-                err = tmp_err;
-            }
-        }
-    }
-
-out:
-    if ((err == ENOSYS) && !fuse_isnosyncwrites_mp(mp)) {
-        err = 0;
-    }
-
-    return err;
+    return fuse_internal_fsync_vp(vp, context);
 }
 
 /*
@@ -750,7 +707,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
     fuse_abi_in(fuse_getattr_in, DTOABI(data), &fgi, fdi.indata);
 
-    if ((err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
         if ((err == ENOTCONN) && vnode_isvroot(vp)) {
             /* see comment at similar place in fuse_statfs() */
             goto fake;
@@ -1057,6 +1015,9 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
         avfi = (struct fuse_avfi_ioctl *)(ap->a_data);
         return fuse_internal_ioctl_avfi(vp, context, avfi);
     }
+    if (cmd == F_FULLFSYNC) {
+        return fuse_internal_fsync_vp(vp, context);
+    }
 
     if (!fuse_abi_is_op_supported(DTOABI(data), FUSE_IOCTL) ||
         !fuse_implemented(data, FSESS_NOIMPLBIT(IOCTL))) {
@@ -1283,8 +1244,11 @@ fuse_vnop_link(struct vnop_link_args *ap)
                                        fuse_abi_sizeof_p(fuse_link_in),
                                        fuse_abi_in_p(fuse_link_in),
                                        &fdi, context);
+
+    /* Note: fuse_internal_newentry_core releases fdi.tick */
     err = fuse_internal_newentry_core(tdvp, &tvp, cnp, vnode_vtype(vp), &fdi,
                                       context);
+
     fuse_invalidate_attr(tdvp);
     fuse_invalidate_attr(vp);
 
@@ -1532,8 +1496,14 @@ calldaemon:
         if (!nodeid) {
             fdi.answ_stat = ENOENT; /* XXX: negative_timeout case */
             lookup_err = ENOENT;
+
+            fuse_ticket_release(fdi.tick);
+            fdi.tick = NULL;
         } else if (nodeid == FUSE_ROOT_ID) {
             lookup_err = EINVAL;
+
+            fuse_ticket_release(fdi.tick);
+            fdi.tick = NULL;
         }
     }
 
@@ -2623,7 +2593,8 @@ fuse_vnop_read(struct vnop_read_args *ap)
 
             fuse_abi_in(fuse_read_in, DTOABI(data), &fri, fdi.indata);
 
-            if ((err = fdisp_wait_answ(&fdi))) {
+            err = fdisp_wait_answ(&fdi);
+            if (err) {
                 return err;
             }
 
@@ -2644,8 +2615,10 @@ fuse_vnop_read(struct vnop_read_args *ap)
             }
         }
 
-        fuse_ticket_release(fdi.tick);
-
+        if (fdi.tick) {
+            fuse_ticket_release(fdi.tick);
+        }
+            
     } /* direct_io */
 
     return ((err == -1) ? 0 : err);
@@ -2774,7 +2747,8 @@ fuse_vnop_readlink(struct vnop_readlink_args *ap)
         return EINVAL;
     }
 
-    if ((err = fdisp_simple_putget_vp(&fdi, FUSE_READLINK, vp, context))) {
+    err = fdisp_simple_putget_vp(&fdi, FUSE_READLINK, vp, context);
+    if (err) {
         return err;
     }
 
@@ -3304,7 +3278,8 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
     fuse_abi_in(fuse_setattr_in, DTOABI(data), &fsai, fdi.indata);
 
-    if ((err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
         fuse_invalidate_attr(vp);
         return err;
     }
@@ -3764,7 +3739,9 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fuse_invalidate_attr(vp);
         }
 
-        fuse_ticket_release(fdi.tick);
+        if (fdi.tick) {
+            fuse_ticket_release(fdi.tick);
+        }
 
         return error;
 

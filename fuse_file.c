@@ -77,7 +77,8 @@ fuse_filehandle_get(vnode_t       vp,
     fuse_abi_in(fuse_open_in, DTOABI(data), &foi, fdi.indata);
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
-    if ((err = fdisp_wait_answ(&fdi))) {
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
         const char *vname = vnode_getname(vp);
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
@@ -166,12 +167,14 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     fuse_abi_in(fuse_release_in, DTOABI(data), &fri, fdi.indata);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
-        if ((err = fdisp_wait_answ(&fdi))) {
+        err = fdisp_wait_answ(&fdi);
+        if (err) {
             goto out;
         }
     } else {
         fuse_insert_message(fdi.tick);
     }
+
     fuse_ticket_release(fdi.tick);
 
 out:
