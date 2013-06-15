@@ -264,7 +264,9 @@ again:
          * We will "hang" while this is showing.
          */
 
-#if M_OSXFUSE_ENABLE_KUNC
+#if !M_OSXFUSE_ENABLE_KUNC
+        kr = KERN_FAILURE;
+#else
         kr = KUNCUserNotificationDisplayAlert(
                  FUSE_DAEMON_TIMEOUT_ALERT_TIMEOUT,   // timeout
                  0,                                   // flags (stop alert)
@@ -277,11 +279,10 @@ again:
                  FUSE_DAEMON_TIMEOUT_ALTERNATE_BUTTON_TITLE,
                  FUSE_DAEMON_TIMEOUT_OTHER_BUTTON_TITLE,
                  &rf);
-#else
-        kr = KERN_FAILURE;
-#endif
 
-        if (kr != KERN_SUCCESS) {
+        if (kr != KERN_SUCCESS)
+#endif
+        {
             /* force ejection if we couldn't show the dialog */
             IOLog("OSXFUSE: force ejecting (no response from user space %d)\n",
                   kr);

@@ -157,15 +157,12 @@ fuse_vget_i(vnode_t               *vpp,
 
 /* Name cache wrappers */
 
-__inline__
 void
 fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp);
 
-__inline__
 void
 fuse_vncache_purge(vnode_t vp);
 
-__inline__
 int
 fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp);
 

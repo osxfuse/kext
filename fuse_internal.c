@@ -25,7 +25,7 @@
 
 /* msleep */
 
-__private_extern__ __inline__
+__private_extern__
 int
 fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
                      struct timespec *ts, __unused struct fuse_data *data)

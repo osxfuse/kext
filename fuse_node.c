@@ -266,7 +266,6 @@ fuse_vget_i(vnode_t               *vpp,
     return 0;
 }
 
-__inline__
 void
 fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 {
@@ -290,7 +289,6 @@ fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 #endif
 }
 
-__inline__
 void
 fuse_vncache_purge(vnode_t vp)
 {
@@ -314,7 +312,6 @@ fuse_vncache_purge(vnode_t vp)
 #endif
 }
 
-__inline__
 int
 fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 {

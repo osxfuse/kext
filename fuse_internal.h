@@ -40,7 +40,6 @@ struct fuse_filehandle;
 
 /* msleep */
 
-__inline__
 int
 fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
                      struct timespec *ts, struct fuse_data *data);
