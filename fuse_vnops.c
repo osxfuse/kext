@@ -1379,13 +1379,11 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     int lookup_err            = 0;
     vnode_t vp                = NULL;
     vnode_t pdp               = (vnode_t)NULL;
-    uint64_t size             = FUSE_ZERO_SIZE;
 
     struct fuse_dispatcher fdi;
     enum   fuse_opcode     op;
 
     uint64_t nodeid;
-    uint64_t parent_nodeid;
 
     struct fuse_getattr_in  fgi;
     struct fuse_data       *data;
@@ -1428,13 +1426,11 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     if (isdotdot) {
         pdp = VTOFUD(dvp)->parentvp;
         nodeid = VTOI(pdp);
-        parent_nodeid = VTOFUD(dvp)->parent_nodeid;
         fdisp_init_abi(&fdi, fuse_getattr_in, DTOABI(data));
         op = FUSE_GETATTR;
         goto calldaemon;
     } else if (isdot) {
         nodeid = VTOI(dvp);
-        parent_nodeid = VTOFUD(dvp)->parent_nodeid;
         fdisp_init_abi(&fdi, fuse_getattr_in, DTOABI(data));
         op = FUSE_GETATTR;
         goto calldaemon;
@@ -1472,7 +1468,6 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     }
 
     nodeid = VTOI(dvp);
-    parent_nodeid = VTOI(dvp);
     fdisp_init(&fdi, cnp->cn_namelen + 1);
     op = FUSE_LOOKUP;
 
@@ -1492,7 +1487,6 @@ calldaemon:
     if ((op == FUSE_LOOKUP) && !lookup_err) { /* lookup call succeeded */
         fuse_abi_out(fuse_entry_out, DTOABI(data), fdi.answ, &feo);
         nodeid = feo.nodeid;
-        size = feo.attr.size;
         if (!nodeid) {
             fdi.answ_stat = ENOENT; /* XXX: negative_timeout case */
             lookup_err = ENOENT;
