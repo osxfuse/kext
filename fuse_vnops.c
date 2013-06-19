@@ -1450,7 +1450,6 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
 #endif
                 *vpp = NULL;
                 FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_overrides);
-                err = 0;
                 break; /* pretend it's a miss */
             }
             FUSE_OSAddAtomic(1, (SInt32 *)&fuse_lookup_cache_hits);

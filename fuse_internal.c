@@ -1431,7 +1431,6 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
     int32_t   bflags;
     upl_t     bupl;
     daddr64_t blkno, lblkno;
-    int       bmap_flags;
     buf_t     bp    = ap->a_bp;
     vnode_t   vp    = buf_vnode(bp);
     int       vtype = vnode_vtype(vp);
@@ -1443,12 +1442,6 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap)
     }
 
     bflags = buf_flags(bp);
-
-    if (bflags & B_READ) {
-        bmap_flags = VNODE_READ;
-    } else {
-        bmap_flags = VNODE_WRITE;
-    }
 
     bupl = buf_upl(bp);
     blkno = buf_blkno(bp);
