@@ -248,7 +248,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -278,18 +277,21 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = "osxfuse-Info.plist";
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
+				SDKROOT = "";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -298,7 +300,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				EXPORTED_SYMBOLS_FILE = osxfuse.exports;
@@ -328,20 +329,23 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = "osxfuse-Info.plist";
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -I../common -std=gnu99";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
+				SDKROOT = "";
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -350,9 +354,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_MACFUSE_MODE = 1;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -360,7 +364,6 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OSXFUSE_NAME = osxfuse;
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
-				SDKROOT = macosx10.7;
 			};
 			name = Debug;
 		};
@@ -368,10 +371,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_MACFUSE_MODE = 1;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
@@ -379,7 +382,6 @@
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OSXFUSE_NAME = osxfuse;
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
-				SDKROOT = macosx10.7;
 				SEPARATE_STRIP = YES;
 			};
 			name = Release;
