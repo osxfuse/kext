@@ -1707,7 +1707,6 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 
     int err = 0;
 
-    struct fuse_data *data;
     struct fuse_mkdir_in fmdi;
 
     fuse_trace_printf_vnop_novp();
@@ -1717,8 +1716,6 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
-
-    data = fuse_get_mpdata(vnode_mount(dvp));
 
     fmdi.mode = MAKEIMODE(vap->va_type, vap->va_mode);
     fmdi.umask = 0;
@@ -1756,7 +1753,6 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
     struct vnode_attr    *vap     = ap->a_vap;
     vfs_context_t         context = ap->a_context;
 
-    struct fuse_data *data;
     struct fuse_mknod_in fmni;
 
     int err;
@@ -1768,8 +1764,6 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
     }
 
     CHECK_BLANKET_DENIAL(dvp, context, EPERM);
-
-    data = fuse_get_mpdata(vnode_mount(dvp));
 
     fmni.mode = MAKEIMODE(vap->va_type, vap->va_mode);
     fmni.rdev = vap->va_rdev;
