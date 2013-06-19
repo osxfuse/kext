@@ -32,7 +32,6 @@ fuse_filehandle_get(vnode_t       vp,
     struct fuse_data        *data = fuse_get_mpdata(vnode_mount(vp));
 
     int err    = 0;
-    int isdir  = 0;
     int oflags = 0;
     int op     = FUSE_OPEN;
 
@@ -54,7 +53,6 @@ fuse_filehandle_get(vnode_t       vp,
     oflags = fuse_filehandle_xlate_to_oflags(fufh_type);
 
     if (vnode_isdir(vp)) {
-        isdir = 1;
         op = FUSE_OPENDIR;
         if (fufh_type != FUFH_RDONLY) {
             IOLog("OSXFUSE: non-rdonly fufh requested for directory\n");
@@ -134,7 +132,6 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     struct fuse_filehandle *fufh  = NULL;
 
     int err   = 0;
-    int isdir = 0;
     int op    = FUSE_RELEASE;
 
     fuse_trace_printf("fuse_filehandle_put(vp=%p, fufh_type=%d)\n",
@@ -156,7 +153,6 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
 
     if (vnode_isdir(vp)) {
         op = FUSE_RELEASEDIR;
-        isdir = 1;
     }
 
     fri.fh = fufh->fh_id;
