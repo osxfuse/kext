@@ -207,8 +207,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
      *     MNT_UNION
      */
 
-    err = ENOTSUP;
-
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
     vfs_setlocklocal(mp);
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
@@ -1250,13 +1248,10 @@ fuse_sync_callback(vnode_t vp, void *cargs)
 static errno_t
 fuse_vfsop_sync(mount_t mp, int waitfor, vfs_context_t context)
 {
-    uint64_t mntflags;
     struct fuse_sync_cargs args;
     int allerror = 0;
 
     fuse_trace_printf_vfsop();
-
-    mntflags = vfs_flags(mp);
 
     if (fuse_isdeadfs_mp(mp)) {
         return 0;
