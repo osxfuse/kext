@@ -804,6 +804,18 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
             /* TBD */
             break;
 
+        case FUSE_NOTIFY_REPLY:
+            /* TBD */
+            break;
+
+        case FUSE_BATCH_FORGET:
+            /* TBD */
+            break;
+
+        case FUSE_FALLOCATE:
+            /* TBD */
+            break;
+
         FB_AUDIT_CASE_NO_OUT(FUSE_SETVOLNAME)
 
         FB_AUDIT_CASE_OUT(FUSE_GETXTIMES, fuse_getxtimes_out)
@@ -1055,11 +1067,17 @@ fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
     switch (notify) {
         FN_AUDIT_CASE_OUT(FUSE_NOTIFY_POLL, fuse_notify_poll_wakeup_out)
 
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_INVAL_INODE, fuse_notify_inval_inode_out)
+
         FN_AUDIT_CASE_SIZE(FUSE_NOTIFY_INVAL_ENTRY, >=,
                            fuse_abi_sizeof(fuse_notify_inval_entry_out,
                                            DTOABI(data)))
 
-        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_INVAL_INODE, fuse_notify_inval_inode_out)
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_STORE, fuse_notify_store_out)
+
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_RETRIEVE, fuse_notify_retrieve_out)
+
+        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_DELETE, fuse_notify_delete_out)
 
         default:
             IOLog("OSXFUSE: notification codes out of sync (%d)\n", notify);
@@ -1100,7 +1118,7 @@ fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio) {
 
     switch (notify) {
         case FUSE_NOTIFY_POLL:
-            /* not implemented */
+            /* Not implemented */
             break;
 
         case FUSE_NOTIFY_INVAL_ENTRY:
@@ -1109,6 +1127,12 @@ fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio) {
 
         case FUSE_NOTIFY_INVAL_INODE:
             err = fuse_notify_inval_inode(data, &iov);
+            break;
+
+        case FUSE_NOTIFY_STORE:
+        case FUSE_NOTIFY_RETRIEVE:
+        case FUSE_NOTIFY_DELETE:
+            /* Not implemented */
             break;
     }
 

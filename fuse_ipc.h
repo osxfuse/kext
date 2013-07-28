@@ -403,6 +403,11 @@ fdisp_simple_putget_vp(struct fuse_dispatcher *fdip, enum fuse_opcode op,
 #define FUSE_ABI_710 710
 #define FUSE_ABI_711 711
 #define FUSE_ABI_712 712
+#define FUSE_ABI_713 713
+#define FUSE_ABI_715 715
+#define FUSE_ABI_716 716
+#define FUSE_ABI_718 718
+#define FUSE_ABI_719 719
 
 #define ABITOI(abi_version) (100 * (abi_version)->major + (abi_version)->minor)
 
@@ -421,7 +426,16 @@ fuse_abi_is_op_supported(struct fuse_abi_version *abi_version,
         case FUSE_IOCTL:
         case FUSE_POLL:
             return ABITOI(abi_version) >= FUSE_ABI_712;
-            break;
+
+        case FUSE_FALLOCATE:
+            return ABITOI(abi_version) >= FUSE_ABI_719;
+
+        case FUSE_NOTIFY_REPLY:
+            return ABITOI(abi_version) >= FUSE_ABI_715;
+
+        case FUSE_BATCH_FORGET:
+            return ABITOI(abi_version) >= FUSE_ABI_716;
+
         default:
             return true; /* ABI 7.8 */
     }
@@ -446,7 +460,14 @@ fuse_abi_is_notify_supported(struct fuse_abi_version *abi_version, int notify)
         case FUSE_NOTIFY_INVAL_INODE:
         case FUSE_NOTIFY_INVAL_ENTRY:
             return ABITOI(abi_version) >= FUSE_ABI_712;
-            break;
+
+        case FUSE_NOTIFY_STORE:
+        case FUSE_NOTIFY_RETRIEVE:
+            return ABITOI(abi_version) >= FUSE_ABI_715;
+
+        case FUSE_NOTIFY_DELETE:
+            return ABITOI(abi_version) >= FUSE_ABI_718;
+
         default:
             return true; /* ABI 7.11 */
     }
@@ -480,6 +501,8 @@ FUSE_ABI_SIZEOF_IMPL(fuse_file_lock, )
 FUSE_ABI_SIZEOF_IMPL(fuse_entry_out,
                      return 40 + fuse_abi_sizeof(fuse_attr, abi_version);)
 FUSE_ABI_SIZEOF_IMPL(fuse_forget_in, )
+FUSE_ABI_SIZEOF_IMPL(fuse_forget_one, )
+FUSE_ABI_SIZEOF_IMPL(fuse_batch_forget_in, )
 FUSE_ABI_SIZEOF_IMPL(fuse_getattr_in,
                      if (ABITOI(abi_version) < FUSE_ABI_709) {
                          return 0;
@@ -530,13 +553,19 @@ FUSE_ABI_SIZEOF_IMPL(fuse_interrupt_in, )
 FUSE_ABI_SIZEOF_IMPL(fuse_bmap_in, )
 FUSE_ABI_SIZEOF_IMPL(fuse_bmap_out, )
 FUSE_ABI_SIZEOF_IMPL(fuse_ioctl_in, )
+FUSE_ABI_SIZEOF_IMPL(fuse_ioctl_iovec, )
 FUSE_ABI_SIZEOF_IMPL(fuse_ioctl_out, )
 FUSE_ABI_SIZEOF_IMPL(fuse_poll_in, )
 FUSE_ABI_SIZEOF_IMPL(fuse_poll_out, )
 FUSE_ABI_SIZEOF_IMPL(fuse_notify_poll_wakeup_out, )
+FUSE_ABI_SIZEOF_IMPL(fuse_fallocate_in, )
 FUSE_ABI_SIZEOF_IMPL(fuse_dirent, )
 FUSE_ABI_SIZEOF_IMPL(fuse_notify_inval_inode_out, )
 FUSE_ABI_SIZEOF_IMPL(fuse_notify_inval_entry_out, )
+FUSE_ABI_SIZEOF_IMPL(fuse_notify_delete_out, )
+FUSE_ABI_SIZEOF_IMPL(fuse_notify_store_out, )
+FUSE_ABI_SIZEOF_IMPL(fuse_notify_retrieve_out, )
+FUSE_ABI_SIZEOF_IMPL(fuse_notify_retrieve_in, )
 
 /*
  * Translates the specified FUSE output data structure at the input pointer to
@@ -572,7 +601,11 @@ FUSE_ABI_OUT_IMPL(fuse_write_out, )
 FUSE_ABI_OUT_IMPL(fuse_statfs_out, )
 FUSE_ABI_OUT_IMPL(fuse_getxattr_out, )
 FUSE_ABI_OUT_IMPL(fuse_lk_out, )
-FUSE_ABI_OUT_IMPL(fuse_init_out, )
+FUSE_ABI_OUT_IMPL(fuse_init_out,
+                  if (ABITOI(abi_version) < FUSE_ABI_713) {
+                      ((struct fuse_init_out *)outp)->max_background = 0;
+                      ((struct fuse_init_out *)outp)->congestion_threshold = 0;
+                  })
 FUSE_ABI_OUT_IMPL(fuse_bmap_out, )
 FUSE_ABI_OUT_IMPL(fuse_ioctl_out, )
 FUSE_ABI_OUT_IMPL(fuse_poll_out, )
@@ -580,6 +613,9 @@ FUSE_ABI_OUT_IMPL(fuse_notify_poll_wakeup_out, )
 FUSE_ABI_OUT_IMPL(fuse_dirent, )
 FUSE_ABI_OUT_IMPL(fuse_notify_inval_inode_out, )
 FUSE_ABI_OUT_IMPL(fuse_notify_inval_entry_out, )
+FUSE_ABI_OUT_IMPL(fuse_notify_delete_out, )
+FUSE_ABI_OUT_IMPL(fuse_notify_store_out, )
+FUSE_ABI_OUT_IMPL(fuse_notify_retrieve_out, )
 
 /*
  * Translates the specified FUSE input data structure at the input pointer to
@@ -608,6 +644,8 @@ typedef void *(*fuse_abi_in_t)(struct fuse_abi_version *, void *, void *);
     }
 
 FUSE_ABI_IN_IMPL(fuse_forget_in, )
+FUSE_ABI_IN_IMPL(fuse_forget_one, )
+FUSE_ABI_IN_IMPL(fuse_batch_forget_in, )
 FUSE_ABI_IN_IMPL(fuse_getattr_in, )
 FUSE_ABI_IN_IMPL(fuse_mknod_in, )
 FUSE_ABI_IN_IMPL(fuse_mkdir_in, )
@@ -630,8 +668,11 @@ FUSE_ABI_IN_IMPL(fuse_init_in, )
 FUSE_ABI_IN_IMPL(fuse_interrupt_in, )
 FUSE_ABI_IN_IMPL(fuse_bmap_in, )
 FUSE_ABI_IN_IMPL(fuse_ioctl_in, )
+FUSE_ABI_IN_IMPL(fuse_ioctl_iovec, )
 FUSE_ABI_IN_IMPL(fuse_poll_in, )
+FUSE_ABI_IN_IMPL(fuse_fallocate_in, )
 FUSE_ABI_IN_IMPL(fuse_dirent, )
+FUSE_ABI_IN_IMPL(fuse_notify_retrieve_in, )
 
 /* Undefine ABI macros */
 #undef FUSE_ABI_SIZEOF_IMPL

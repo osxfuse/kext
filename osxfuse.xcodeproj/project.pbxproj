@@ -46,7 +46,7 @@
 		54C6DDBD0B5EEB44002D9FD9 /* fuse_internal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_internal.h; sourceTree = "<group>"; };
 		54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_ipc.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDBF0B5EEB44002D9FD9 /* fuse_ipc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_ipc.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_kernel.h; sourceTree = "<group>"; };
+		54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 30; indentWidth = 8; lastKnownFileType = sourcecode.c.h; path = fuse_kernel.h; sourceTree = "<group>"; tabWidth = 8; usesTabs = 1; };
 		54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_locking.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_locking.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -178,6 +178,8 @@
 /* Begin PBXProject section */
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfuse" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
