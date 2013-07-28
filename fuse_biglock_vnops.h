@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2011-2012 Benjamin Fleischer
+ * Copyright (c) 2010 Tuxera Inc.
+ * Copyright (c) 2011-2013 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -161,7 +162,7 @@ FUSE_VNOP_EXPORT int fuse_biglock_vnop_access(struct vnop_access_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_biglock_vnop_advlock(struct vnop_advlock_args *ap);
 
-// FUSE_VNOP_EXPORT int fuse_biglock_vnop_allocate(struct vnop_allocate_args *ap);
+FUSE_VNOP_EXPORT int fuse_biglock_vnop_allocate(struct vnop_allocate_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_biglock_vnop_blktooff(struct vnop_blktooff_args *ap);
 

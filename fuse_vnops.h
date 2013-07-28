@@ -26,7 +26,7 @@ FUSE_VNOP_EXPORT int fuse_vnop_access(struct vnop_access_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_advlock(struct vnop_advlock_args *ap);
 
-// FUSE_VNOP_EXPORT int fuse_vnop_allocate(struct vnop_allocate_args *ap);
+FUSE_VNOP_EXPORT int fuse_vnop_allocate(struct vnop_allocate_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_blktooff(struct vnop_blktooff_args *ap);
 

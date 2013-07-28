@@ -812,9 +812,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
             /* TBD */
             break;
 
-        case FUSE_FALLOCATE:
-            /* TBD */
-            break;
+        FB_AUDIT_CASE_NO_OUT(FUSE_FALLOCATE)
 
         FB_AUDIT_CASE_NO_OUT(FUSE_SETVOLNAME)
 

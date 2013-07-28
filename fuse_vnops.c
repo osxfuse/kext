@@ -74,6 +74,118 @@ fuse_vnop_access(struct vnop_access_args *ap)
 }
 
 /*
+    struct vnop_allocate_args {
+	    struct vnodeop_desc *a_desc;
+	    vnode_t              a_vp;
+	    off_t                a_length;
+	    u_int32_t            a_flags;
+	    off_t               *a_bytesallocated;
+	    off_t                a_offset;
+	    vfs_context_t        a_context;
+    };
+*/
+FUSE_VNOP_EXPORT
+int
+fuse_vnop_allocate(struct vnop_allocate_args *ap)
+{
+    vnode_t        vp             = ap->a_vp;
+    off_t          length         = ap->a_length;
+    u_int32_t      flags          = ap->a_flags;
+    off_t         *bytesallocated = ap->a_bytesallocated;
+    off_t          offset         = ap->a_offset;
+    vfs_context_t  context        = ap->a_context;
+
+    struct fuse_filehandle   *fufh = NULL;
+    fufh_type_t               fufh_type = FUFH_WRONLY;
+    struct fuse_vnode_data   *fvdat = VTOFUD(vp);
+    struct fuse_dispatcher    fdi;
+    struct fuse_fallocate_in  ffai;
+    struct fuse_data         *data = fuse_get_mpdata(vnode_mount(vp));
+
+    int err = 0;
+
+    fuse_trace_printf_vnop();
+
+    *bytesallocated = 0;
+
+    if (fuse_isdeadfs(vp)) {
+        return ENXIO;
+    }
+
+    if (!fuse_implemented(data, FSESS_NOIMPLBIT(FALLOCATE))) {
+        return ENOTSUP;
+    }
+
+    if (!vnode_isreg(vp)) {
+        return EISDIR;
+    }
+	if (length < (off_t)0) {
+        return EINVAL;
+    }
+
+    if ((flags & ALLOCATEFROMVOL) && (length < fvdat->filesize)) {
+		/* See hfs_vnop_allocate */
+        return EINVAL;
+	}
+
+    fufh = &(fvdat->fufh[fufh_type]);
+    if (!FUFH_IS_VALID(fufh)) {
+        fufh_type = FUFH_RDWR;
+        fufh = &(fvdat->fufh[fufh_type]);
+        if (!FUFH_IS_VALID(fufh)) {
+            fufh = NULL;
+        } else {
+            /* Falling back to FUFH_RDWR. */
+        }
+    }
+
+    if (!fufh) {
+        /* Failing allocate because of no fufh. */
+        return EIO;
+    } else {
+        /* Using existing fufh of type fufh_type. */
+    }
+
+    ffai.fh = fufh->fh_id;
+    ffai.offset = (uint64_t)offset;
+    ffai.length = (uint64_t)length;
+    ffai.mode = flags;
+
+    if (flags & PREALLOCATE) {
+        /*
+         * Note: FUSE_FALLOCATE does not return the actual number of bytes that
+         * have been allocated. Therefore we set the ALLOCATEALL flag (Allocate
+         * all requested space or no space at all) and return a_length in case
+         * FUSE_FALLOCATE succeeds.
+         */
+        ffai.mode |= ALLOCATEALL;
+    }
+
+    fdisp_init_abi(&fdi, fuse_fallocate_in, DTOABI(data));
+    fdisp_make_vp(&fdi, FUSE_FALLOCATE, vp, context);
+    fuse_abi_in(fuse_fallocate_in, DTOABI(data), &ffai, fdi.indata);
+
+    err = fdisp_wait_answ(&fdi);
+    if (err) {
+        if (err == ENOSYS) {
+            /* Make sure we don't come in here again. */
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(FALLOCATE));
+            err = ENOTSUP;
+        }
+    } else {
+        fuse_ticket_release(fdi.tick);
+
+        if (flags & ALLOCATEFROMVOL) {
+            *bytesallocated = length - fvdat->filesize;
+        } else {
+            *bytesallocated = length;
+        }
+    }
+
+    return err;
+}
+
+/*
     struct vnop_blktooff_args {
         struct vnodeop_desc *a_desc;
         vnode_t              a_vp;
@@ -3930,7 +4042,7 @@ fuse_spec_vnop_write(struct vnop_write_args *ap)
 struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
     { &vnop_access_desc,        (fuse_vnode_op_t) fuse_vnop_access        },
     { &vnop_advlock_desc,       (fuse_vnode_op_t) err_advlock             },
-//  { &vnop_allocate_desc,      (fuse_vnode_op_t) fuse_vnop_allocate      },
+    { &vnop_allocate_desc,      (fuse_vnode_op_t) fuse_vnop_allocate      },
     { &vnop_blktooff_desc,      (fuse_vnode_op_t) fuse_vnop_blktooff      },
     { &vnop_blockmap_desc,      (fuse_vnode_op_t) fuse_vnop_blockmap      },
 //  { &vnop_bwrite_desc,        (fuse_vnode_op_t) fuse_vnop_bwrite        },

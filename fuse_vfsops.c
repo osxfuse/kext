@@ -869,6 +869,15 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
             VOL_CAP_INT_EXCHANGEDATA;
     }
 
+    /*
+     * Don't set the ALLOCATE capability if it's known not to be implemented
+     * in the FUSE daemon.
+     */
+    if (fuse_implemented(data, FSESS_NOIMPLBIT(FALLOCATE))) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_ALLOCATE;
+    }
+
     attr->f_capabilities.valid[VOL_CAPABILITIES_INTERFACES] = 0
         | VOL_CAP_INT_SEARCHFS
         | VOL_CAP_INT_ATTRLIST
