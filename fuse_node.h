@@ -137,24 +137,24 @@ void fuse_vnode_ditch(vnode_t vp, vfs_context_t context);
 void fuse_vnode_teardown(vnode_t vp, vfs_context_t context, enum vtype vtyp);
 
 errno_t
-FSNodeGetOrCreateFileVNodeByID(vnode_t               *vpp,
-                               uint32_t               flags,
-                               struct fuse_entry_out *feo,
-                               mount_t                mp,
-                               vnode_t                dvp,
-                               vfs_context_t          context,
-                               uint32_t              *oflags);
+FSNodeGetOrCreateFileVNodeByID(vnode_t              *vpp,
+                               uint32_t              flags,
+                               struct fuse_abi_data *feo,
+                               mount_t               mp,
+                               vnode_t               dvp,
+                               vfs_context_t         context,
+                               uint32_t             *oflags);
 
 void FSNodeScrub(struct fuse_vnode_data *fvdat);
 
 int
-fuse_vget_i(vnode_t               *vpp,
-            uint32_t               flags,
-            struct fuse_entry_out *feo,
-            struct componentname  *cnp,
-            vnode_t                dvp,
-            mount_t                mp,
-            vfs_context_t          context);
+fuse_vget_i(vnode_t              *vpp,
+            uint32_t              flags,
+            struct fuse_abi_data *feo,
+            struct componentname *cnp,
+            vnode_t               dvp,
+            mount_t               mp,
+            vfs_context_t         context);
 
 /* Name cache wrappers */
 

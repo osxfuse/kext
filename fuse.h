@@ -191,4 +191,9 @@ typedef enum fuse_op_waitfor {
     FUSE_OP_FOREGROUNDED = 1,
 } fuse_op_waitfor_t;
 
+struct fuse_abi_data {
+    int   fad_version;
+    void *fad_data;
+};
+
 #endif /* _FUSE_H_ */

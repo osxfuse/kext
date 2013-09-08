@@ -461,17 +461,17 @@ fuse_internal_loadxtimes(vnode_t vp, struct vnode_attr *out_vap,
                          vfs_context_t context);
 
 int
-fuse_internal_attr_vat2fsai(mount_t                 mp,
-                            vnode_t                 vp,
-                            struct vnode_attr      *vap,
-                            struct fuse_setattr_in *fsai,
-                            uint64_t               *newsize);
+fuse_internal_attr_vat2fsai(mount_t               mp,
+                            vnode_t               vp,
+                            struct vnode_attr    *vap,
+                            struct fuse_abi_data *fsai,
+                            uint64_t             *newsize);
 
 static __inline__
 void
-fuse_internal_attr_fat2vat(vnode_t            vp,
-                           struct fuse_attr  *fat,
-                           struct vnode_attr *vap)
+fuse_internal_attr_fat2vat(vnode_t               vp,
+                           struct fuse_abi_data *fat,
+                           struct vnode_attr    *vap)
 {
     struct timespec t;
     mount_t mp = vnode_mount(vp);
@@ -480,9 +480,11 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
 
     VATTR_INIT(vap);
 
+    uint64_t ino = fuse_attr_get_ino(fat);
+
     VATTR_RETURN(vap, va_fsid, vfs_statfs(mp)->f_fsid.val[0]);
-    VATTR_RETURN(vap, va_fileid, fat->ino);
-    VATTR_RETURN(vap, va_linkid, fat->ino);
+    VATTR_RETURN(vap, va_fileid, ino);
+    VATTR_RETURN(vap, va_linkid, ino);
 
     /*
      * If we have asynchronous writes enabled, our local in-kernel size
@@ -490,9 +492,9 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      */
     /* ATTR_FUDGE_CASE */
     if (!vfs_issynchronous(mp)) {
-        fat->size = fvdat->filesize;
+        fuse_attr_set_size(fat, fvdat->filesize);
     }
-    VATTR_RETURN(vap, va_data_size, fat->size);
+    VATTR_RETURN(vap, va_data_size, fuse_attr_get_size(fat));
 
     /*
      * The kernel will compute the following for us if we leave them
@@ -503,45 +505,46 @@ fuse_internal_attr_fat2vat(vnode_t            vp,
      * va_total_alloc
      */
     if (fuse_issparse_mp(mp)) {
-        VATTR_RETURN(vap, va_data_alloc, fat->blocks * 512);
+        VATTR_RETURN(vap, va_data_alloc, fuse_attr_get_blocks(fat) * 512);
     }
 
-    t.tv_sec = (typeof(t.tv_sec))fat->atime; /* XXX: truncation */
-    t.tv_nsec = fat->atimensec;
+    t.tv_sec = (typeof(t.tv_sec))fuse_attr_get_atime(fat); /* XXX: truncation */
+    t.tv_nsec = fuse_attr_get_atimensec(fat);
     VATTR_RETURN(vap, va_access_time, t);
 
-    t.tv_sec = (typeof(t.tv_sec))fat->ctime; /* XXX: truncation */
-    t.tv_nsec = fat->ctimensec;
+    t.tv_sec = (typeof(t.tv_sec))fuse_attr_get_ctime(fat); /* XXX: truncation */
+    t.tv_nsec = fuse_attr_get_ctimensec(fat);
     VATTR_RETURN(vap, va_change_time, t);
 
-    t.tv_sec = (typeof(t.tv_sec))fat->mtime; /* XXX: truncation */
-    t.tv_nsec = fat->mtimensec;
+    t.tv_sec = (typeof(t.tv_sec))fuse_attr_get_mtime(fat); /* XXX: truncation */
+    t.tv_nsec = fuse_attr_get_mtimensec(fat);
     VATTR_RETURN(vap, va_modify_time, t);
 
-    t.tv_sec = (typeof(t.tv_sec))fat->crtime; /* XXX: truncation */
-    t.tv_nsec = fat->crtimensec;
+    t.tv_sec = (typeof(t.tv_sec))fuse_attr_get_crtime(fat); /* XXX: truncation */
+    t.tv_nsec = fuse_attr_get_crtimensec(fat);
     VATTR_RETURN(vap, va_create_time, t);
 
-    VATTR_RETURN(vap, va_mode, fat->mode & ~S_IFMT);
-    VATTR_RETURN(vap, va_nlink, fat->nlink);
-    VATTR_RETURN(vap, va_uid, fat->uid);
-    VATTR_RETURN(vap, va_gid, fat->gid);
-    VATTR_RETURN(vap, va_rdev, fat->rdev);
+    VATTR_RETURN(vap, va_mode, fuse_attr_get_mode(fat) & ~S_IFMT);
+    VATTR_RETURN(vap, va_nlink, fuse_attr_get_nlink(fat));
+    VATTR_RETURN(vap, va_uid, fuse_attr_get_uid(fat));
+    VATTR_RETURN(vap, va_gid, fuse_attr_get_gid(fat));
+    VATTR_RETURN(vap, va_rdev, fuse_attr_get_rdev(fat));
 
-    VATTR_RETURN(vap, va_type, IFTOVT(fat->mode));
+    VATTR_RETURN(vap, va_type, IFTOVT(fuse_attr_get_mode(fat)));
 
-    if (fat->blksize != 0) {
-        fat->blksize = fuse_round_size(fat->blksize,
-                                       FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
-        if (fat->blksize < data->blocksize) {
-            fat->blksize = data->blocksize;
+    uint32_t blksize = fuse_attr_get_blksize(fat);
+    if (blksize != 0) {
+        blksize = fuse_round_size(blksize, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+        if (blksize < data->blocksize) {
+            blksize = data->blocksize;
         }
     } else {
-        fat->blksize = data->iosize;
+        blksize = data->iosize;
     }
-    VATTR_RETURN(vap, va_iosize, fat->blksize);
+    fuse_attr_set_blksize(fat, blksize);
+    VATTR_RETURN(vap, va_iosize, blksize);
 
-    VATTR_RETURN(vap, va_flags, fat->flags);
+    VATTR_RETURN(vap, va_flags, fuse_attr_get_flags(fat));
 }
 
 static __inline__
@@ -674,18 +677,21 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     }
 }
 
-#define cache_attrs(vp, fuse_out) do {                               \
-    struct timespec uptsp_ ## __func__;                              \
-                                                                     \
-    /* XXX: truncation; user space sends us a 64-bit tv_sec */       \
-    VTOFUD(vp)->attr_valid.tv_sec = (time_t)(fuse_out)->attr_valid;  \
-    VTOFUD(vp)->attr_valid.tv_nsec = (fuse_out)->attr_valid_nsec;    \
-    nanouptime(&uptsp_ ## __func__);                                 \
-                                                                     \
-    fuse_timespec_add(&VTOFUD(vp)->attr_valid, &uptsp_ ## __func__); \
-                                                                     \
-    fuse_internal_attr_fat2vat(vp, &(fuse_out)->attr, VTOVA(vp));    \
-} while (0)
+#define cache_attrs(vp, struct_name, fuse_out) \
+    do { \
+        struct timespec uptsp_ ## __funct__; \
+        struct fuse_abi_data fa_ ## __func__; \
+        \
+        /* XXX: truncation; user space sends us a 64-bit tv_sec */ \
+        VTOFUD(vp)->attr_valid.tv_sec = (time_t)struct_name ## _get_attr_valid(fuse_out); \
+        VTOFUD(vp)->attr_valid.tv_nsec = struct_name ## _get_attr_valid_nsec(fuse_out); \
+        nanouptime(&uptsp_ ## __funct__); \
+        \
+        fuse_timespec_add(&VTOFUD(vp)->attr_valid, &uptsp_ ## __funct__); \
+        \
+        fuse_abi_data_init(&fa_ ## __func__, (fuse_out)->fad_version, struct_name ## _get_attr(fuse_out)); \
+        fuse_internal_attr_fat2vat(vp, &fa_ ## __func__, VTOVA(vp)); \
+    } while (0)
 
 #if M_OSXFUSE_ENABLE_EXCHANGE
 
@@ -801,17 +807,21 @@ fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
 
 static __inline__
 int
-fuse_internal_checkentry(struct fuse_entry_out *feo, enum vtype vtype)
+fuse_internal_checkentry(struct fuse_abi_data *feo, enum vtype vtype)
 {
-    if (vtype != IFTOVT(feo->attr.mode)) {
+    struct fuse_abi_data fa;
+
+    fuse_abi_data_init(&fa, feo->fad_version, fuse_entry_out_get_attr(feo));
+
+    if (vtype != IFTOVT(fuse_attr_get_mode(&fa))) {
         return EINVAL;
     }
 
-    if (feo->nodeid == FUSE_NULL_ID) {
+    if (fuse_entry_out_get_nodeid(feo) == FUSE_NULL_ID) {
         return EINVAL;
     }
 
-    if (feo->nodeid == FUSE_ROOT_ID) {
+    if (fuse_entry_out_get_nodeid(feo) == FUSE_ROOT_ID) {
         return EINVAL;
     }
 
@@ -824,8 +834,7 @@ fuse_internal_newentry(vnode_t               dvp,
                        struct componentname *cnp,
                        enum fuse_opcode      op,
                        void                 *buf,
-                       fuse_abi_sizeof_t     abi_sizeof,
-                       fuse_abi_in_t         abi_in,
+                       size_t                bufsize,
                        enum vtype            vtype,
                        vfs_context_t         context);
 
@@ -835,8 +844,7 @@ fuse_internal_newentry_makerequest(mount_t                 mp,
                                    struct componentname   *cnp,
                                    enum fuse_opcode        op,
                                    void                   *buf,
-                                   fuse_abi_sizeof_t       abi_sizeof,
-                                   fuse_abi_in_t           abi_in,
+                                   size_t                  bufsize,
                                    struct fuse_dispatcher *fdip,
                                    vfs_context_t           context);
 

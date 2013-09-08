@@ -24,8 +24,8 @@ fuse_filehandle_get(vnode_t       vp,
                     int           mode)
 {
     struct fuse_dispatcher  fdi;
-    struct fuse_open_in     foi;
-    struct fuse_open_out    foo;
+    struct fuse_abi_data    foi;
+    struct fuse_abi_data    foo;
     struct fuse_filehandle *fufh;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
 
@@ -68,11 +68,11 @@ fuse_filehandle_get(vnode_t       vp,
         oflags |= O_TRUNC;
     }
 
-    foi.flags = oflags;
-
-    fdisp_init_abi(&fdi, fuse_open_in, DTOABI(data));
+    fdisp_init_abi(&fdi, fuse_open_in, DATOI(data));
     fdisp_make_vp(&fdi, op, vp, context);
-    fuse_abi_in(fuse_open_in, DTOABI(data), &foi, fdi.indata);
+    fuse_abi_data_init(&foi, DATOI(data), fdi.indata);
+
+    fuse_open_in_set_flags(&foi, oflags);
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_upcall_count);
     err = fdisp_wait_answ(&fdi);
@@ -108,12 +108,12 @@ fuse_filehandle_get(vnode_t       vp,
     }
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
 
-    fuse_abi_out(fuse_open_out, DTOABI(data), fdi.answ, &foo);
+    fuse_abi_data_init(&foo, DATOI(data), fdi.answ);
 
-    fufh->fh_id = foo.fh;
+    fufh->fh_id = fuse_open_out_get_fh(&foo);
     fufh->open_count = 1;
     fufh->open_flags = oflags;
-    fufh->fuse_open_flags = foo.open_flags;
+    fufh->fuse_open_flags = fuse_open_out_get_open_flags(&foo);
     fufh->aux_count = 0;
 
     fuse_ticket_release(fdi.tick);
@@ -127,7 +127,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
 {
     struct fuse_data       *data;
     struct fuse_dispatcher  fdi;
-    struct fuse_release_in  fri;
+    struct fuse_abi_data    fri;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_filehandle *fufh  = NULL;
 
@@ -155,12 +155,12 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
         op = FUSE_RELEASEDIR;
     }
 
-    fri.fh = fufh->fh_id;
-    fri.flags = fufh->open_flags;
-
-    fdisp_init_abi(&fdi, fuse_release_in, DTOABI(data));
+    fdisp_init_abi(&fdi, fuse_release_in, DATOI(data));
     fdisp_make_vp(&fdi, op, vp, context);
-    fuse_abi_in(fuse_release_in, DTOABI(data), &fri, fdi.indata);
+    fuse_abi_data_init(&fri, DATOI(data), fdi.indata);
+
+    fuse_release_in_set_fh(&fri, fufh->fh_id);
+    fuse_release_in_set_flags(&fri, fufh->open_flags);
 
     if (waitfor == FUSE_OP_FOREGROUNDED) {
         err = fdisp_wait_answ(&fdi);

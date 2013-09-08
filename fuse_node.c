@@ -28,13 +28,13 @@ FSNodeScrub(struct fuse_vnode_data *fvdat)
 }
 
 errno_t
-FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
-                               uint32_t               flags,
-                               struct fuse_entry_out *feo,
-                               mount_t                mp,
-                               vnode_t                dvp,
-                               vfs_context_t          context,
-                               uint32_t              *oflags)
+FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
+                               uint32_t              flags,
+                               struct fuse_abi_data *feo,
+                               mount_t               mp,
+                               vnode_t               dvp,
+                               vfs_context_t         context,
+                               uint32_t             *oflags)
 {
     int   err;
 
@@ -45,21 +45,27 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
     struct fuse_data       *mntdata = NULL;
     fuse_device_t           dummy_device;
 
-    enum vtype vtyp = IFTOVT(feo->attr.mode);
+    struct fuse_abi_data fa;
+
+    enum vtype vtyp;
+
+    fuse_abi_data_init(&fa, feo->fad_version, fuse_entry_out_get_attr(feo));
+
+    vtyp = IFTOVT(fuse_attr_get_mode(&fa));
 
     if ((vtyp >= VBAD) || (vtyp == VNON)) {
         return EINVAL;
     }
 
     int      markroot   = (flags & FN_IS_ROOT) ? 1 : 0;
-    uint64_t size       = (flags & FN_IS_ROOT) ? 0 : feo->attr.size;
-    uint32_t rdev       = (flags & FN_IS_ROOT) ? 0 : feo->attr.rdev;
-    uint64_t generation = feo->generation;
+    uint64_t size       = (flags & FN_IS_ROOT) ? 0 : fuse_attr_get_size(&fa);
+    uint32_t rdev       = (flags & FN_IS_ROOT) ? 0 : fuse_attr_get_rdev(&fa);
+    uint64_t generation = fuse_entry_out_get_generation(feo);
 
     mntdata = fuse_get_mpdata(mp);
     dummy_device = mntdata->fdev;
 
-    err = HNodeLookupCreatingIfNecessary(dummy_device, feo->nodeid,
+    err = HNodeLookupCreatingIfNecessary(dummy_device, fuse_entry_out_get_nodeid(feo),
                                          0 /* fork index */, &hn, &vn);
     if ((err == 0) && (vn == NULL)) {
 
@@ -73,7 +79,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 
             /* self */
             fvdat->vp           = NULLVP; /* hold on */
-            fvdat->nodeid       = feo->nodeid;
+            fvdat->nodeid       = fuse_entry_out_get_nodeid(feo);
             fvdat->generation   = generation;
 
             /* parent */
@@ -99,19 +105,19 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             /* meta */
 
             /* XXX: truncation */
-            fvdat->entry_valid.tv_sec  = (time_t)feo->entry_valid;
+            fvdat->entry_valid.tv_sec  = (time_t)fuse_entry_out_get_entry_valid(feo);
 
-            fvdat->entry_valid.tv_nsec = feo->entry_valid_nsec;
-
-            /* XXX: truncation */
-            fvdat->attr_valid.tv_sec   = (time_t)feo->attr_valid;
-
-            fvdat->attr_valid.tv_nsec  = feo->attr_valid_nsec;
+            fvdat->entry_valid.tv_nsec = fuse_entry_out_get_entry_valid_nsec(feo);
 
             /* XXX: truncation */
-            fvdat->modify_time.tv_sec  = (time_t)feo->attr.mtime;
+            fvdat->attr_valid.tv_sec   = (time_t)fuse_entry_out_get_attr_valid(feo);
 
-            fvdat->modify_time.tv_nsec = feo->attr.mtimensec;
+            fvdat->attr_valid.tv_nsec  = fuse_entry_out_get_attr_valid_nsec(feo);
+
+            /* XXX: truncation */
+            fvdat->modify_time.tv_sec  = (time_t)fuse_attr_get_mtime(&fa);
+
+            fvdat->modify_time.tv_nsec = fuse_attr_get_mtimensec(&fa);
 
             fvdat->filesize            = size;
             fvdat->nlookup             = 0;
@@ -232,13 +238,13 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
 }
 
 int
-fuse_vget_i(vnode_t               *vpp,
-            uint32_t               flags,
-            struct fuse_entry_out *feo,
-            struct componentname  *cnp,
-            vnode_t                dvp,
-            mount_t                mp,
-            vfs_context_t          context)
+fuse_vget_i(vnode_t              *vpp,
+            uint32_t              flags,
+            struct fuse_abi_data *feo,
+            struct componentname *cnp,
+            vnode_t               dvp,
+            mount_t               mp,
+            vfs_context_t         context)
 {
     int err = 0;
 

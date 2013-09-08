@@ -18,27 +18,31 @@ int
 fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov) {
     int err = 0;
 
-    struct fuse_notify_inval_entry_out fnieo;
+    struct fuse_abi_data fnieo;
     char name[FUSE_MAXNAMLEN + 1];
     void *next;
+
+    uint32_t namelen;
 
     HNodeRef dhp;
     vnode_t dvp;
     vnode_t vp;
     struct componentname cn;
 
-    next = fuse_abi_out(fuse_notify_inval_entry_out, DTOABI(data), iov->base,
-                       &fnieo);
-    if (fnieo.namelen > iov->len - ((char *)next - (char *)iov->base)) {
+    fuse_abi_data_init(&fnieo, DATOI(data), iov->base);
+    next = (char *)iov->base + fuse_notify_inval_entry_out_sizeof(DATOI(data));
+
+    namelen = fuse_notify_inval_entry_out_get_namelen(&fnieo);
+    if (namelen > iov->len - ((char *)next - (char *)iov->base)) {
         return EINVAL;
     }
-    if (fnieo.namelen > FUSE_MAXNAMLEN) {
+    if (namelen > FUSE_MAXNAMLEN) {
         return ENAMETOOLONG;
     }
-    memcpy(name, next, fnieo.namelen);
-    name[fnieo.namelen] = '\0';
+    memcpy(name, next, namelen);
+    name[namelen] = '\0';
 
-    err = (int)HNodeLookupRealQuickIfExists(data->fdev, (ino_t)fnieo.parent,
+    err = (int)HNodeLookupRealQuickIfExists(data->fdev, (ino_t)fuse_notify_inval_entry_out_get_parent(&fnieo),
                                             0 /* fork index */, &dhp, &dvp);
     if (err) {
         return err;
@@ -54,7 +58,7 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov) {
     memset(&cn, 0, sizeof(cn));
     cn.cn_nameiop = LOOKUP;
     cn.cn_flags = MAKEENTRY;
-    cn.cn_namelen = fnieo.namelen;
+    cn.cn_namelen = namelen;
     cn.cn_nameptr = name;
 
     fuse_nodelock_lock(VTOFUD(dvp), FUSEFS_EXCLUSIVE_LOCK);
@@ -89,15 +93,23 @@ int
 fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov) {
     int err = 0;
 
-    struct fuse_notify_inval_inode_out fniio;
+    struct fuse_abi_data fniio;
+
+    ino_t ino;
+    int64_t off;
+    int64_t len;
 
     HNodeRef hp;
     vnode_t vp;
 
-    fuse_abi_out(fuse_notify_inval_inode_out, DTOABI(data), iov->base, &fniio);
+    fuse_abi_data_init(&fniio, DATOI(data), iov->base);
 
-    err = (int)HNodeLookupRealQuickIfExists(data->fdev, (ino_t)fniio.ino,
-                                            0 /* fork index */, &hp, &vp);
+    ino = (ino_t)fuse_notify_inval_inode_out_get_ino(&fniio);
+    off = fuse_notify_inval_inode_out_get_off(&fniio);
+    len = fuse_notify_inval_inode_out_get_len(&fniio);
+
+    err = (int)HNodeLookupRealQuickIfExists(data->fdev, ino, 0 /* fork index */,
+                                            &hp, &vp);
     if (err) {
         return err;
     }
@@ -106,16 +118,16 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov) {
     fuse_nodelock_lock(VTOFUD(vp), FUSEFS_EXCLUSIVE_LOCK);
 
     fuse_invalidate_attr(vp);
-    if (fniio.off >= 0) {
+    if (off >= 0) {
         off_t end_off;
 
-        if (fniio.len > 0) {
-            end_off = (off_t) min(fniio.off + fniio.len, ubc_getsize(vp));
+        if (len > 0) {
+            end_off = (off_t) min(off + len, ubc_getsize(vp));
         } else {
             end_off = ubc_getsize(vp);
         }
 
-        ubc_msync(vp, (off_t)fniio.off, end_off, NULL,
+        ubc_msync(vp, (off_t)off, end_off, NULL,
                   UBC_PUSHDIRTY | UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
     }
 

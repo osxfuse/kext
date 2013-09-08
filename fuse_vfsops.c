@@ -731,8 +731,10 @@ fuse_vfsop_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
 {
     int err = 0;
     vnode_t vp = NULLVP;
-    struct fuse_entry_out feo_root;
-    struct fuse_data *data = fuse_get_mpdata(mp);
+    struct fuse_entry_out  feo_root_data;
+    struct fuse_abi_data   feo_root;
+    struct fuse_abi_data   fa;
+    struct fuse_data      *data = fuse_get_mpdata(mp);
 
     fuse_trace_printf_vfsop();
 
@@ -741,12 +743,17 @@ fuse_vfsop_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
         return vnode_get(*vpp);
     }
 
-    bzero(&feo_root, sizeof(feo_root));
-    feo_root.nodeid      = FUSE_ROOT_ID;
-    feo_root.generation  = 0;
-    feo_root.attr.ino    = FUSE_ROOT_ID;
-    feo_root.attr.size   = FUSE_ROOT_SIZE;
-    feo_root.attr.mode   = VTTOIF(VDIR);
+    bzero(&feo_root_data, sizeof(feo_root_data));
+
+    fuse_abi_data_init(&feo_root, FUSE_ABI_VERSION_MAX, &feo_root_data);
+    fuse_abi_data_init(&fa, feo_root.fad_version, fuse_entry_out_get_attr(&feo_root));
+
+    fuse_entry_out_set_nodeid(&feo_root, FUSE_ROOT_ID);
+    fuse_entry_out_set_generation(&feo_root, 0);
+
+    fuse_attr_set_ino(&fa, FUSE_ROOT_ID);
+    fuse_attr_set_size(&fa, FUSE_ROOT_SIZE);
+    fuse_attr_set_mode(&fa, VTTOIF(VDIR));
 
     err = FSNodeGetOrCreateFileVNodeByID(&vp, FN_IS_ROOT, &feo_root, mp,
                                          NULLVP /* dvp */, context,
@@ -1025,8 +1032,15 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     bool deading = false, faking = false;
 
     struct fuse_dispatcher  fdi;
-    struct fuse_statfs_out  fsfo;
     struct fuse_data       *data;
+
+    uint64_t blocks;
+	uint64_t bfree;
+	uint64_t bavail;
+	uint64_t files;
+	uint64_t ffree;
+	uint32_t bsize;
+	uint32_t frsize;
 
     fuse_trace_printf_vfsop();
 
@@ -1064,30 +1078,47 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 
 dostatfs:
     if (faking) {
-        bzero(&fsfo, sizeof(fsfo));
+        blocks = 0;
+        bfree = 0;
+        bavail = 0;
+        files = 0;
+        ffree = 0;
+        bsize = 0;
+        frsize = 0;
+
     } else {
-        fuse_abi_out(fuse_statfs_out, DTOABI(data), fdi.answ, &fsfo);
+        struct fuse_abi_data fsfo;
+        struct fuse_abi_data fksf;
+
+        fuse_abi_data_init(&fsfo, DATOI(data), fdi.answ);
+        fuse_abi_data_init(&fksf, DATOI(data), fuse_statfs_out_get_st(&fsfo));
+
+        blocks = fuse_kstatfs_get_blocks(&fksf);
+        bfree = fuse_kstatfs_get_bfree(&fksf);
+        bavail = fuse_kstatfs_get_bavail(&fksf);
+        files = fuse_kstatfs_get_files(&fksf);
+        ffree = fuse_kstatfs_get_ffree(&fksf);
+        bsize = fuse_kstatfs_get_bsize(&fksf);
+        frsize = fuse_kstatfs_get_frsize(&fksf);
     }
 
-    if (fsfo.st.bsize == 0) {
-        fsfo.st.bsize = FUSE_DEFAULT_IOSIZE;
+    if (bsize == 0) {
+        bsize = FUSE_DEFAULT_IOSIZE;
     }
 
-    if (fsfo.st.frsize == 0) {
-        fsfo.st.frsize = FUSE_DEFAULT_BLOCKSIZE;
+    if (frsize == 0) {
+        frsize = FUSE_DEFAULT_BLOCKSIZE;
     }
 
     /* optimal transfer block size; will go into f_iosize in the kernel */
-    fsfo.st.bsize = fuse_round_size(fsfo.st.bsize,
-                                    FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+    bsize = fuse_round_size(bsize, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
 
     /* file system fragment size; will go into f_bsize in the kernel */
-    fsfo.st.frsize  = fuse_round_size(fsfo.st.frsize,
-                                      FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);
+    frsize  = fuse_round_size(frsize, FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);
 
     /* We must have: f_iosize >= f_bsize (fsfo.st.bsize >= fsfo.st_frsize) */
-    if (fsfo.st.bsize < fsfo.st.frsize) {
-        fsfo.st.bsize = fsfo.st.frsize;
+    if (bsize < frsize) {
+        bsize = frsize;
     }
 
     /*
@@ -1143,15 +1174,15 @@ dostatfs:
      *  uint16_t f_carbon_fsid <-    // handled here
      */
 
-    VFSATTR_RETURN(attr, f_filecount, fsfo.st.files);
-    VFSATTR_RETURN(attr, f_bsize, fsfo.st.frsize);
-    VFSATTR_RETURN(attr, f_iosize, fsfo.st.bsize);
-    VFSATTR_RETURN(attr, f_blocks, fsfo.st.blocks);
-    VFSATTR_RETURN(attr, f_bfree, fsfo.st.bfree);
-    VFSATTR_RETURN(attr, f_bavail, fsfo.st.bavail);
-    VFSATTR_RETURN(attr, f_bused, (fsfo.st.blocks - fsfo.st.bfree));
-    VFSATTR_RETURN(attr, f_files, fsfo.st.files);
-    VFSATTR_RETURN(attr, f_ffree, fsfo.st.ffree);
+    VFSATTR_RETURN(attr, f_filecount, files);
+    VFSATTR_RETURN(attr, f_bsize, frsize);
+    VFSATTR_RETURN(attr, f_iosize, bsize);
+    VFSATTR_RETURN(attr, f_blocks, blocks);
+    VFSATTR_RETURN(attr, f_bfree, bfree);
+    VFSATTR_RETURN(attr, f_bavail, bavail);
+    VFSATTR_RETURN(attr, f_bused, (blocks - bfree));
+    VFSATTR_RETURN(attr, f_files, files);
+    VFSATTR_RETURN(attr, f_ffree, ffree);
 
     /* f_fsid and f_owner handled elsewhere. */
 

@@ -687,7 +687,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         break;
 
 #define FB_AUDIT_CASE_OUT(OPCODE, NAME) \
-    FB_AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
+    FB_AUDIT_CASE_SIZE(OPCODE, ==, NAME ## _sizeof(DATOI(data)))
 
 #define FB_AUDIT_CASE_NO_OUT(OPCODE) FB_AUDIT_CASE_SIZE(OPCODE, ==, 0)
 
@@ -784,8 +784,8 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         FB_AUDIT_CASE_NO_OUT(FUSE_ACCESS)
 
         FB_AUDIT_CASE_SIZE(FUSE_CREATE, ==,
-                        fuse_abi_sizeof(fuse_entry_out, DTOABI(data)) +
-                        fuse_abi_sizeof(fuse_open_out, DTOABI(data)))
+                        fuse_entry_out_sizeof(DATOI(data)) +
+                        fuse_open_out_sizeof(DATOI(data)))
 
         case FUSE_INTERRUPT:
             /* TBD */
@@ -798,7 +798,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         FB_AUDIT_CASE_NO_OUT(FUSE_DESTROY)
 
         FB_AUDIT_CASE_SIZE(FUSE_IOCTL, >=,
-                        fuse_abi_sizeof(fuse_ioctl_out, DTOABI(data)))
+                        fuse_ioctl_out_sizeof(DATOI(data)))
 
         case FUSE_POLL:
             /* TBD */
@@ -1052,7 +1052,7 @@ fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
         break;
 
 #define FN_AUDIT_CASE_OUT(OPCODE, NAME) \
-    FN_AUDIT_CASE_SIZE(OPCODE, ==, fuse_abi_sizeof(NAME, DTOABI(data)))
+    FN_AUDIT_CASE_SIZE(OPCODE, ==, NAME ## _sizeof(DATOI(data)))
 
 #define FN_AUDIT_CASE_NO_OUT(OPCODE) FN_AUDIT_CASE_SIZE(OPCODE, ==, 0)
 
@@ -1068,8 +1068,7 @@ fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
         FN_AUDIT_CASE_OUT(FUSE_NOTIFY_INVAL_INODE, fuse_notify_inval_inode_out)
 
         FN_AUDIT_CASE_SIZE(FUSE_NOTIFY_INVAL_ENTRY, >=,
-                           fuse_abi_sizeof(fuse_notify_inval_entry_out,
-                                           DTOABI(data)))
+                           fuse_notify_inval_entry_out_sizeof(DATOI(data)))
 
         FN_AUDIT_CASE_OUT(FUSE_NOTIFY_STORE, fuse_notify_store_out)
 
