@@ -499,6 +499,8 @@ static __inline__ size_t fuse_attr_sizeof(int version)
     if (version < FUSE_ABI_709) {
         return 96;
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_attr);
@@ -976,6 +978,8 @@ static __inline__ size_t fuse_getattr_in_sizeof(int version)
     if (version < FUSE_ABI_709) {
         return 0;
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_getattr_in);
@@ -1113,6 +1117,8 @@ static __inline__ size_t fuse_mknod_in_sizeof(int version)
     if (version < FUSE_ABI_712) {
         return FUSE_COMPAT_MKNOD_IN_SIZE;
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_mknod_in);
@@ -1526,6 +1532,8 @@ static __inline__ size_t fuse_create_in_sizeof(int version)
     if (version < FUSE_ABI_712) {
         return fuse_open_in_sizeof(version);
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_create_in);
@@ -1707,6 +1715,8 @@ static __inline__ size_t fuse_read_in_sizeof(int version)
     if (version < FUSE_ABI_709) {
         return 24;
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_read_in);
@@ -1804,6 +1814,8 @@ static __inline__ size_t fuse_write_in_sizeof(int version)
     if (version < FUSE_ABI_709) {
         return FUSE_COMPAT_WRITE_IN_SIZE;
     }
+#else
+    #pragma unused(version)
 #endif
 
     return sizeof(struct fuse_write_in);
