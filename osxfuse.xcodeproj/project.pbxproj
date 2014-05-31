@@ -249,6 +249,7 @@
 		1DEB91C408733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = NO;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -281,11 +282,11 @@
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
+				OTHER_CODE_SIGN_FLAGS = "--identifier $(MODULE_NAME)";
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
@@ -299,6 +300,7 @@
 		1DEB91C508733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
@@ -333,11 +335,11 @@
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
+				OTHER_CODE_SIGN_FLAGS = "--identifier $(MODULE_NAME)";
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
@@ -353,7 +355,6 @@
 		1DEB91C808733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_MACFUSE_MODE = 1;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -363,6 +364,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OSXFUSE_NAME = osxfuse;
+				OSXFUSE_VERSION = 3.0.0;
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
 				SDKROOT = macosx;
 			};
@@ -371,7 +373,6 @@
 		1DEB91C908733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_MACFUSE_MODE = 1;
@@ -382,6 +383,7 @@
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				OSXFUSE_NAME = osxfuse;
+				OSXFUSE_VERSION = 3.0.0;
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=$(ENABLE_MACFUSE_MODE)";
 				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
