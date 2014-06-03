@@ -293,6 +293,7 @@
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -348,6 +349,7 @@
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
