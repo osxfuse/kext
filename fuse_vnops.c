@@ -1488,25 +1488,26 @@ calldaemon:
             *vpp = vp;
         }
 
-        if (op == FUSE_GETATTR) {
-
-            /* ATTR_FUDGE_CASE */
-            if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
-                VTOFUD(*vpp)->filesize =
-                    ((struct fuse_attr_out *)fdi.answ)->attr.size;
-            }
-
-            cache_attrs(*vpp, (struct fuse_attr_out *)fdi.answ);
-        } else {
-
-            /* ATTR_FUDGE_CASE */
-            if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
-                VTOFUD(*vpp)->filesize =
-                    ((struct fuse_entry_out *)fdi.answ)->attr.size;
-            }
-
-            cache_attrs(*vpp, (struct fuse_entry_out *)fdi.answ);
-        }
+        /*
+         * Do not mess with *vpp's filesize or attributes. Doing so can cause data
+         * corruption in case the file is currently being appended.
+         *
+         * if (op == FUSE_GETATTR) {
+         *     // ATTR_FUDGE_CASE
+         *     if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
+         *         VTOFUD(*vpp)->filesize =
+         *             ((struct fuse_attr_out *)fdi.answ)->attr.size;
+         *     }
+         *     cache_attrs(*vpp, (struct fuse_attr_out *)fdi.answ);
+         * } else {
+         *     // ATTR_FUDGE_CASE
+         *     if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
+         *         VTOFUD(*vpp)->filesize =
+         *             ((struct fuse_entry_out *)fdi.answ)->attr.size;
+         *     }
+         *     cache_attrs(*vpp, (struct fuse_entry_out *)fdi.answ);
+         * }
+         */
 
         /*
          * We do this elsewhere...
