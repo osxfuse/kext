@@ -1749,16 +1749,21 @@ calldaemon:
             *vpp = vp;
         }
 
-        /* ATTR_FUDGE_CASE */
-        if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
-            VTOFUD(*vpp)->filesize = fuse_attr_get_size(&fattr);
-        }
-
-        if (op == FUSE_GETATTR) {
-            cache_attrs(*vpp, fuse_attr_out, &fao);
-        } else {
-            cache_attrs(*vpp, fuse_entry_out, &feo);
-        }
+        /*
+         * Do not mess with *vpp's filesize or attributes. Doing so can cause data
+         * corruption in case the file is currently being appended.
+         *
+         * // ATTR_FUDGE_CASE
+         * if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
+         *     VTOFUD(*vpp)->filesize = fuse_attr_get_size(&fattr);
+         * }
+         *
+         * if (op == FUSE_GETATTR) {
+         *     cache_attrs(*vpp, fuse_attr_out, &fao);
+         * } else {
+         *     cache_attrs(*vpp, fuse_entry_out, &feo);
+         * }
+         */
 
         /*
          * We do this elsewhere...
