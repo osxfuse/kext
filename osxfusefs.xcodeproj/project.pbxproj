@@ -719,6 +719,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = mount_osxfusefs;
+				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
 			};
 			name = Debug;
 		};
@@ -758,6 +759,7 @@
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = mount_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
+				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
 			};
 			name = Release;
 		};
@@ -842,6 +844,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = load_osxfusefs;
+				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
 			};
 			name = Debug;
 		};
@@ -880,6 +883,7 @@
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = load_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
+				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
 			};
 			name = Release;
 		};
