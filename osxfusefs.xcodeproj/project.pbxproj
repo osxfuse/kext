@@ -404,6 +404,8 @@
 /* Begin PBXProject section */
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfusefs" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
@@ -719,7 +721,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = mount_osxfusefs;
-				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
+				VALID_ARCHS = "ppc i386 x86_64";
 			};
 			name = Debug;
 		};
@@ -759,7 +761,7 @@
 				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = mount_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
-				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
+				VALID_ARCHS = "ppc i386 x86_64";
 			};
 			name = Release;
 		};
@@ -844,7 +846,7 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = load_osxfusefs;
-				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
+				VALID_ARCHS = "ppc i386 x86_64";
 			};
 			name = Debug;
 		};
@@ -883,7 +885,7 @@
 				INSTALL_PATH = "$(HOME)/bin";
 				PRODUCT_NAME = load_osxfusefs;
 				STRIP_INSTALLED_PRODUCT = YES;
-				VALID_ARCHS = "i386 ppc ppc7400 x86_64";
+				VALID_ARCHS = "ppc i386 x86_64";
 			};
 			name = Release;
 		};
