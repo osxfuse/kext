@@ -523,6 +523,10 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
      * ...
      */
 
+    struct fuse_filehandle *fufh = NULL;
+    fufh_type_t fufh_type = FUFH_WRONLY;
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
     int sizechanged = 0;
     uid_t nuid;
     gid_t ngid;
@@ -530,6 +534,21 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
 
     if (newsize) {
         *newsize = 0;
+    }
+
+    fufh = &(fvdat->fufh[fufh_type]);
+
+    if (!FUFH_IS_VALID(fufh)) {
+        fufh_type = FUFH_RDWR;
+        fufh = &(fvdat->fufh[fufh_type]);
+        if (!FUFH_IS_VALID(fufh)) {
+            fufh = NULL;
+        }
+    }
+
+    if (fufh) {
+        fuse_setattr_in_set_fh(fsai, fufh->fh_id);
+        valid |= FATTR_FH;
     }
 
     nuid = VATTR_IS_ACTIVE(vap, va_uid) ? vap->va_uid : (uid_t)VNOVAL;
@@ -555,30 +574,9 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
             *newsize = vap->va_data_size;
         }
         valid |= FATTR_SIZE;
-
-        if (vp) {
-            struct fuse_filehandle *fufh = NULL;
-            fufh_type_t fufh_type = FUFH_WRONLY;
-            struct fuse_vnode_data *fvdat = VTOFUD(vp);
-
-            fufh = &(fvdat->fufh[fufh_type]);
-
-            if (!FUFH_IS_VALID(fufh)) {
-                fufh_type = FUFH_RDWR;
-                fufh = &(fvdat->fufh[fufh_type]);
-                if (!FUFH_IS_VALID(fufh)) {
-                    fufh = NULL;
-                }
-            }
-
-            if (fufh) {
-                fuse_setattr_in_set_fh(fsai, fufh->fh_id);
-                valid |= FATTR_FH;
-            }
-        }
     }
     VATTR_SET_SUPPORTED(vap, va_data_size);
-
+    
     /*
      * Possible timestamps:
      *
