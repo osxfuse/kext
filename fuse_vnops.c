@@ -3568,8 +3568,22 @@ fuse_vnop_write(struct vnop_write_args *ap)
                 break;
             }
 
-            uio_setresid(uio, (uio_resid(uio) + diff));
-            uio_setoffset(uio, (uio_offset(uio) - diff));
+            if (diff) {
+                /*
+                 * Note that merely updating the residue and offset leaves
+                 * the uio in an inconsistent state, since the iov-related
+                 * fields are not correspondingly adjusted.  Since there
+                 * is no reasonable mechanism for performing this update
+                 * correctly, we hope that the caller doesn't care about
+                 * the inconsistency.
+                 *
+                 * Further uses of uiomove() in this state are illegal.
+                 */
+                uio_setresid(uio, (uio_resid(uio) + diff));
+                uio_setoffset(uio, (uio_offset(uio) - diff));
+
+                break;
+            }
 
         } /* while */
 
@@ -3681,6 +3695,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
         if (ioflag & IO_UNIT) {
             /*
              * e.g.: detrunc(dep, original_size, ioflag & IO_SYNC, context);
+             */
+            /*
+             * As noted above, the caller better not expect a consistently
+             * reset uio in this (error) case.
              */
             uio_setoffset(uio, original_offset);
             uio_setresid(uio, original_resid);
