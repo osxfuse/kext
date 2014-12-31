@@ -1390,6 +1390,16 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             bufdat += fwo->size;
             offset += fwo->size;
             buf_setresid(bp, buf_resid(bp) - fwo->size);
+
+            if (diff) {
+                /*
+                 * Stop when the filesystem stops accepting data.
+                 * At present, the early termination is reported to the
+                 * application as an I/O error rather than as a short count,
+                 * but that's preferable to an infinite loop.
+                 */
+                break;
+            }
         }
     }
 
