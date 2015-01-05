@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2015 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -17,8 +18,16 @@
 #include <vfs/vfs_support.h>
 
 #ifndef _FUSE_KERNEL_H_
-#  define _FUSE_KERNEL_H_
-#  include "fuse_kernel.h"
+    #define _FUSE_KERNEL_H_
+    #include "fuse_kernel.h"
+#endif
+
+#define FUSE_INLINE static __inline__
+
+#if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+    #define FUSE_VNOP_EXPORT __private_extern__
+#else
+    #define FUSE_VNOP_EXPORT static
 #endif
 
 #define FUSE_COUNT_MEMORY     1
@@ -121,7 +130,7 @@ extern OSMallocTag fuse_malloc_tag;
 
 extern int32_t fuse_memory_allocated;
 
-static __inline__
+FUSE_INLINE
 void *
 FUSE_OSMalloc(size_t size, OSMallocTag tag)
 {
@@ -136,7 +145,7 @@ FUSE_OSMalloc(size_t size, OSMallocTag tag)
     return addr;
 }
 
-static __inline__
+FUSE_INLINE
 void
 FUSE_OSFree(void *addr, size_t size, OSMallocTag tag)
 {
@@ -151,7 +160,7 @@ FUSE_OSFree(void *addr, size_t size, OSMallocTag tag)
 #  define FUSE_OSFree(addr, size, tag)       OSFree((addr), (size), (tag))
 #endif /* FUSE_COUNT_MEMORY */
 
-static __inline__
+FUSE_INLINE
 void *
 FUSE_OSRealloc_nocopy(void *oldptr, size_t oldsize, size_t newsize)
 {
@@ -168,7 +177,7 @@ FUSE_OSRealloc_nocopy(void *oldptr, size_t oldsize, size_t newsize)
     return data;
 }
 
-static __inline__
+FUSE_INLINE
 void *
 FUSE_OSRealloc_nocopy_canfail(void *oldptr, size_t oldsize, size_t newsize)
 {

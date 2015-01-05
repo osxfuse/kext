@@ -36,7 +36,7 @@ typedef struct fuse_filehandle * fuse_filehandle_t;
 #define FUFH_USE_RESET(f) ((f)->open_count = 0)
 #define FUFH_AUX_INC(f)   ((f)->aux_count++)
 
-static __inline__
+FUSE_INLINE
 fufh_type_t
 fuse_filehandle_xlate_from_mmap(int fflags)
 {
@@ -54,7 +54,7 @@ fuse_filehandle_xlate_from_mmap(int fflags)
     }
 }
 
-static __inline__
+FUSE_INLINE
 fufh_type_t
 fuse_filehandle_xlate_from_fflags(int fflags)
 {
@@ -84,7 +84,7 @@ fuse_filehandle_xlate_from_fflags(int fflags)
     return FUFH_INVALID;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_filehandle_xlate_to_oflags(fufh_type_t type)
 {
@@ -114,7 +114,7 @@ fuse_filehandle_xlate_to_oflags(fufh_type_t type)
 /*
  * 0 return => can proceed
  */
-static __inline__
+FUSE_INLINE
 int
 fuse_filehandle_preflight_status(vnode_t vp, vnode_t dvp, vfs_context_t context,
                                  fufh_type_t fufh_type)

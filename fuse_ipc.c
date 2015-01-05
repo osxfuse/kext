@@ -23,29 +23,28 @@
 #include <sys/vm.h>
 
 static struct fuse_ticket *fticket_alloc(struct fuse_data *data);
-static void                fticket_refresh(struct fuse_ticket *ftick);
-static void                fticket_destroy(struct fuse_ticket *ftick);
-static int                 fticket_wait_answer(struct fuse_ticket *ftick);
-static __inline__ int      fticket_aw_pull_uio(struct fuse_ticket *ftick,
+static void fticket_refresh(struct fuse_ticket *ftick);
+static void fticket_destroy(struct fuse_ticket *ftick);
+static int fticket_wait_answer(struct fuse_ticket *ftick);
+FUSE_INLINE int fticket_aw_pull_uio(struct fuse_ticket *ftick,
                                                uio_t uio);
-static __inline__ void     fuse_push_freeticks(struct fuse_ticket *ftick);
+FUSE_INLINE void fuse_push_freeticks(struct fuse_ticket *ftick);
 
-static __inline__ struct fuse_ticket *
-fuse_pop_freeticks(struct fuse_data *data);
+FUSE_INLINE struct fuse_ticket *fuse_pop_freeticks(struct fuse_data *data);
 
-static __inline__ void     fuse_push_allticks(struct fuse_ticket *ftick);
-static __inline__ void     fuse_remove_allticks(struct fuse_ticket *ftick);
+FUSE_INLINE void fuse_push_allticks(struct fuse_ticket *ftick);
+FUSE_INLINE void fuse_remove_allticks(struct fuse_ticket *ftick);
 static struct fuse_ticket *fuse_pop_allticks(struct fuse_data *data);
 
-static int             fuse_body_audit(struct fuse_ticket *ftick, size_t blen);
-static __inline__ void fuse_setup_ihead(struct fuse_in_header *ihead,
-                                        struct fuse_ticket    *ftick,
-                                        uint64_t               nid,
-                                        enum fuse_opcode       op,
-                                        size_t                 blen,
-                                        vfs_context_t          context);
+static int fuse_body_audit(struct fuse_ticket *ftick, size_t blen);
+FUSE_INLINE void fuse_setup_ihead(struct fuse_in_header *ihead,
+                                  struct fuse_ticket    *ftick,
+                                  uint64_t               nid,
+                                  enum fuse_opcode       op,
+                                  size_t                 blen,
+                                  vfs_context_t          context);
 
-static fuse_handler_t  fuse_standard_handler;
+static fuse_handler_t fuse_standard_handler;
 
 void
 fiov_init(struct fuse_iov *fiov, size_t size)
@@ -163,7 +162,7 @@ fticket_alloc(struct fuse_data *data)
     return ftick;
 }
 
-static __inline__
+FUSE_INLINE
 void
 fticket_refresh(struct fuse_ticket *ftick)
 {
@@ -277,7 +276,7 @@ out:
     return err;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
 {
@@ -464,7 +463,7 @@ fdata_set_dead(struct fuse_data *data, bool fdev_locked)
     return true;
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_push_freeticks(struct fuse_ticket *ftick)
 {
@@ -473,7 +472,7 @@ fuse_push_freeticks(struct fuse_ticket *ftick)
     ftick->tk_data->freeticket_counter++;
 }
 
-static __inline__
+FUSE_INLINE
 struct fuse_ticket *
 fuse_pop_freeticks(struct fuse_data *data)
 {
@@ -492,7 +491,7 @@ fuse_pop_freeticks(struct fuse_data *data)
     return ftick;
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_push_allticks(struct fuse_ticket *ftick)
 {
@@ -500,7 +499,7 @@ fuse_push_allticks(struct fuse_ticket *ftick)
                       tk_alltickets_link);
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_remove_allticks(struct fuse_ticket *ftick)
 {

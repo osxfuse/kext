@@ -121,7 +121,7 @@ typedef struct fuse_vnode_data * fusenode_t;
 
 #define FUSE_NULL_ID 0
 
-static __inline__
+FUSE_INLINE
 void
 fuse_invalidate_attr(vnode_t vp)
 {

@@ -53,14 +53,16 @@ uint32_t fuse_userkernel_bufsize     = FUSE_DEFAULT_USERKERNEL_BUFSIZE;    // rw
 int32_t  fuse_vnodes_current         = 0;                                  // r
 
 
-#define OSXFUSE_SYSCTL_ROOT  CONCAT(_vfs_generic_, OSXFUSE_NAME_LITERAL)
-#define OSXFUSE_SYSCTL(name) CONCAT(OSXFUSE_SYSCTL_ROOT, _, name)
+#define OSXFUSE_SYSCTL_ROOT  FUSE_PP_CAT(_vfs_generic_, OSXFUSE_NAME_LITERAL)
+#define OSXFUSE_SYSCTL(name) FUSE_PP_CAT(OSXFUSE_SYSCTL_ROOT, _, name)
 
-#define OSXFUSE_SYSCTL_VAR_ROOT  CONCAT(sysctl_, OSXFUSE_SYSCTL_ROOT)
-#define OSXFUSE_SYSCTL_VAR(name) CONCAT(OSXFUSE_SYSCTL_VAR_ROOT, _, name)
+#define OSXFUSE_SYSCTL_VAR_ROOT  FUSE_PP_CAT(sysctl_, OSXFUSE_SYSCTL_ROOT)
+#define OSXFUSE_SYSCTL_VAR(name) FUSE_PP_CAT(OSXFUSE_SYSCTL_VAR_ROOT, _, name)
 
 
 /* SYSCTL_* macro wrappers */
+
+#define CALL(macro, ...) macro(__VA_ARGS__)
 
 #define OSXFUSE_SYSCTL_DECL(name) \
     CALL(SYSCTL_DECL, name)

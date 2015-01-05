@@ -140,7 +140,7 @@ struct vfs_fsentry fuse_vfs_entry = {
     0,
 
     // File system type name
-    OSXFUSE_FS_TYPE,
+    OSXFUSE_NAME,
 
     // Flags specifying file system capabilities
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
@@ -215,11 +215,11 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
 
     if (fusefs_args.altflags & FUSE_MOPT_FSTYPENAME) {
         size_t typenamelen = strlen(fusefs_args.fstypename);
-        if ((typenamelen <= 0) || (typenamelen > FUSE_FSTYPENAME_MAXLEN)) {
+        if ((typenamelen <= 0) || (typenamelen > FUSE_TYPE_NAME_MAXLEN)) {
             return EINVAL;
         }
         snprintf(vfsstatfsp->f_fstypename, MFSTYPENAMELEN, "%s%s",
-                 OSXFUSE_FSTYPENAME_PREFIX, fusefs_args.fstypename);
+                 OSXFUSE_TYPE_NAME_PREFIX, fusefs_args.fstypename);
     }
 
     if ((fusefs_args.daemon_timeout > FUSE_MAX_DAEMON_TIMEOUT) ||

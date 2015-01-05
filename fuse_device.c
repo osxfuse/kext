@@ -101,7 +101,7 @@ fuse_device_close_final(fuse_device_t fdev)
     }
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_reject_answers(struct fuse_data *data)
 {

@@ -26,6 +26,7 @@
 
 /* Begin PBXFileReference section */
 		433E5DC113B2D1B300A523B2 /* osxfuse.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfuse.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		43A3741E1A58AD04007A64F9 /* fuse_preprocessor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fuse_preprocessor.h; sourceTree = "<group>"; };
 		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
 		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
 		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
@@ -37,7 +38,7 @@
 		549960D00EC093D800DDFCAD /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
+		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_device.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_device.h; sourceTree = "<group>"; };
 		54C6DDBA0B5EEB44002D9FD9 /* fuse_file.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_file.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -46,7 +47,7 @@
 		54C6DDBD0B5EEB44002D9FD9 /* fuse_internal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_internal.h; sourceTree = "<group>"; };
 		54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_ipc.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDBF0B5EEB44002D9FD9 /* fuse_ipc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_ipc.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 30; indentWidth = 8; lastKnownFileType = sourcecode.c.h; path = fuse_kernel.h; sourceTree = "<group>"; tabWidth = 8; usesTabs = 1; };
+		54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 30; indentWidth = 8; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kernel.h; sourceTree = "<group>"; tabWidth = 8; usesTabs = 1; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_locking.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_locking.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -107,6 +108,7 @@
 				540966520C33B5F500F5E227 /* fuse_ioctl.h */,
 				540966530C33B5F500F5E227 /* fuse_mount.h */,
 				540966540C33B5F500F5E227 /* fuse_param.h */,
+				43A3741E1A58AD04007A64F9 /* fuse_preprocessor.h */,
 				540966550C33B5F500F5E227 /* fuse_version.h */,
 			);
 			name = Common;
@@ -279,21 +281,21 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = "osxfuse-Info.plist";
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -I\"$(SDKROOT)/System/Library/Frameworks/Kernel.framework/Headers\" -I\"$(SRCROOT)/../common\" -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = KERNEL;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				OTHER_CODE_SIGN_FLAGS = "--identifier $(MODULE_NAME)";
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
+				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
-				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -333,9 +335,9 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_FILE = "osxfuse-Info.plist";
-				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -mmacosx-version-min=\"$(MACOSX_DEPLOYMENT_TARGET)\" -I../common -std=gnu99";
+				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -I\"$(SDKROOT)/System/Library/Frameworks/Kernel.framework/Headers\" -I\"$(SRCROOT)/../common\" -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
+				INFOPLIST_PREPROCESSOR_DEFINITIONS = KERNEL;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
 				MODULE_START = fusefs_start;
 				MODULE_STOP = fusefs_stop;
@@ -344,12 +346,12 @@
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
+				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
-				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;

@@ -30,7 +30,7 @@ fuse_internal_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
                      struct timespec *ts, struct fuse_data *data);
 
 #ifdef FUSE_TRACE_MSLEEP
-static __inline__
+FUSE_INLINE
 int
 fuse_msleep(void *chan, lck_mtx_t *mtx, int pri, const char *wmesg,
             struct timespec *ts, struct fuse_data *data)
@@ -86,7 +86,7 @@ extern const char *vnode_getname(vnode_t vp);
 extern void  vnode_putname(const char *name);
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
-static __inline__
+FUSE_INLINE
 int
 fuse_match_cred(kauth_cred_t daemoncred, kauth_cred_t requestcred)
 {
@@ -98,28 +98,28 @@ fuse_match_cred(kauth_cred_t daemoncred, kauth_cred_t requestcred)
     return EPERM;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_vfs_context_issuser(vfs_context_t context)
 {
     return (kauth_cred_getuid(vfs_context_ucred(context)) == 0);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isautocache_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_AUTO_CACHE);
 }
 
-static __inline__
+FUSE_INLINE
 bool
 fuse_isdeadfs_mp(mount_t mp)
 {
     return fdata_dead_get(fuse_get_mpdata(mp));
 }
 
-static __inline__
+FUSE_INLINE
 bool
 fuse_isdeadfs(vnode_t vp)
 {
@@ -130,14 +130,14 @@ fuse_isdeadfs(vnode_t vp)
     return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
-static __inline__
+FUSE_INLINE
 bool
 fuse_isdeadfs_fs(vnode_t vp)
 {
     return fuse_isdeadfs_mp(vnode_mount(vp));
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdirectio(vnode_t vp)
 {
@@ -149,14 +149,14 @@ fuse_isdirectio(vnode_t vp)
     return (VTOFUD(vp)->flag & FN_DIRECT_IO);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdirectio_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_DIRECT_IO);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnoattrcache(vnode_t vp)
 {
@@ -168,14 +168,14 @@ fuse_isnoattrcache(vnode_t vp)
     return 0;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnoattrcache_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NO_ATTRCACHE);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnoreadahead(vnode_t vp)
 {
@@ -188,7 +188,7 @@ fuse_isnoreadahead(vnode_t vp)
     return fuse_isdirectio(vp);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnosynconclose(vnode_t vp)
 {
@@ -199,7 +199,7 @@ fuse_isnosynconclose(vnode_t vp)
     return (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_NO_SYNCONCLOSE);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnosyncwrites_mp(mount_t mp)
 {
@@ -211,7 +211,7 @@ fuse_isnosyncwrites_mp(mount_t mp)
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NO_SYNCWRITES);
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_setnosyncwrites_mp(mount_t mp)
 {
@@ -220,7 +220,7 @@ fuse_setnosyncwrites_mp(mount_t mp)
     fuse_get_mpdata(mp)->dataflags |= FSESS_NO_SYNCWRITES;
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_clearnosyncwrites_mp(mount_t mp)
 {
@@ -231,7 +231,7 @@ fuse_clearnosyncwrites_mp(mount_t mp)
     }
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnoubc(vnode_t vp)
 {
@@ -244,21 +244,21 @@ fuse_isnoubc(vnode_t vp)
     return fuse_isdirectio(vp);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnoubc_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NO_UBC);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnegativevncache_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NEGATIVE_VNCACHE);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnovncache(vnode_t vp)
 {
@@ -271,14 +271,14 @@ fuse_isnovncache(vnode_t vp)
     return fuse_isdirectio(vp);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isnovncache_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_NO_VNCACHE);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isextendedsecurity(vnode_t vp)
 {
@@ -286,14 +286,14 @@ fuse_isextendedsecurity(vnode_t vp)
             FSESS_EXTENDED_SECURITY);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isextendedsecurity_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_EXTENDED_SECURITY);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdefaultpermissions(vnode_t vp)
 {
@@ -301,14 +301,14 @@ fuse_isdefaultpermissions(vnode_t vp)
             FSESS_DEFAULT_PERMISSIONS);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdefaultpermissions_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_DEFAULT_PERMISSIONS);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdeferpermissions(vnode_t vp)
 {
@@ -316,35 +316,35 @@ fuse_isdeferpermissions(vnode_t vp)
             FSESS_DEFER_PERMISSIONS);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isdeferpermissions_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_DEFER_PERMISSIONS);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isxtimes(vnode_t vp)
 {
     return (fuse_get_mpdata(vnode_mount(vp))->dataflags & FSESS_XTIMES);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_isxtimes_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_XTIMES);
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_issparse_mp(mount_t mp)
 {
     return (fuse_get_mpdata(mp)->dataflags & FSESS_SPARSE);
 }
 
-static __inline__
+FUSE_INLINE
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
@@ -358,7 +358,7 @@ fuse_round_powerof2(uint32_t size)
     return result;
 }
 
-static __inline__
+FUSE_INLINE
 uint32_t
 fuse_round_size(uint32_t size, uint32_t b_min, uint32_t b_max)
 {
@@ -377,7 +377,7 @@ fuse_round_size(uint32_t size, uint32_t b_min, uint32_t b_max)
     return candidate;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
 {
@@ -400,7 +400,7 @@ fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
     return 0;
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_blanket_deny(vnode_t vp, vfs_context_t context)
 {
@@ -467,7 +467,7 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
                             struct fuse_abi_data *fsai,
                             uint64_t             *newsize);
 
-static __inline__
+FUSE_INLINE
 void
 fuse_internal_attr_fat2vat(vnode_t               vp,
                            struct fuse_abi_data *fat,
@@ -547,7 +547,7 @@ fuse_internal_attr_fat2vat(vnode_t               vp,
     VATTR_RETURN(vap, va_flags, fuse_attr_get_flags(fat));
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
                            vfs_context_t context)
@@ -794,7 +794,7 @@ fuse_internal_strategy_buf(struct vnop_strategy_args *ap);
 
 #define COM_APPLE_ "com.apple."
 
-static __inline__
+FUSE_INLINE
 bool
 fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
 {
@@ -805,7 +805,7 @@ fuse_skip_apple_xattr_mp(mount_t mp, const char *name)
 
 /* entity creation */
 
-static __inline__
+FUSE_INLINE
 int
 fuse_internal_checkentry(struct fuse_abi_data *feo, enum vtype vtype)
 {
@@ -887,7 +887,7 @@ void fuse_internal_init(void *parameter, __unused wait_result_t wait_result);
 
 /* other */
 
-static __inline__
+FUSE_INLINE
 int
 fuse_implemented(struct fuse_data *data, uint64_t which)
 {
@@ -900,7 +900,7 @@ fuse_implemented(struct fuse_data *data, uint64_t which)
     return result;
 }
 
-static __inline__
+FUSE_INLINE
 void
 fuse_clear_implemented(struct fuse_data *data, uint64_t which)
 {
@@ -909,7 +909,7 @@ fuse_clear_implemented(struct fuse_data *data, uint64_t which)
     /* FUSE_DATA_UNLOCK_EXCLUSIVE(data); */
 }
 
-static __inline__
+FUSE_INLINE
 int
 fuse_set_implemented_custom(struct fuse_data *data, uint64_t flags)
 {
