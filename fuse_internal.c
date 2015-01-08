@@ -1364,7 +1364,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
 
         left = buf_count(bp);
 
-        while (left) {
+        while (left > 0) {
 
             chunksize = min((size_t)left, VTOVA(vp)->va_iosize);
 
@@ -1397,9 +1397,10 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             }
 
             fuse_abi_data_init(&fwo, DATOI(data), fdi.answ);
-
             size = fuse_write_out_get_size(&fwo);
+
             diff = chunksize - size;
+
             if (diff < 0) {
                 err = EINVAL;
                 break;
@@ -1408,7 +1409,16 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
             left -= size;
             bufdat += size;
             offset += size;
-            buf_setresid(bp, buf_resid(bp) - size);
+            buf_setresid(bp, (uint32_t)left);
+
+            if (diff > 0) {
+                /*
+                 * The write operation could not be fully executed. In case of
+                 * synchronous I/O the kernel will report an EIO error back to
+                 * the process that issued the I/O.
+                 */
+                break;
+            }
         }
     }
 

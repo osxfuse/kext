@@ -15,10 +15,6 @@
 #include "fuse_node.h"
 #include "fuse_nodehash.h"
 
-#if M_OSXFUSE_ENABLE_KQUEUE
-#  include "fuse_knote.h"
-#endif
-
 #if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_biglock_vnops.h"
 #endif
@@ -3864,15 +3860,27 @@ fuse_vnop_write(struct vnop_write_args *ap)
             }
 
             fuse_abi_data_init(&fwo, DATOI(data), fdi.answ);
-
             diff = chunksize - fuse_write_out_get_size(&fwo);
+
             if (diff < 0) {
                 error = EINVAL;
                 break;
-            }
 
-            uio_setresid(uio, (uio_resid(uio) + diff));
-            uio_setoffset(uio, (uio_offset(uio) - diff));
+            } else if (diff > 0) {
+                /*
+                 * The write operation could not be fully executed.
+                 *
+                 * Note that merely resetting the residue and offset leaves the
+                 * uio in an inconsistent state, since the iov-related fields
+                 * are not correspondingly adjusted.
+                 *
+                 * Further uses of uiomove() in this state are illegal.
+                 */
+                uio_setresid(uio, uio_resid(uio) + diff);
+                uio_setoffset(uio, uio_offset(uio) - diff);
+
+                break;
+            }
 
         } /* while */
 
