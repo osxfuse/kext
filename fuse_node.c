@@ -107,9 +107,9 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t               *vnPtr,
             fvdat->entry_valid.tv_nsec = feo->entry_valid_nsec;
 
             /* XXX: truncation */
-            fvdat->attr_valid.tv_sec   = (time_t)feo->attr_valid;
+            fvdat->attr_valid.tv_sec   = 0;
 
-            fvdat->attr_valid.tv_nsec  = feo->attr_valid_nsec;
+            fvdat->attr_valid.tv_nsec  = 0;
 
             /* XXX: truncation */
             fvdat->modify_time.tv_sec  = (time_t)feo->attr.mtime;
