@@ -483,8 +483,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     data->blocksize = fuse_round_size(fusefs_args.blocksize,
                                       FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);
 
-    data->iosize = fuse_round_size(fusefs_args.iosize,
-                                   FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+    data->iosize = fuse_round_iosize(fusefs_args.iosize);
 
     if (data->iosize < data->blocksize) {
         data->iosize = data->blocksize;
@@ -1111,7 +1110,7 @@ dostatfs:
     }
 
     /* optimal transfer block size; will go into f_iosize in the kernel */
-    bsize = fuse_round_size(bsize, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+    bsize = fuse_round_iosize(bsize);
 
     /* file system fragment size; will go into f_bsize in the kernel */
     frsize  = fuse_round_size(frsize, FUSE_MIN_BLOCKSIZE, FUSE_MAX_BLOCKSIZE);

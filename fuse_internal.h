@@ -17,6 +17,7 @@
 
 #include <fuse_ioctl.h>
 
+#include <libkern/version.h>
 #include <stdbool.h>
 #include <sys/ubc.h>
 
@@ -378,6 +379,24 @@ fuse_round_size(uint32_t size, uint32_t b_min, uint32_t b_max)
 }
 
 FUSE_INLINE
+uint32_t
+fuse_round_iosize(uint32_t size)
+{
+    uint32_t max_iosize = FUSE_MAX_IOSIZE;
+
+    if (version_major < 11) {
+        /*
+         * Note: Because of a bug in Mac OS X 10.6 and earlier versions there
+         * is an increased probability of kernel panics due to potentially
+         * running out of vm maps when using I/O sizes greater than 16 MiB.
+         */
+        max_iosize = min(max_iosize, 16 * 1024 * 1024);
+    }
+
+    return fuse_round_size(size, FUSE_MIN_IOSIZE, max_iosize);
+}
+
+FUSE_INLINE
 int
 fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
 {
@@ -534,7 +553,7 @@ fuse_internal_attr_fat2vat(vnode_t               vp,
 
     uint32_t blksize = fuse_attr_get_blksize(fat);
     if (blksize != 0) {
-        blksize = fuse_round_size(blksize, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
+        blksize = fuse_round_iosize(blksize);
         if (blksize < data->blocksize) {
             blksize = data->blocksize;
         }
