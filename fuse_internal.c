@@ -1797,7 +1797,7 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
     fiii->major = FUSE_KERNEL_VERSION;
     fiii->minor = FUSE_KERNEL_MINOR_VERSION;
     fiii->max_readahead = data->iosize * 16;
-    fiii->flags = 0;
+    fiii->flags = FUSE_ALLOCATE | FUSE_EXCHANGE_DATA | FUSE_CASE_INSENSITIVE | FUSE_VOL_RENAME | FUSE_XTIMES;
 
     err = fdisp_wait_answ(&fdi);
     if (err) {
@@ -1826,18 +1826,24 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
 
     uint32_t flags = fuse_init_out_get_flags(&fio);
 
+    if (ABITOI(DTOABI(data)) >= 719) {
+        if (!(flags & FUSE_ALLOCATE)) {
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(FALLOCATE));
+        }
+        if (!(flags & FUSE_EXCHANGE_DATA)) {
+            fuse_clear_implemented(data, FSESS_NOIMPLBIT(EXCHANGE));
+        }
+    }
+
     if (flags & FUSE_CASE_INSENSITIVE) {
         data->dataflags |= FSESS_CASE_INSENSITIVE;
     }
-
     if (flags & FUSE_VOL_RENAME) {
         data->dataflags |= FSESS_VOL_RENAME;
     }
-
     if (flags & FUSE_XTIMES) {
         data->dataflags |= FSESS_XTIMES;
     }
-
     if (flags & FUSE_ATOMIC_O_TRUNC) {
         data->dataflags |= FSESS_ATOMIC_O_TRUNC;
     }
