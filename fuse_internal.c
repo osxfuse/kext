@@ -1797,7 +1797,7 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
     fiii->major = FUSE_KERNEL_VERSION;
     fiii->minor = FUSE_KERNEL_MINOR_VERSION;
     fiii->max_readahead = data->iosize * 16;
-    fiii->flags = FUSE_ALLOCATE | FUSE_EXCHANGE_DATA | FUSE_CASE_INSENSITIVE | FUSE_VOL_RENAME | FUSE_XTIMES;
+    fiii->flags = FUSE_ATOMIC_O_TRUNC | FUSE_ALLOCATE | FUSE_EXCHANGE_DATA | FUSE_CASE_INSENSITIVE | FUSE_VOL_RENAME | FUSE_XTIMES;
 
     err = fdisp_wait_answ(&fdi);
     if (err) {
