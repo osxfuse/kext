@@ -1984,7 +1984,7 @@ retry:
          *
          * - fufh_type is determined by fflags which is not going to change.
          * - We make sure that no other thread opens the file while the
-         *   fusenode is released before proceding.
+         *   fusenode lock is released before proceeding.
          */
         fuse_biglock_unlock(data->biglock);
         fuse_nodelock_unlock(fvdat);
@@ -2073,16 +2073,40 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
     }
 
     /*
-     * XXX
+     * munmap(2) states:
      *
-     * What behavior do we want here?
+     *   If the mapping maps data from a file (MAP_SHARED), then the memory will
+     *   eventually be written back to disk if it's dirty. This will happen
+     *   automatically at some point in the future (implementation dependent).
      *
-     * I once noted that sync() is not going to help here, but I think
-     * I've forgotten the context. Need to think about this again.
+     * In our case this point is now. Maintaining a consistent file state on the
+     * backing storage is important if we are dealing with distributed file
+     * systems.
      *
-     * ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL, UBC_PUSHDIRTY);
+     * Note:
+     *
+     * fuse_vnop_mnomap() is called when there are no more references to the
+     * file's mapped data. In other words, we have no definate way of knowing
+     * when a particular process unmaps a file since the file's data might
+     * still be referenced by other processes (MAP_SHARED).
+     *
+     * Calling ubc_msync() in fuse_vnop_close() is not going to help because
+     * the close(2) system call does not unmap the file. See mmap(2).
+     *
+     * Since vnop mnomap is considered a hint, returned errors are being
+     * ignored. See ubc_unmap(). As a result ubc_msync() might fail without the
+     * error being propagated back to user space.
      */
-
+    
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    fuse_biglock_unlock(data->biglock);
+#endif
+    (void)ubc_msync(vp, (off_t)0, ubc_getsize(vp), NULL, UBC_PUSHDIRTY);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
+    
     /*
      * Earlier, we used to go through our vnode's fufh list here, doing
      * something like the following:
@@ -2100,7 +2124,6 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * }
      *
      * Now, cleanup is all taken care of in vnop_inactive/reclaim.
-     *
      */
 
     return 0;

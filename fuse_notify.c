@@ -128,7 +128,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov) {
         }
 
         ubc_msync(vp, (off_t)off, end_off, NULL,
-                  UBC_PUSHDIRTY | UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
+                  UBC_PUSHALL | UBC_INVALIDATE | UBC_SYNC);
     }
 
     FUSE_KNOTE(vp, NOTE_ATTRIB);
