@@ -309,7 +309,7 @@ fuse_ticket_retain(struct fuse_ticket *ticket)
     } while (!OSCompareAndSwap(count, count + 1, &(ticket->tk_ref_count)));
 
     if (count == 0) {
-        panic("OSXFUSE: fuse_ticket_retain: ticket reference count is 0");
+        panic("osxfuse: fuse_ticket_retain: ticket reference count is 0");
     }
 }
 
@@ -327,7 +327,7 @@ fuse_ticket_release(struct fuse_ticket *ticket) {
     } while (!OSCompareAndSwap(count, count - 1, &(ticket->tk_ref_count)));
 
     if (count == 0) {
-        panic("OSXFUSE: fuse_ticket_release: ticket reference count is 0");
+        panic("osxfuse: fuse_ticket_release: ticket reference count is 0");
     }
     if (count == 1) {
         if (ticket->tk_interrupt) {

@@ -148,7 +148,7 @@ fusefs_start(__unused kmod_info_t *ki, __unused void *d)
 
     fuse_sysctl_start();
 
-    IOLog("OSXFUSE: starting (version %s, %s)\n",
+    IOLog("osxfuse: starting (%s, %s)\n",
           OSXFUSE_VERSION, OSXFUSE_TIMESTAMP);
 
     return KERN_SUCCESS;
@@ -183,7 +183,7 @@ fusefs_stop(__unused kmod_info_t *ki, __unused void *d)
 
     fuse_sysctl_stop();
 
-    IOLog("OSXFUSE: stopping (version %s, %s)\n",
+    IOLog("osxfuse: stopping (%s, %s)\n",
           OSXFUSE_VERSION, OSXFUSE_TIMESTAMP);
 
     return KERN_SUCCESS;

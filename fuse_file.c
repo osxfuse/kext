@@ -41,7 +41,7 @@ fuse_filehandle_get(vnode_t       vp,
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (FUFH_IS_VALID(fufh)) {
-        panic("OSXFUSE: filehandle_get called despite valid fufh (type=%d)",
+        panic("osxfuse: filehandle_get called despite valid fufh (type=%d)",
               fufh_type);
         /* NOTREACHED */
     }
@@ -55,7 +55,7 @@ fuse_filehandle_get(vnode_t       vp,
     if (vnode_isdir(vp)) {
         op = FUSE_OPENDIR;
         if (fufh_type != FUFH_RDONLY) {
-            IOLog("OSXFUSE: non-rdonly fufh requested for directory\n");
+            IOLog("osxfuse: non-rdonly fufh requested for directory\n");
             fufh_type = FUFH_RDONLY;
         }
     }
@@ -87,7 +87,7 @@ fuse_filehandle_get(vnode_t       vp,
             cache_purge(vp);
         }
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-        IOLog("OSXFUSE: filehandle_get: failed for %s "
+        IOLog("osxfuse: filehandle_get: failed for %s "
               "(type=%d, err=%d, caller=%p)\n",
               (vname) ? vname : "?", fufh_type, err,
                __builtin_return_address(0));
@@ -140,7 +140,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (FUFH_IS_VALID(fufh)) {
-        panic("OSXFUSE: filehandle_put called on a valid fufh (type=%d)",
+        panic("osxfuse: filehandle_put called on a valid fufh (type=%d)",
               fufh_type);
         /* NOTREACHED */
     }

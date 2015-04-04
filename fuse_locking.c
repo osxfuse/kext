@@ -334,7 +334,7 @@ void
 fusefs_lock_truncate(fusenode_t cp, lck_rw_type_t lck_rw_type)
 {
     if (cp->nodelockowner == current_thread()) {
-        panic("OSXFUSE: fusefs_lock_truncate: cnode %p locked!", cp);
+        panic("osxfuse: fusefs_lock_truncate: cnode %p locked!", cp);
     }
 
     lck_rw_lock(cp->truncatelock, lck_rw_type);
@@ -429,7 +429,7 @@ void fusefs_recursive_lock_lock(fusefs_recursive_lock *lock)
 {
     if (lock->thread == current_thread()) {
         if (lock->maxcount > 0 && lock->count >= lock->maxcount) {
-            panic("OSXFUSE: Attempted to lock max-locked recursive lock.");
+            panic("osxfuse: Attempted to lock max-locked recursive lock.");
         }
         lock->count++;
     } else {
@@ -470,7 +470,7 @@ void fusefs_recursive_lock_unlock(fusefs_recursive_lock *lock)
     assert(lock->thread == current_thread());
 
     if(lock->count == 0)
-        panic("OSXFUSE: Attempted to unlock non-locked recursive lock.");
+        panic("osxfuse: Attempted to unlock non-locked recursive lock.");
 
     if (0 == (--lock->count)) {
         lock->thread = 0;

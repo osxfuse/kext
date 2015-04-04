@@ -181,7 +181,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
     fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
     if (!fdev) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
-        IOLog("OSXFUSE: device found with no softc\n");
+        IOLog("osxfuse: device found with no softc\n");
         return ENXIO;
     }
 
@@ -254,7 +254,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
 
     data = fdev->data;
     if (!data) {
-        panic("OSXFUSE: no device private data in device_close");
+        panic("osxfuse: no device private data in device_close");
     }
 
     FUSE_DEVICE_LOCAL_LOCK(fdev);
@@ -347,7 +347,7 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             break;
 
         default:
-            panic("OSXFUSE: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
+            panic("osxfuse: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
     }
 
     fuse_lck_mtx_lock(ftick->tk_aw_mtx);
@@ -421,7 +421,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     }
 
     if (uio_resid(uio) < (user_ssize_t)sizeof(struct fuse_out_header)) {
-        IOLog("OSXFUSE: Incorrect header size. Got %lld, expected at least %lu\n",
+        IOLog("osxfuse: Incorrect header size. Got %lld, expected at least %lu\n",
               uio_resid(uio), sizeof(struct fuse_out_header));
         return EINVAL;
     }
@@ -433,12 +433,12 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
     /* begin audit */
 
     if (uio_resid(uio) + sizeof(struct fuse_out_header) != ohead.len) {
-        IOLog("OSXFUSE: message body size does not match that in the header\n");
+        IOLog("osxfuse: message body size does not match that in the header\n");
         return EINVAL;
     }
 
     if (uio_resid(uio) && ohead.unique && ohead.error) {
-        IOLog("OSXFUSE: non-zero error for a message with a body\n");
+        IOLog("osxfuse: non-zero error for a message with a body\n");
         return EINVAL;
     }
 
@@ -559,7 +559,7 @@ fuse_devices_stop(void)
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
 
-            IOLog("OSXFUSE: /dev/" OSXFUSE_DEVICE_BASENAME "%d is still active "
+            IOLog("osxfuse: /dev/" OSXFUSE_DEVICE_BASENAME "%d is still active "
                   "(pid=%d %s)\n", i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
@@ -569,7 +569,7 @@ fuse_devices_stop(void)
             FUSE_DEVICE_GLOBAL_UNLOCK();
             proc_name(fuse_device_table[i].pid, p_comm, MAXCOMLEN + 1);
             /* The pid can't possibly be active here. */
-            IOLog("OSXFUSE: /dev/" OSXFUSE_DEVICE_BASENAME "%d has a lingering "
+            IOLog("osxfuse: /dev/" OSXFUSE_DEVICE_BASENAME "%d has a lingering "
                   "mount (pid=%d, %s)\n", i, fuse_device_table[i].pid, p_comm);
             return KERN_FAILURE;
         }
@@ -589,7 +589,7 @@ fuse_devices_stop(void)
 
     ret = cdevsw_remove(fuse_cdev_major, &fuse_device_cdevsw);
     if (ret != fuse_cdev_major) {
-        IOLog("OSXFUSE: fuse_cdev_major != return from cdevsw_remove()\n");
+        IOLog("osxfuse: fuse_cdev_major != return from cdevsw_remove()\n");
     }
 
     fuse_cdev_major = -1;
@@ -716,7 +716,7 @@ fuse_device_select(dev_t dev, int which, void *wql, struct proc *p)
 
     data = fdev->data;
     if (!data) {
-        panic("OSXFUSE: no device private data in device_select");
+        panic("osxfuse: no device private data in device_select");
     }
 
     switch (which) {

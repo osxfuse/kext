@@ -267,7 +267,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
                                      &is_member) == 0) && is_member) {
             mntopts |= FSESS_ALLOW_ROOT;
         } else {
-            IOLog("OSXFUSE: caller not a member of OSXFUSE admin group (%d)\n",
+            IOLog("osxfuse: caller not a member of osxfuse admin group (%d)\n",
                   fuse_admin_group);
             return EPERM;
         }
@@ -412,7 +412,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     drandom = fuse_device_get_random(fdev);
     if (fusefs_args.random != drandom) {
         fuse_device_unlock(fdev);
-        IOLog("OSXFUSE: failing mount because of mismatched random\n");
+        IOLog("osxfuse: failing mount because of mismatched random\n");
         return EINVAL;
     }
 
@@ -453,7 +453,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     if (!data->daemoncred) {
-        panic("OSXFUSE: daemon found but identity unknown");
+        panic("osxfuse: daemon found but identity unknown");
     }
 
     if (fuse_vfs_context_issuser(context) &&
@@ -507,7 +507,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     /* Send a handshake message to the daemon. */
     kr = kernel_thread_start(fuse_internal_init, data, &init_thread);
     if (kr != KERN_SUCCESS) {
-        IOLog("OSXFUSE: could not start init thread\n");
+        IOLog("osxfuse: could not start init thread\n");
         err = ENOTCONN;
     } else {
         thread_deallocate(init_thread);
@@ -600,7 +600,7 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("OSXFUSE: no mount private data in vfs_unmount");
+        panic("osxfuse: no mount private data in vfs_unmount");
     }
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
@@ -627,12 +627,12 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
          * quite pure to do that though.
          *
          *    flags |= FORCECLOSE;
-         *    IOLog("OSXFUSE: forcing unmount on a dead file system\n");
+         *    IOLog("osxfuse: forcing unmount on a dead file system\n");
          */
 
     } else if (!(data->dataflags & FSESS_INITED)) {
         flags |= FORCECLOSE;
-        IOLog("OSXFUSE: forcing unmount on not-yet-alive file system\n");
+        IOLog("osxfuse: forcing unmount on not-yet-alive file system\n");
         fdata_set_dead(data, false);
     }
 
@@ -780,7 +780,7 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_SYMBOLICLINKS
 
         /*
-         * Note that we don't really have hard links in a OSXFUSE file system
+         * Note that we don't really have hard links in a osxfuse file system
          * unless the user file system daemon provides persistent/consistent
          * inode numbers. Maybe instead of returning the "wrong" answer here
          * we should just deny knowledge of this capability in the valid bits
@@ -1045,7 +1045,7 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 
     data = fuse_get_mpdata(mp);
     if (!data) {
-        panic("OSXFUSE: no private data for mount point?");
+        panic("osxfuse: no private data for mount point?");
     }
 
     if (!(data->dataflags & FSESS_INITED)) {

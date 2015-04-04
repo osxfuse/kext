@@ -201,7 +201,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
 
     if (err == 0) {
         if (vnode_vtype(vn) != vtyp) {
-            IOLog("OSXFUSE: vnode changed type behind us (old=%d, new=%d)\n",
+            IOLog("osxfuse: vnode changed type behind us (old=%d, new=%d)\n",
                   vnode_vtype(vn), vtyp);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(mntdata->biglock);
@@ -213,7 +213,7 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
 #endif
             err = EIO;
         } else if (VTOFUD(vn)->generation != generation) {
-            IOLog("OSXFUSE: vnode changed generation\n");
+            IOLog("osxfuse: vnode changed generation\n");
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(mntdata->biglock);
 #endif
@@ -273,7 +273,7 @@ void
 fuse_vncache_enter(vnode_t dvp, vnode_t vp, struct componentname *cnp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
+    IOLog("osxfuse: cache enter dvp=%p, vp=%p, %s\n", dvp, vp, cnp->cn_nameptr);
 #endif
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
@@ -296,7 +296,7 @@ void
 fuse_vncache_purge(vnode_t vp)
 {
 #if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache purge vp=%p\n", vp);
+    IOLog("osxfuse: cache purge vp=%p\n", vp);
 #endif
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
@@ -341,7 +341,7 @@ fuse_vncache_lookup(vnode_t dvp, vnode_t *vpp, struct componentname *cnp)
 #endif
 
 #if FUSE_TRACE_VNCACHE
-    IOLog("OSXFUSE: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
+    IOLog("osxfuse: cache lookup ret=%d, dvp=%p, *vpp=%p, %s\n",
           ret, dvp, *vpp, cnp->cn_nameptr);
 #endif
     return ret;

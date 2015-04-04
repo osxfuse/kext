@@ -137,7 +137,7 @@ FUSE_OSMalloc(size_t size, OSMallocTag tag)
     void *addr = OSMalloc((uint32_t)size, tag);
 
     if (!addr) {
-        panic("OSXFUSE: memory allocation failed (size=%lu)", size);
+        panic("osxfuse: memory allocation failed (size=%lu)", size);
     }
 
     FUSE_OSAddAtomic((UInt32)size, (SInt32 *)&fuse_memory_allocated);
@@ -168,7 +168,7 @@ FUSE_OSRealloc_nocopy(void *oldptr, size_t oldsize, size_t newsize)
 
     data = FUSE_OSMalloc(newsize, fuse_malloc_tag);
     if (!data) {
-        panic("OSXFUSE: OSMalloc failed in realloc");
+        panic("osxfuse: OSMalloc failed in realloc");
     }
 
     FUSE_OSFree(oldptr, oldsize, fuse_malloc_tag);

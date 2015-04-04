@@ -55,7 +55,7 @@ fiov_init(struct fuse_iov *fiov, size_t size)
 
     fiov->base = FUSE_OSMalloc(msize, fuse_malloc_tag);
     if (!fiov->base) {
-        panic("OSXFUSE: OSMalloc failed in fiov_init");
+        panic("osxfuse: OSMalloc failed in fiov_init");
     }
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_iov_current);
@@ -85,7 +85,7 @@ fiov_adjust(struct fuse_iov *fiov, size_t size)
         fiov->base = FUSE_OSRealloc_nocopy(fiov->base, fiov->allocated_size,
                                            FU_AT_LEAST(size));
         if (!fiov->base) {
-            panic("OSXFUSE: realloc failed");
+            panic("osxfuse: realloc failed");
         }
 
         fiov->allocated_size = FU_AT_LEAST(size);
@@ -136,7 +136,7 @@ fticket_alloc(struct fuse_data *data)
     ftick = (struct fuse_ticket *)FUSE_OSMalloc(sizeof(struct fuse_ticket),
                                                 fuse_malloc_tag);
     if (!ftick) {
-        panic("OSXFUSE: OSMalloc failed in fticket_alloc");
+        panic("osxfuse: OSMalloc failed in fticket_alloc");
     }
 
     FUSE_OSAddAtomic(1, (SInt32 *)&fuse_tickets_current);
@@ -269,7 +269,7 @@ out:
     fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
 
     if (!err && !fticket_answered(ftick)) {
-        IOLog("OSXFUSE: requester was woken up but still no answer");
+        IOLog("osxfuse: requester was woken up but still no answer");
         err = ENXIO;
     }
 
@@ -289,12 +289,12 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             err = fiov_adjust_canfail(fticket_resp(ftick), len);
             if (err) {
                 fticket_set_killl(ftick);
-                IOLog("OSXFUSE: failed to pull uio (error=%d)\n", err);
+                IOLog("osxfuse: failed to pull uio (error=%d)\n", err);
                 break;
             }
             err = uiomove(fticket_resp(ftick)->base, (int)len, uio);
             if (err) {
-                IOLog("OSXFUSE: FT_A_FIOV error is %d (%p, %ld, %p)\n",
+                IOLog("osxfuse: FT_A_FIOV error is %d (%p, %ld, %p)\n",
                       err, fticket_resp(ftick)->base, len, uio);
             }
             break;
@@ -303,13 +303,13 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
             ftick->tk_aw_bufsize = len;
             err = uiomove(ftick->tk_aw_bufdata, (int)len, uio);
             if (err) {
-                IOLog("OSXFUSE: FT_A_BUF error is %d (%p, %ld, %p)\n",
+                IOLog("osxfuse: FT_A_BUF error is %d (%p, %ld, %p)\n",
                       err, ftick->tk_aw_bufdata, len, uio);
             }
             break;
 
         default:
-            panic("OSXFUSE: unknown answer type for ticket %p", ftick);
+            panic("osxfuse: unknown answer type for ticket %p", ftick);
         }
     }
 
@@ -341,7 +341,7 @@ fdata_alloc(struct proc *p)
     data = (struct fuse_data *)FUSE_OSMalloc(sizeof(struct fuse_data),
                                              fuse_malloc_tag);
     if (!data) {
-        panic("OSXFUSE: OSMalloc failed in fdata_alloc");
+        panic("osxfuse: OSMalloc failed in fdata_alloc");
     }
 
     bzero(data, sizeof(struct fuse_data));
@@ -485,7 +485,7 @@ fuse_pop_freeticks(struct fuse_data *data)
 
     if (STAILQ_EMPTY(&data->freetickets_head) &&
         (data->freeticket_counter != 0)) {
-        panic("OSXFUSE: ticket count mismatch!");
+        panic("osxfuse: ticket count mismatch!");
     }
 
     return ftick;
@@ -531,7 +531,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         fuse_lck_mtx_unlock(data->ticket_mtx);
         ftick = fticket_alloc(data);
         if (!ftick) {
-            panic("OSXFUSE: ticket allocation failed");
+            panic("osxfuse: ticket allocation failed");
         }
         fuse_lck_mtx_lock(data->ticket_mtx);
         fuse_push_allticks(ftick);
@@ -539,7 +539,7 @@ fuse_ticket_fetch(struct fuse_data *data)
         /* locked here */
         ftick = fuse_pop_freeticks(data);
         if (!ftick) {
-            panic("OSXFUSE: no free ticket despite the counter's value");
+            panic("osxfuse: no free ticket despite the counter's value");
         }
     }
     ftick->tk_ref_count = 1;
@@ -635,7 +635,7 @@ void
 fuse_insert_message(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_DIRTY) {
-        panic("OSXFUSE: ticket reused without being refreshed");
+        panic("osxfuse: ticket reused without being refreshed");
     }
 
     if (fdata_dead_get(ftick->tk_data)) {
@@ -658,7 +658,7 @@ void
 fuse_insert_message_head(struct fuse_ticket *ftick)
 {
     if (ftick->tk_flag & FT_DIRTY) {
-        panic("OSXFUSE: ticket reused without being refreshed");
+        panic("osxfuse: ticket reused without being refreshed");
     }
 
     if (fdata_dead_get(ftick->tk_data)) {
@@ -701,7 +701,7 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         FB_AUDIT_CASE_OUT(FUSE_LOOKUP, fuse_entry_out)
 
         case FUSE_FORGET:
-            panic("OSXFUSE: a handler has been installed for FUSE_FORGET");
+            panic("osxfuse: a handler has been installed for FUSE_FORGET");
             break;
 
         FB_AUDIT_CASE_OUT(FUSE_GETATTR, fuse_attr_out)
@@ -769,15 +769,15 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         FB_AUDIT_CASE_NO_OUT(FUSE_FSYNCDIR)
 
         case FUSE_GETLK:
-            panic("OSXFUSE: no response body format check for FUSE_GETLK");
+            panic("osxfuse: no response body format check for FUSE_GETLK");
             break;
 
         case FUSE_SETLK:
-            panic("OSXFUSE: no response body format check for FUSE_SETLK");
+            panic("osxfuse: no response body format check for FUSE_SETLK");
             break;
 
         case FUSE_SETLKW:
-            panic("OSXFUSE: no response body format check for FUSE_SETLKW");
+            panic("osxfuse: no response body format check for FUSE_SETLKW");
             break;
 
         FB_AUDIT_CASE_NO_OUT(FUSE_ACCESS)
@@ -820,8 +820,8 @@ fuse_body_audit(struct fuse_ticket *ftick, size_t blen)
         FB_AUDIT_CASE_NO_OUT(FUSE_EXCHANGE);
 
         default:
-            IOLog("OSXFUSE: opcodes out of sync (%d)\n", opcode);
-            panic("OSXFUSE: opcodes out of sync (%d)", opcode);
+            IOLog("osxfuse: opcodes out of sync (%d)\n", opcode);
+            panic("osxfuse: opcodes out of sync (%d)", opcode);
     }
 
     return err;
@@ -922,7 +922,7 @@ fdisp_make(struct fuse_dispatcher *fdip,
         }
         fuse_lck_mtx_unlock(data->aw_mtx);
 
-        IOLog("OSXFUSE: new ticket created op=%d ms_count=%d aw_count=%d\n",
+        IOLog("osxfuse: new ticket created op=%d ms_count=%d aw_count=%d\n",
               op, ms_count, aw_count);
     }
 #endif
@@ -1076,8 +1076,8 @@ fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
         FN_AUDIT_CASE_OUT(FUSE_NOTIFY_DELETE, fuse_notify_delete_out)
 
         default:
-            IOLog("OSXFUSE: notification codes out of sync (%d)\n", notify);
-            panic("OSXFUSE: notification codes out of sync (%d)", notify);
+            IOLog("osxfuse: notification codes out of sync (%d)\n", notify);
+            panic("osxfuse: notification codes out of sync (%d)", notify);
     }
 
     return err;

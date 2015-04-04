@@ -337,7 +337,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
     fufh = &(fvdat->fufh[fufh_type]);
 
     if (!FUFH_IS_VALID(fufh)) {
-        IOLog("OSXFUSE: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
+        IOLog("osxfuse: fufh invalid in close [type=%d oc=%d vtype=%d cf=%d]\n",
               fufh_type, fufh->open_count, vnode_vtype(vp), fflag);
         return 0;
     }
@@ -2029,13 +2029,13 @@ retry:
          */
         if (!retried && (err == EACCES) &&
             ((fufh_type == FUFH_RDWR) || (fufh_type == FUFH_WRONLY))) {
-            IOLog("OSXFUSE: filehandle_get retrying (type=%d, err=%d)\n",
+            IOLog("osxfuse: filehandle_get retrying (type=%d, err=%d)\n",
                   fufh_type, err);
             fufh_type = FUFH_RDONLY;
             retried = 1;
             goto retry;
         } else {
-            IOLog("OSXFUSE: filehandle_get failed in mmap (type=%d, err=%d)\n",
+            IOLog("osxfuse: filehandle_get failed in mmap (type=%d, err=%d)\n",
                   fufh_type, err);
         }
         return EPERM;
@@ -2316,7 +2316,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
     error = fuse_filehandle_get(vp, context, fufh_type, mode);
     if (error) {
-        IOLog("OSXFUSE: filehandle_get failed in open (type=%d, err=%d)\n",
+        IOLog("osxfuse: filehandle_get failed in open (type=%d, err=%d)\n",
               fufh_type, error);
         if (error == ENOENT) {
             cache_purge(vp);
@@ -2837,7 +2837,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     if (!FUFH_IS_VALID(fufh)) {
         err = fuse_filehandle_get(vp, context, FUFH_RDONLY, 0 /* mode */);
         if (err) {
-            IOLog("OSXFUSE: filehandle_get failed in readdir (err=%d)\n", err);
+            IOLog("osxfuse: filehandle_get failed in readdir (err=%d)\n", err);
             return err;
         }
         freefufh = 1;
@@ -2950,7 +2950,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
     fuse_trace_printf_vnop();
 
     if (!fvdat) {
-        panic("OSXFUSE: no vnode data during recycling");
+        panic("osxfuse: no vnode data during recycling");
     }
 
     /*
@@ -3002,7 +3002,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                     if (open_count != aux_count) {
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
                         const char *vname = vnode_getname(vp);
-                        IOLog("OSXFUSE: vnode reclaimed with valid fufh "
+                        IOLog("osxfuse: vnode reclaimed with valid fufh "
                               "(%s type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
                               (vname) ? vname : "?", type, vnode_vtype(vp),
@@ -3011,7 +3011,7 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
                             vnode_putname(vname);
                         }
 #else
-                        IOLog("OSXFUSE: vnode reclaimed with valid fufh "
+                        IOLog("osxfuse: vnode reclaimed with valid fufh "
                               "(type=%d, vtype=%d, open_count=%d, busy=%d, "
                               "aux_count=%d)\n",
                               type, vnode_vtype(vp), open_count,
@@ -3594,7 +3594,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
                      namelen + 1 + attrsize);
     err = fdisp_make_vp_canfail(&fdi, FUSE_SETXATTR, vp, ap->a_context);
     if (err) {
-        IOLog("OSXFUSE: setxattr failed for too large attribute (%lu)\n",
+        IOLog("osxfuse: setxattr failed for too large attribute (%lu)\n",
               attrsize);
         return ERANGE;
     }

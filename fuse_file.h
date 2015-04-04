@@ -49,7 +49,7 @@ fuse_filehandle_xlate_from_mmap(int fflags)
     } else if (fflags & (PROT_READ | PROT_EXEC)) {
         return FUFH_RDONLY;
     } else {
-        IOLog("OSXFUSE: mmap being attempted with no region accessibility\n");
+        IOLog("osxfuse: mmap being attempted with no region accessibility\n");
         return FUFH_INVALID;
     }
 }
@@ -77,7 +77,7 @@ fuse_filehandle_xlate_from_fflags(int fflags)
         if (fflags == 0) {
             return FUFH_RDONLY;
         } else {
-            panic("OSXFUSE: What kind of a flag is this (%x)?", fflags);
+            panic("osxfuse: What kind of a flag is this (%x)?", fflags);
         }
     }
 
