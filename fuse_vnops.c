@@ -2815,7 +2815,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
     CHECK_BLANKET_DENIAL(vp, context, EPERM);
 
     /* No cookies yet. */
-    if (flags & (VNODE_READDIR_REQSEEKOFF | VNODE_READDIR_EXTENDED)) {
+    if (flags & (VNODE_READDIR_REQSEEKOFF)) {
         return EINVAL;
     }
 
@@ -2849,7 +2849,7 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
 
     fiov_init(&cookediov, DIRCOOKEDSIZE);
 
-    err = fuse_internal_readdir(vp, uio, context, fufh, &cookediov,
+    err = fuse_internal_readdir(vp, uio, flags, context, fufh, &cookediov,
                                 numdirentPtr);
 
     fiov_teardown(&cookediov);

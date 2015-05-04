@@ -752,13 +752,10 @@ fuse_internal_ioctl_avfi(vnode_t                 vp,
 
 /* readdir */
 
-struct pseudo_dirent {
-    uint32_t d_namlen;
-};
-
 int
 fuse_internal_readdir(vnode_t                 vp,
                       uio_t                   uio,
+                      int                     flags,
                       vfs_context_t           context,
                       struct fuse_filehandle *fufh,
                       struct fuse_iov        *cookediov,
@@ -767,6 +764,7 @@ fuse_internal_readdir(vnode_t                 vp,
 int
 fuse_internal_readdir_processdata(vnode_t          vp,
                                   uio_t            uio,
+                                  int              flags,
                                   size_t           reqsize,
                                   void            *buf,
                                   size_t           bufsize,

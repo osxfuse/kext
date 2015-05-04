@@ -146,7 +146,7 @@ struct vfs_fsentry fuse_vfs_entry = {
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
     VFS_TBLTHREADSAFE |
 #endif
-    VFS_TBL64BITREADY | VFS_TBLNOTYPENUM,
+    VFS_TBL64BITREADY | VFS_TBLNOTYPENUM | VFS_TBLREADDIR_EXTENDED,
 
     // Reserved for future use
     { NULL, NULL }

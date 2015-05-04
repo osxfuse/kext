@@ -760,6 +760,7 @@ __private_extern__
 int
 fuse_internal_readdir(vnode_t                 vp,
                       uio_t                   uio,
+                      int                     flags,
                       vfs_context_t           context,
                       struct fuse_filehandle *fufh,
                       struct fuse_iov        *cookediov,
@@ -800,9 +801,9 @@ fuse_internal_readdir(vnode_t                 vp,
             goto out;
         }
 
-        err = fuse_internal_readdir_processdata(vp, uio, size, fdi.answ,
-                                                fdi.iosize, cookediov,
-                                                numdirent);
+        err = fuse_internal_readdir_processdata(vp, uio, flags, size,
+                                                fdi.answ, fdi.iosize,
+                                                cookediov, numdirent);
         if (err) {
             break;
         }
@@ -818,10 +819,17 @@ out:
     return ((err == -1) ? 0 : err);
 }
 
+#define GENERIC_DIRSIZ(namlen) \
+    ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1)) + (((namlen) + 1 + 3) & ~3))
+
+#define EXT_DIRSIZ(namlen) \
+    ((sizeof(struct direntry) + (namlen) - (MAXPATHLEN-1) + 7) & ~7)
+
 __private_extern__
 int
 fuse_internal_readdir_processdata(vnode_t          vp,
                                   uio_t            uio,
+                                  int              flags,
                          __unused size_t           reqsize,
                                   void            *buf,
                                   size_t           bufsize,
@@ -831,11 +839,13 @@ fuse_internal_readdir_processdata(vnode_t          vp,
     int err = 0;
     int cou = 0;
     int n   = 0;
-    size_t bytesavail;
-    size_t freclen;
+    bool extended = flags & VNODE_READDIR_EXTENDED;
+    size_t bytesavail = 0;
+    size_t freclen = 0;
 
-    struct dirent      *de;
-    struct fuse_dirent *fudge;
+    struct dirent      *de = NULL;
+    struct direntry    *de_ext = NULL;
+    struct fuse_dirent *fudge = NULL;
 
     if (bufsize < FUSE_NAME_OFFSET) {
         return -1;
@@ -876,12 +886,12 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             err = EIO;
             break;
         }
-
-#define GENERIC_DIRSIZ(dp) \
-  ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1)) + \
-   (((dp)->d_namlen + 1 + 3) & ~3))
-
-        bytesavail = GENERIC_DIRSIZ((struct pseudo_dirent *)&fudge->namelen);
+        
+        if (extended) {
+            bytesavail = EXT_DIRSIZ(fudge->namelen);
+        } else {
+            bytesavail = GENERIC_DIRSIZ(fudge->namelen);
+        }
 
         if (bytesavail > (size_t)uio_resid(uio)) {
             err = -1;
@@ -891,26 +901,40 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_refresh(cookediov);
         fiov_adjust(cookediov, bytesavail);
 
-        de = (struct dirent *)cookediov->base;
-#ifdef _DARWIN_FEATURE_64_BIT_INODE
-        de->d_ino = fudge->ino;
-#else
-        de->d_ino = (ino_t)fudge->ino; /* XXX: truncation */
-#endif /* _DARWIN_FEATURE_64_BIT_INODE */
-        de->d_reclen = bytesavail;
-        de->d_type   = fudge->type;
-        de->d_namlen = fudge->namelen;
+        if (extended) {
+            de_ext = (struct direntry *)cookediov->base;
+            de_ext->d_ino = fudge->ino;
+            de_ext->d_seekoff = 0;
+            de_ext->d_reclen = bytesavail;
+            de_ext->d_namlen = fudge->namelen;
+            de_ext->d_type   = fudge->type;
+        } else {
+            de = (struct dirent *)cookediov->base;
+            de->d_ino = (ino_t)fudge->ino;
+            de->d_reclen = bytesavail;
+            de->d_type   = fudge->type;
+            de->d_namlen = fudge->namelen;
+        }
 
         /* Filter out any ._* files if the mount is configured as such. */
         if (fuse_skip_apple_double_mp(vnode_mount(vp),
                                       fudge->name, fudge->namelen)) {
-            de->d_fileno = 0;
-            de->d_type = DT_WHT;
+            if (extended) {
+                de_ext->d_ino = 0;
+                de_ext->d_type = DT_WHT;
+            } else {
+                de->d_ino = 0;
+                de->d_type = DT_WHT;
+            }
         }
 
-        memcpy((char *)cookediov->base +
-               sizeof(struct dirent) - FUSE_MAXNAMLEN - 1,
-               (char *)buf + FUSE_NAME_OFFSET, fudge->namelen);
+        if (extended) {
+            memcpy(de_ext->d_name, (char *)buf + FUSE_NAME_OFFSET,
+                   fudge->namelen);
+        } else {
+            memcpy(de->d_name, (char *)buf + FUSE_NAME_OFFSET,
+                   fudge->namelen);
+        }
         ((char *)cookediov->base)[bytesavail] = '\0';
 
         err = uiomove(cookediov->base, (int)cookediov->len, uio);
