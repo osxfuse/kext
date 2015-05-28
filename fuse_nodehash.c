@@ -245,7 +245,7 @@ HNodeFromVNode(vnode_t vn)
     assert(vn != NULL);
     hnode = vnode_fsnode(vn);
     assert(hnode != NULL);
-    assert(hnode->magic = gMagic);
+    assert(hnode->magic == gMagic);
 
     return hnode;
 }
@@ -659,7 +659,6 @@ HNodeLookupCreatingIfNecessary(fuse_device_t dev,
 
                 if (err == 0) {
                     /* All ok; return the HNode/vnode to the caller. */
-                    assert(thisNode != NULL);
                     assert(resultVN == NULL);
                     resultVN = candidateVN;
                     needsUnlock = false;
@@ -1060,7 +1059,6 @@ HNodeLookupRealQuickIfExists(fuse_device_t dev,
 #endif
             needsUnlock = false;
             if (err == 0) {
-                assert(thisNode != NULL);
                 assert(resultVN == NULL);
                 resultVN = candidateVN;
             } else {
