@@ -1927,12 +1927,6 @@ FUSE_INLINE
 uint32_t
 fuse_create_in_get_mode(struct fuse_abi_data *fuse_create_in)
 {
-#if FUSE_ABI_VERSION_MIN < FUSE_ABI_712
-    if (fuse_create_in->fad_version < FUSE_ABI_712) {
-        return 0;
-    }
-#endif
-
     return ((struct fuse_create_in *)fuse_create_in->fad_data)->mode;
 }
 
@@ -1940,12 +1934,6 @@ FUSE_INLINE
 void
 fuse_create_in_set_mode(struct fuse_abi_data *fuse_create_in, uint32_t mode)
 {
-#if FUSE_ABI_VERSION_MIN < FUSE_ABI_712
-    if (fuse_create_in->fad_version < FUSE_ABI_712) {
-        return;
-    }
-#endif
-
     ((struct fuse_create_in *)fuse_create_in->fad_data)->mode = mode;
 }
 
