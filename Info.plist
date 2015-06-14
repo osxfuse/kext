@@ -1,7 +1,9 @@
 #include "common/fuse_version.h"
 #include "common/fuse_param.h"
 #include <AvailabilityMacros.h>
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101100
+#  define OSXFUSE_KPI_VERSION 15.0.0
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
 #  define OSXFUSE_KPI_VERSION 14.0.0
 #elif MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
 #  define OSXFUSE_KPI_VERSION 13.0.0
