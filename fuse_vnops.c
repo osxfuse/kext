@@ -563,6 +563,7 @@ bringup:
         FUSE_OSAddAtomic(1, (SInt32 *)&fuse_fh_current);
     }
 
+    fuse_invalidate_attr(dvp);
     cache_purge_negatives(dvp);
 
     fuse_ticket_release(fdip->tick);
