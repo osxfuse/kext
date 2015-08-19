@@ -189,6 +189,12 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
             if (oflags) {
                 *oflags |= MAKEENTRY;
             }
+
+            /* Need VT_OSXFUSE from xnu */
+            vnode_settag(vn, VT_OTHER);
+
+            cache_attrs(vn, fuse_entry_out, feo);
+
             HNodeAttachVNodeSucceeded(hn, 0 /* forkIndex */, vn);
             FUSE_OSAddAtomic(1, (SInt32 *)&fuse_vnodes_current);
         } else {
@@ -228,8 +234,6 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
 
     if (err == 0) {
         *vnPtr = vn;
-        /* Need VT_OSXFUSE from xnu */
-        vnode_settag(vn, VT_OTHER);
     }
 
     /* assert((err == 0) == (*vnPtr != NULL); */
