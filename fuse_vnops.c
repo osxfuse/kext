@@ -876,7 +876,6 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
          * We also don't want to do it when we have asynchronous writes
          * enabled because we might have pending writes on *our* side.
          * We're not researching distributed file systems here!
-         *
          */
 
         off_t new_filesize = fuse_attr_get_size(&fa);
