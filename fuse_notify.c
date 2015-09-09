@@ -52,7 +52,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
             fuse_internal_vnode_disappear(vp, vfs_context_current(), REVOKE_SOFT);
             fuse_biglock_lock(data->biglock);
         }
-        return;
+        goto out;
     }
 
     fuse_abi_data_init(&fao, DATOI(data), fdi.answ);
