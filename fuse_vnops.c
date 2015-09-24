@@ -640,7 +640,17 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
     }
 
     if (!vnode_isvroot(vp) || !fuse_vfs_context_issuser(context)) {
-        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+        /*
+         * Note: Unless allow_root or allow_other is set we limit vnode operations to
+         * the user that mounted the file system. We enforce this policy by calling:
+         *
+         * CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+         *
+         * Starting with OS X 10.11 DesktopServicesHelper, which is running as root,
+         * calls stat(2) on behalf of Finder when trying to delete a directory.
+         * Returning ENOENT results in Finder aborting the delete process. Therefore
+         * we are no longer enforcing allow_root or allow_other for vnop_getattr.
+         */
     }
 
     dataflags = data->dataflags;
