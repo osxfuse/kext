@@ -30,6 +30,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     struct fuse_abi_data fao;
     struct fuse_abi_data fa;
 
+    off_t old_filesize;
     off_t new_filesize;
 
     fuse_biglock_lock(data->biglock);
@@ -60,12 +61,29 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
 
     cache_attrs(vp, fuse_attr_out, &fao);
 
+    old_filesize = fvdat->filesize;
     new_filesize = fuse_attr_get_size(&fa);
-    if (fvdat->filesize != new_filesize) {
+
+    if (old_filesize != new_filesize) {
         fvdat->filesize = new_filesize;
 
         fuse_biglock_unlock(data->biglock);
+
         ubc_setsize(vp, new_filesize);
+
+        if (new_filesize > old_filesize) {
+            /*
+             * Note: Unless the file did end on a page boundary we need to invalidate the
+             * last page of the file's unified buffer cache maunally. ubc_setsize does not
+             * take care of this when expanding files.
+             */
+
+            off_t end_off = round_page_64(old_filesize);
+            if (end_off != old_filesize) {
+                ubc_msync(vp, trunc_page_64(old_filesize), end_off, NULL, UBC_INVALIDATE);
+            }
+        }
+
         fuse_biglock_lock(data->biglock);
     }
 
