@@ -639,18 +639,16 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         }
     }
 
-    if (!vnode_isvroot(vp) || !fuse_vfs_context_issuser(context)) {
+    if (fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Unless allow_root or allow_other is set we limit vnode operations to
-         * the user that mounted the file system. We enforce this policy by calling:
-         *
-         * CHECK_BLANKET_DENIAL(vp, context, ENOENT);
-         *
-         * Starting with OS X 10.11 DesktopServicesHelper, which is running as root,
-         * calls stat(2) on behalf of Finder when trying to delete a directory.
+         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is running as
+         * root) calls stat(2) on behalf of Finder when trying to delete a directory.
          * Returning ENOENT results in Finder aborting the delete process. Therefore
-         * we are no longer enforcing allow_root or allow_other for vnop_getattr.
+         * we are no longer blocking calls by root even if allow_root or allow_other
+         * is not set.
          */
+    } else {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
     }
 
     dataflags = data->dataflags;
@@ -808,7 +806,16 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
         return ENXIO;
     }
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Starting with OS X 10.9 syspolicyd (which is running as root) calls
+         * getxattr(2) when opening items in Finder. Blocking these calls results in
+         * Finder displaying an error message. Therefore we are no longer blocking
+         * calls by root even if allow_root or allow_other is not set.
+         */
+    } else {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     if (name == NULL || name[0] == '\0') {
         return EINVAL;
