@@ -11,18 +11,18 @@
 #if M_OSXFUSE_ENABLE_DSELECT
 
 /*
- * # 10.5        10.6-32        10.6-64
+ * # 10.5        10.6-32     10.6-64     10.11-64
  *
  * # sizeof(struct selinfo)
- *   24          24             48
+ *   24          24          48          64
  *
  */
 
 struct fuse_selinfo {
 #if __LP64__
-    unsigned char __data[48];
+    unsigned char __data[64];
 #else
-    unsigned char __data[32];
+    unsigned char __data[24];
 #endif
 };
 
@@ -31,19 +31,19 @@ struct fuse_selinfo {
 /* The shop of horrors. */
 
 /*
- * # 10.5        10.6-32     10.6-64     10.7-32     10.7-64
+ * # 10.5        10.6-32     10.6-64     10.7-32     10.7-64     10.9-64
  *
  * # sizeof(struct vnode)
- *   144         148         248         148         248
+ *   144         148         248         148         248         240
  *
  * # offsetof(struct vnode, v_lflag)
- *   48          48          88          44          80
+ *   48          48          88          44          80          80
  *
  * # offsetof(struct vnode, v_name)
- *   112         116         184         112         176
+ *   112         116         184         112         176         176
  *
  * # offsetof(struct vnode, v_parent)
- *   116         120         192         116         184
+ *   116         120         192         116         184         184
  */
 
 struct fuse_kludge_vnode_9 {
