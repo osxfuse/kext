@@ -1873,8 +1873,8 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
     }
 
     /*
-     * Ignore the congestion_threshold field of struct fuse_init_out because
-     * there is no equivalent to the Linux backing device info concept (struct
+     * Ignore the congestion_threshold field of struct fuse_init_out because there
+     * is no equivalent to the Linux backing device info concept (struct
      * backing_dev_info) on OS X.
      */
 
@@ -1884,9 +1884,19 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-    err = vfs_update_vfsstat(data->mp, vfs_context_current(), VFS_KERNEL_EVENT);
-    if (err) {
-        IOLog("osxfuse: failed to update vfsstat (err=%d)\n", err);
+    {
+        vfs_context_t context = vfs_context_create(NULL);
+        err = vfs_update_vfsstat(data->mp, context, VFS_KERNEL_EVENT);
+        vfs_context_rele(context);
+
+        if (err) {
+            /*
+             * Do not treat this as a fatal error, the worst that can happen is vfsstat
+             * being stale.
+             */
+            IOLog("osxfuse: failed to update vfsstat (err=%d)\n", err);
+            err = 0;
+        }
     }
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
 
