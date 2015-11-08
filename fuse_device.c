@@ -109,11 +109,11 @@ fuse_reject_answers(struct fuse_data *data)
 
     fuse_lck_mtx_lock(data->aw_mtx);
     while ((ftick = fuse_aw_pop(data))) {
-        fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+        fuse_lck_mtx_lock(ftick->tk_mtx);
         fticket_set_answered(ftick);
         ftick->tk_aw_errno = ENOTCONN;
         fuse_wakeup(ftick);
-        fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+        fuse_lck_mtx_unlock(ftick->tk_mtx);
         fuse_ticket_release(ftick);
     }
     fuse_lck_mtx_unlock(data->aw_mtx);
@@ -350,45 +350,51 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             panic("osxfuse: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
     }
 
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_lock(ftick->tk_mtx);
 
     if (fticket_answered(ftick)) {
         /*
-         * Filter out tickets, that have been marked as answered by returning
-         * EINTR. In case this ticket has been interrupted drop the interrrupt
-         * ticket.
+         * Filter out tickets, that have been marked as answered by returning EINTR.
+         * For now only interrupt tickets can be marked as answered before actually
+         * having been sent to user space.
          */
 
         fuse_remove_callback(ftick);
         err = EINTR;
+        goto out;
+    }
 
-        if (ftick->tk_interrupt) {
-            /* Set interrupt ticket to answered and remove its callback */
-            fuse_internal_interrupt_remove(ftick->tk_interrupt);
-        }
-    } else {
+    fticket_set_sent(ftick);
+
+    if (fticket_interrupted(ftick)) {
         /*
-         * Transfer the ticket's data to user space.
-         *
-         * Note: This needs to be done while holding tk_aw_mtx. Otherwise the
-         * ticket's data buffer tk_ms_bufdata might disappear on us, resulting
-         * in a kernel panic
+         * The ticket has been interrupted before beeing sent to user space. We need to
+         * queue the corresponding interrupt.
          */
 
-        for (i = 0; buf[i]; i++) {
-            if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-                fdata_set_dead(data, false);
-                break;
-            }
+        fuse_internal_interrupt_send(ftick);
+    }
 
-            err = uiomove(buf[i], (int)buflen[i], uio);
-            if (err) {
-                break;
-            }
+    /*
+     * Transfer the ticket's data to user space.
+     *
+     * This needs to be done while holding tk_aw_mtx. Otherwise the ticket's data
+     * buffer tk_ms_bufdata might disappear on us, resulting in a kernel panic.
+     */
+
+    for (i = 0; buf[i]; i++) {
+        if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
+            fdata_set_dead(data, false);
+            break;
+        }
+        err = uiomove(buf[i], (int)buflen[i], uio);
+        if (err) {
+            break;
         }
     }
 
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+out:
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
 
     if (fdata_dead_get(data)) {
         err = ENODEV;

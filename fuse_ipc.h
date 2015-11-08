@@ -59,6 +59,7 @@ typedef int fuse_handler_t(struct fuse_ticket *ftick, uio_t uio);
 struct fuse_ticket {
     uint64_t                     tk_unique;
     struct fuse_data            *tk_data;
+    lck_mtx_t                   *tk_mtx;
     int                          tk_flag;
 #ifdef FUSE_TRACE_TICKET
     uint32_t                     tk_age;
@@ -82,15 +83,16 @@ struct fuse_ticket {
 
     struct fuse_out_header       tk_aw_ohead;
     int                          tk_aw_errno;
-    lck_mtx_t                   *tk_aw_mtx;
     fuse_handler_t              *tk_aw_handler;
     TAILQ_ENTRY(fuse_ticket)     tk_aw_link;
 };
 
-#define FT_ANSW  0x01  // request of ticket has already been answered
-#define FT_INVAL 0x02  // ticket is invalidated
-#define FT_DIRTY 0x04  // ticket has been used
-#define FT_KILLL 0x08  // ticket has been marked for death (KILLL => KILL_LATER)
+#define FT_DIRTY       0x01  // ticket has been used
+#define FT_SENT        0x02  // ticket has been used
+#define FT_INTERRUPTED 0x04  // request has been interrupted
+#define FT_ANSWERED    0x08  // request of ticket has already been answered
+#define FT_KILL        0x10  // ticket has been marked for death
+
 
 FUSE_INLINE
 struct fuse_iov *
@@ -101,23 +103,51 @@ fticket_resp(struct fuse_ticket *ftick)
 
 FUSE_INLINE
 int
+fticket_sent(struct fuse_ticket *ftick)
+{
+    return (ftick->tk_flag & FT_SENT);
+}
+
+FUSE_INLINE
+void
+fticket_set_sent(struct fuse_ticket *ftick)
+{
+    ftick->tk_flag |= FT_SENT;
+}
+
+FUSE_INLINE
+int
+fticket_interrupted(struct fuse_ticket *ftick)
+{
+    return (ftick->tk_flag & FT_INTERRUPTED);
+}
+
+FUSE_INLINE
+void
+fticket_set_interrupted(struct fuse_ticket *ftick)
+{
+    ftick->tk_flag |= FT_INTERRUPTED;
+}
+
+FUSE_INLINE
+int
 fticket_answered(struct fuse_ticket *ftick)
 {
-    return (ftick->tk_flag & FT_ANSW);
+    return (ftick->tk_flag & FT_ANSWERED);
 }
 
 FUSE_INLINE
 void
 fticket_set_answered(struct fuse_ticket *ftick)
 {
-    ftick->tk_flag |= FT_ANSW;
+    ftick->tk_flag |= FT_ANSWERED;
 }
 
 FUSE_INLINE
 void
-fticket_set_killl(struct fuse_ticket *ftick)
+fticket_set_kill(struct fuse_ticket *ftick)
 {
-    ftick->tk_flag |= FT_KILLL;
+    ftick->tk_flag |= FT_KILL;
 }
 
 FUSE_INLINE

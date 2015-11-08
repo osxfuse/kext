@@ -1682,7 +1682,7 @@ fuse_internal_forget_send(mount_t                 mp,
 static int
 fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
 {
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_lock(ftick->tk_mtx);
 
     if (fticket_answered(ftick)) {
         goto out;
@@ -1697,7 +1697,7 @@ fuse_internal_interrupt_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     }
 
 out:
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
 
     return 0;
 }
@@ -1728,7 +1728,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
      * - We drop the interrupt request ticket and reuse it for a new request.
      * - The server answeres our interrupt request.
      */
-    fticket_set_killl(fdi.tick);
+    fticket_set_kill(fdi.tick);
 
     ftick->tk_interrupt = fdi.tick;
 
@@ -1745,7 +1745,7 @@ __private_extern__
 void
 fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
 {
-    fuse_lck_mtx_lock(interrupt->tk_aw_mtx);
+    fuse_lck_mtx_lock(interrupt->tk_mtx);
 
     /*
      * Set interrupt ticket state to answered and remove the callback. Pending
@@ -1758,7 +1758,7 @@ fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
     fticket_set_answered(interrupt);
     fuse_remove_callback(interrupt);
 
-    fuse_lck_mtx_unlock(interrupt->tk_aw_mtx);
+    fuse_lck_mtx_unlock(interrupt->tk_mtx);
 }
 
 __private_extern__

@@ -1018,7 +1018,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
     ((char *)next)[namelen] = '\0';
 
     if (fuse_getxattr_in_get_size(&fgxi) > FUSE_REASONABLE_XATTRSIZE) {
-        fticket_set_killl(fdi.tick);
+        fticket_set_kill(fdi.tick);
     }
 
     err = fdisp_wait_answ(&fdi);
@@ -3626,7 +3626,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     fuse_setxattr_in_set_position(&fsxi, (uint32_t)saved_offset);
 
     if (attrsize > FUSE_REASONABLE_XATTRSIZE) {
-        fticket_set_killl(fdi.tick);
+        fticket_set_kill(fdi.tick);
     }
 
     memcpy(next, name, namelen);

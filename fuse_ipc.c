@@ -155,7 +155,7 @@ fticket_alloc(struct fuse_data *data)
     fiov_init(&ftick->tk_ms_fiov, sizeof(struct fuse_in_header));
     ftick->tk_ms_type = FT_M_FIOV;
 
-    ftick->tk_aw_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
+    ftick->tk_mtx = lck_mtx_alloc_init(fuse_lock_group, fuse_lock_attr);
     fiov_init(&ftick->tk_aw_fiov, 0);
     ftick->tk_aw_type = FT_A_FIOV;
 
@@ -191,8 +191,8 @@ fticket_destroy(struct fuse_ticket *ftick)
 {
     fiov_teardown(&ftick->tk_ms_fiov);
 
-    lck_mtx_free(ftick->tk_aw_mtx, fuse_lock_group);
-    ftick->tk_aw_mtx = NULL;
+    lck_mtx_free(ftick->tk_mtx, fuse_lock_group);
+    ftick->tk_mtx = NULL;
     fiov_teardown(&ftick->tk_aw_fiov);
 
     FUSE_OSFree(ftick, sizeof(struct fuse_ticket), fuse_malloc_tag);
@@ -205,24 +205,32 @@ fticket_wait_answer(struct fuse_ticket *ftick)
 {
     int err = 0;
     struct fuse_data *data;
+    int pri;
 
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_lock(ftick->tk_mtx);
 
     if (fticket_answered(ftick)) {
         goto out;
     }
 
     data = ftick->tk_data;
+    pri = PCATCH;
 
+again:
     if (fdata_dead_get(data)) {
         err = ENOTCONN;
         fticket_set_answered(ftick);
         goto out;
     }
 
-    err = fuse_msleep(ftick, ftick->tk_aw_mtx, PCATCH, "fu_ans",
-                      data->daemon_timeout_p, data);
-    if (err == EAGAIN) { /* same as EWOULDBLOCK */
+    err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
+
+    if (err == EAGAIN /* same as EWOULDBLOCK */) {
+        /*
+         * We did not receive an answer within the timout interval. The file system is
+         * considdered dead.
+         */
+
         fdata_set_dead(data, false);
 
         err = ENOTCONN;
@@ -231,42 +239,50 @@ fticket_wait_answer(struct fuse_ticket *ftick)
         goto out;
     }
 
-#if M_OSXFUSE_ENABLE_INTERRUPT
-    else if (err == EINTR) {
-        /*
-         * Check if the ticket has been answered. It is possible that we are
-         * being interrupted after receiving the answer to this request but
-         * before the handler had a chance to wake us up.
-         */
-        if (!fticket_answered(ftick)) {
+    if (err == EINTR || err == ERESTART) {
+        if (fticket_answered(ftick)) {
             /*
-             * We have yet to receive the answer, but nobody is waiting to be
-             * woken up, therefore mark the ticket as answered.
+             * We have been interrupted by a signal after having received the answer to this
+             * request, but before the handler had a chance to wake us up. No need to send
+             * an interrupt.
              */
-            fticket_set_answered(ftick);
-
-            /*
-             * To prevent the following race condition do not reuse the ticket
-             * of the original request.
-             *
-             * - We send an interrupt request to the FUSE server.
-             * - The FUSE server responds to the original request before
-             *   processing our interupt request.
-             * - We drop the original request ticket.
-             * - The server processes our interrupt request and queues it
-             *   believing the request to interrupt has yet to be received.
-             * - We reuse the dropped ticket for a new request.
-             * - The server interrupts our new request.
-             */
-            fticket_set_killl(ftick);
-
-            fuse_internal_interrupt_send(ftick);
+            err = 0;
+            goto out;
         }
+
+        fticket_set_interrupted(ftick);
+
+        if (fticket_sent(ftick)) {
+            fuse_internal_interrupt_send(ftick);
+        } else {
+            /*
+             * The interrupt will be sent in fuse_device_read() after the original request
+             * has been sent.
+             */
+        }
+
+        /*
+         * Do not reuse the ticket to prevent possible race conditions:
+         *
+         * - The FUSE server responds to the original request before processing the
+         *   interrupt we just sent.
+         * - We drop the original request ticket.
+         * - The server processes the interrupt and queues it.
+         * - We reuse the dropped ticket for a new request.
+         * - The server interrupts the new request.
+         */
+        fticket_set_kill(ftick);
+
+        /*
+         * Wait until we receive the answer to the interrupted request, but this time
+         * ignore signals.
+         */
+        pri &= ~PCATCH;
+        goto again;
     }
-#endif /* M_OSXFUSE_ENABLE_INTERRUPT */
 
 out:
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
 
     if (!err && !fticket_answered(ftick)) {
         IOLog("osxfuse: requester was woken up but still no answer");
@@ -288,7 +304,7 @@ fticket_aw_pull_uio(struct fuse_ticket *ftick, uio_t uio)
         case FT_A_FIOV:
             err = fiov_adjust_canfail(fticket_resp(ftick), len);
             if (err) {
-                fticket_set_killl(ftick);
+                fticket_set_kill(ftick);
                 IOLog("osxfuse: failed to pull uio (error=%d)\n", err);
                 break;
             }
@@ -570,7 +586,7 @@ fuse_ticket_drop(struct fuse_ticket *ftick)
     fuse_lck_mtx_lock(ftick->tk_data->ticket_mtx);
 
     if (fuse_max_freetickets <= ftick->tk_data->freeticket_counter ||
-        (ftick->tk_flag & FT_KILLL)) {
+        (ftick->tk_flag & FT_KILL)) {
         die = true;
     } else {
         fuse_lck_mtx_unlock(ftick->tk_data->ticket_mtx);
@@ -861,7 +877,7 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
 {
     int err = 0;
 
-    fuse_lck_mtx_lock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_lock(ftick->tk_mtx);
 
     if (ftick->tk_interrupt) {
         struct fuse_ticket *interrupt = ftick->tk_interrupt;
@@ -882,7 +898,7 @@ fuse_standard_handler(struct fuse_ticket *ftick, uio_t uio)
         fuse_wakeup(ftick);
     }
 
-    fuse_lck_mtx_unlock(ftick->tk_aw_mtx);
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
 
     return err;
 }
@@ -1005,9 +1021,9 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
          * We are no longer interested in an answer, therefore mark the ticket
          * as answered.
          */
-        fuse_lck_mtx_lock(fdip->tick->tk_aw_mtx);
+        fuse_lck_mtx_lock(fdip->tick->tk_mtx);
         fticket_set_answered(fdip->tick);
-        fuse_lck_mtx_unlock(fdip->tick->tk_aw_mtx);
+        fuse_lck_mtx_unlock(fdip->tick->tk_mtx);
 
         goto out;
     }
