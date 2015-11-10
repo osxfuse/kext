@@ -204,6 +204,7 @@ static int
 fticket_wait_answer(struct fuse_ticket *ftick)
 {
     int err = 0;
+    int err_interrupt = 0;
     struct fuse_data *data;
     int pri;
 
@@ -218,28 +219,34 @@ fticket_wait_answer(struct fuse_ticket *ftick)
 
 again:
     if (fdata_dead_get(data)) {
-        err = ENOTCONN;
         fticket_set_answered(ftick);
+        err = ENOTCONN;
         goto out;
     }
 
     err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
 
-    if (err == EAGAIN /* same as EWOULDBLOCK */) {
+    if (err == 0) {
+        if (fticket_answered(ftick) && fticket_interrupted(ftick) && ftick->tk_aw_ohead.error == EINTR) {
+            /*
+             * The request has been interrupted in user space. It will not be restarted
+             * automatically unless SA_RESTART is set and we return ERESTART instead of
+             * EINTR. Therefore we need to restore the original msleep error code.
+             */
+            ftick->tk_aw_ohead.error = err_interrupt;
+        }
+
+    } else if (err == EWOULDBLOCK /* same as EAGAIN */) {
         /*
-         * We did not receive an answer within the timout interval. The file system is
+         * We did not receive an answer within the timeout interval. The file system is
          * considdered dead.
          */
 
-        fdata_set_dead(data, false);
-
-        err = ENOTCONN;
         fticket_set_answered(ftick);
+        fdata_set_dead(data, false);
+        err = ENOTCONN;
 
-        goto out;
-    }
-
-    if (err == EINTR || err == ERESTART) {
+    } else if (err == EINTR || err == ERESTART) {
         if (fticket_answered(ftick)) {
             /*
              * We have been interrupted by a signal after having received the answer to this
@@ -249,8 +256,13 @@ again:
             err = 0;
             goto out;
         }
+        if (fticket_interrupted(ftick)) {
+            goto out;
+        }
 
         fticket_set_interrupted(ftick);
+        err_interrupt = err;
+        err = 0;
 
         if (fticket_sent(ftick)) {
             fuse_internal_interrupt_send(ftick);
@@ -284,7 +296,7 @@ again:
 out:
     fuse_lck_mtx_unlock(ftick->tk_mtx);
 
-    if (!err && !fticket_answered(ftick)) {
+    if (err == 0 && !fticket_answered(ftick)) {
         IOLog("osxfuse: requester was woken up but still no answer");
         err = ENXIO;
     }
