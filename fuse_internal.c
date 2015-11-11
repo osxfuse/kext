@@ -1776,27 +1776,20 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
         }
 
         /*
-         * Checking whether the vnode is in the process of being recycled
-         * to avoid the 'vnode reclaim in progress' kernel panic.
+         * Checking whether the vnode is in the process of being recycled to avoid the
+         * 'vnode reclaim in progress' kernel panic.
          *
-         * Obviously this is a quick fix done without much understanding of
-         * the code flow of a recycle operation, but it seems that we
-         * shouldn't call this again if a recycle operation was the reason
-         * that we got here.
+         * Obviously this is a quick fix done without much understanding of the code
+         * flow of a recycle operation, but it seems that we shouldn't call this again
+         * if a recycle operation was the reason that we got here.
          */
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
-        if(!vnode_isrecycled(vp)) {
-#else
-        if(!fuse_kludge_vnode_isrecycled(vp)) {
-#endif
+        if (!fuse_kludge_vnode_isrecycled(vp)) {
             err = vnode_recycle(vp);
             if (err) {
                 IOLog("osxfuse: disappearing act: recycle failed (%d)\n", err);
             }
-        }
-        else {
-            IOLog("osxfuse: Avoided 'vnode reclaim in progress' kernel "
-                  "panic. What now?\n");
+        } else {
+            IOLog("osxfuse: Avoided 'vnode reclaim in progress' kernel panic. What now?\n");
         }
     }
 }
