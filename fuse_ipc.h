@@ -126,7 +126,18 @@ FUSE_INLINE
 void
 fticket_set_interrupted(struct fuse_ticket *ftick)
 {
-    ftick->tk_flag |= FT_INTERRUPTED;
+    /*
+     * Do not reuse this ticket to prevent possible race conditions:
+     *
+     * - The FUSE server responds to the original request before processing the
+     *   interrupt we just sent.
+     * - We drop the original request ticket.
+     * - The server processes the interrupt and queues it.
+     * - We reuse the dropped ticket for a new request.
+     * - The server interrupts the new request.
+     */
+
+    ftick->tk_flag |= FT_INTERRUPTED | FT_KILL;
 }
 
 FUSE_INLINE

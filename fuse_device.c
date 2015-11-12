@@ -354,11 +354,9 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     if (fticket_answered(ftick)) {
         /*
-         * Filter out tickets, that have been marked as answered by returning EINTR.
-         * For now only interrupt tickets can be marked as answered before actually
-         * having been sent to user space.
+         * Filter out tickets, that have already been marked as answered by returning
+         * EINTR.
          */
-
         fuse_remove_callback(ftick);
         err = EINTR;
         goto out;
@@ -371,7 +369,6 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
          * The ticket has been interrupted before beeing sent to user space. We need to
          * queue the corresponding interrupt.
          */
-
         fuse_internal_interrupt_send(ftick);
     }
 
@@ -381,7 +378,6 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
      * This needs to be done while holding tk_aw_mtx. Otherwise the ticket's data
      * buffer tk_ms_bufdata might disappear on us, resulting in a kernel panic.
      */
-
     for (i = 0; buf[i]; i++) {
         if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
             fdata_set_dead(data, false);

@@ -576,7 +576,7 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
         valid |= FATTR_SIZE;
     }
     VATTR_SET_SUPPORTED(vap, va_data_size);
-    
+
     /*
      * Possible timestamps:
      *
@@ -886,7 +886,7 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             err = EIO;
             break;
         }
-        
+
         if (extended) {
             bytesavail = EXT_DIRSIZ(fudge->namelen);
         } else {

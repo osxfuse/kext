@@ -8,19 +8,20 @@
 #include "fuse_ipc.h"
 
 #include "fuse_internal.h"
+#include "fuse_kludges.h"
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
-#  if M_OSXFUSE_ENABLE_BIG_LOCK
-#    include "fuse_biglock_vnops.h"
-#  endif
-#  include "fuse_notify.h"
-#endif
-
-#if M_OSXFUSE_ENABLE_DSELECT
-#  include <sys/select.h>
+    #if M_OSXFUSE_ENABLE_BIG_LOCK
+        #include "fuse_biglock_vnops.h"
+    #endif
+    #include "fuse_notify.h"
 #endif
 
 #include <sys/vm.h>
+
+#if M_OSXFUSE_ENABLE_DSELECT
+    #include <sys/select.h>
+#endif
 
 static struct fuse_ticket *fticket_alloc(struct fuse_data *data);
 static void fticket_refresh(struct fuse_ticket *ftick);
@@ -227,7 +228,7 @@ again:
     err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
 
     if (err == 0) {
-        if (fticket_answered(ftick) && fticket_interrupted(ftick) && ftick->tk_aw_ohead.error == EINTR) {
+        if (fticket_interrupted(ftick) && fticket_answered(ftick) && ftick->tk_aw_ohead.error == EINTR) {
             /*
              * The request has been interrupted in user space. It will not be restarted
              * automatically unless SA_RESTART is set and we return ERESTART instead of
@@ -256,40 +257,29 @@ again:
             err = 0;
             goto out;
         }
-        if (fticket_interrupted(ftick)) {
+
+        if (!fticket_sent(ftick) && fuse_kludge_thread_should_abort(current_thread())) {
+            fticket_set_answered(ftick);
             goto out;
         }
 
-        fticket_set_interrupted(ftick);
-        err_interrupt = err;
-        err = 0;
+        if (!fticket_interrupted(ftick)) {
+            fticket_set_interrupted(ftick);
+            err_interrupt = err;
 
-        if (fticket_sent(ftick)) {
-            fuse_internal_interrupt_send(ftick);
-        } else {
-            /*
-             * The interrupt will be sent in fuse_device_read() after the original request
-             * has been sent.
-             */
+            if (fticket_sent(ftick)) {
+                fuse_internal_interrupt_send(ftick);
+            } else {
+                /*
+                 * The interrupt will be sent in fuse_device_read() after the original request
+                 * has been sent.
+                 */
+            }
         }
 
-        /*
-         * Do not reuse the ticket to prevent possible race conditions:
-         *
-         * - The FUSE server responds to the original request before processing the
-         *   interrupt we just sent.
-         * - We drop the original request ticket.
-         * - The server processes the interrupt and queues it.
-         * - We reuse the dropped ticket for a new request.
-         * - The server interrupts the new request.
-         */
-        fticket_set_kill(ftick);
-
-        /*
-         * Wait until we receive the answer to the interrupted request, but this time
-         * ignore signals.
-         */
-        pri &= ~PCATCH;
+        if (fticket_sent(ftick)) {
+            pri &= ~PCATCH;
+        }
         goto again;
     }
 

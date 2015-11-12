@@ -2116,7 +2116,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
      * ignored. See ubc_unmap(). As a result ubc_msync() might fail without the
      * error being propagated back to user space.
      */
-    
+
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
     fuse_biglock_unlock(data->biglock);
@@ -2125,7 +2125,7 @@ fuse_vnop_mnomap(struct vnop_mnomap_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
-    
+
     /*
      * Earlier, we used to go through our vnode's fufh list here, doing
      * something like the following:

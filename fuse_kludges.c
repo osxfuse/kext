@@ -107,7 +107,7 @@ fuse_kludge_vnode_isrecycled(vnode_t vp)
 #endif
 }
 
-/* 
+/*
  * Constants from osfmk/kern/thread.h
  */
 #define FUSE_KLUDGE_TH_SFLAG_ABORT          0x0010
@@ -119,7 +119,7 @@ boolean_t
 fuse_kludge_thread_should_abort(thread_t th)
 {
     uint32_t sched_mode;
-    
+
     if (version_major >= 13) {
         sched_mode = ((struct fuse_kludge_thread_13 *)th)->sched_flags;
     } else if (version_major >= 11) {
@@ -129,6 +129,6 @@ fuse_kludge_thread_should_abort(thread_t th)
     } else {
         sched_mode = ((struct fuse_kludge_thread_9 *)th)->sched_mode;
     }
-    
+
     return ((sched_mode & FUSE_KLUDGE_TH_SFLAG_ABORTED_MASK) == FUSE_KLUDGE_TH_SFLAG_ABORT);
 }
