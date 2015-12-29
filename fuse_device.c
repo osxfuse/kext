@@ -484,18 +484,37 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 int
 fuse_devices_start(void)
 {
+    int cdevsw_index = -1;
     int i = 0;
-
+    
     fuse_trace_printf_func();
 
     bzero((void *)fuse_device_table, sizeof(fuse_device_table));
 
-    if ((fuse_cdev_major = cdevsw_add(-1, &fuse_device_cdevsw)) == -1) {
+    /*
+     * If index is negative, we start looking for a free slot at the absolute value
+     * of index, instead of starting at 0.
+     *
+     * In practice, -1 is unusable, since there are kernel internal devices that
+     * call this function with absolute index values, which will stomp on free-slot
+     * based assignments that happen before them.
+     *
+     * 12 is considered a safe starting index for Mac OS X 10.5 to 10.7, 24 for
+     * OS X 10.8 and later. See bsd/kern/bsd_stubs.c for details.
+     */
+    if (version_major < 12) {
+        cdevsw_index = -12;
+    } else {
+        cdevsw_index = -24;
+    }
+
+    fuse_cdev_major = cdevsw_add(cdevsw_index, &fuse_device_cdevsw);
+    if (fuse_cdev_major == -1) {
+        IOLog("osxfuse: Failed to register major device number\n");
         goto error;
     }
 
     for (i = 0; i < OSXFUSE_NDEVICES; i++) {
-
         dev_t dev = makedev(fuse_cdev_major, i);
         fuse_device_table[i].cdev = devfs_make_node(
                                         dev,
