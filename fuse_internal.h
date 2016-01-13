@@ -900,7 +900,7 @@ enum {
 
 /* fuse start/stop */
 
-void fuse_internal_init(void *parameter, __unused wait_result_t wait_result);
+void fuse_internal_init(struct fuse_data *data, vfs_context_t context);
 
 /* other */
 

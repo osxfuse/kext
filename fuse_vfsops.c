@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011 Anatol Pomozov
- * Copyright (c) 2012-2013 Benjamin Fleischer
+ * Copyright (c) 2012-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -169,9 +169,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     struct fuse_data  *data = NULL;
     fuse_mount_args    fusefs_args;
     struct vfsstatfs  *vfsstatfsp = vfs_statfs(mp);
-
-    kern_return_t kr;
-    thread_t      init_thread;
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_t    *biglock;
@@ -505,13 +502,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     fuse_device_unlock(fdev);
 
     /* Send a handshake message to the daemon. */
-    kr = kernel_thread_start(fuse_internal_init, data, &init_thread);
-    if (kr != KERN_SUCCESS) {
-        IOLog("osxfuse: could not start init thread\n");
-        err = ENOTCONN;
-    } else {
-        thread_deallocate(init_thread);
-    }
+    fuse_internal_init(data, context);
 
 out:
     if (err) {
@@ -570,7 +561,7 @@ out:
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_device_lock(fdev);
     data = fuse_device_get_mpdata(fdev); /* ...and again */
-    if(data) {
+    if (data) {
         assert(data->biglock == biglock);
         fuse_biglock_unlock(biglock);
     }
@@ -659,6 +650,8 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
         return EBUSY;
     }
 
+    data->rootvp = NULLVP;
+
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);
 #endif
@@ -666,8 +659,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
-
-    data->rootvp = NULLVP;
 
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_unlock(data->biglock);

@@ -266,7 +266,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
     fuse_reject_answers(data);
 
 #if M_OSXFUSE_ENABLE_DSELECT
-    selwakeup((struct selinfo*)&data->d_rsel);
+    selwakeup((struct selinfo *)&data->d_rsel);
 #endif /* M_OSXFUSE_ENABLE_DSELECT */
 
     if (data->mount_state == FM_NOTMOUNTED) {

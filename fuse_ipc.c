@@ -284,12 +284,12 @@ again:
     }
 
 out:
-    fuse_lck_mtx_unlock(ftick->tk_mtx);
-
     if (err == 0 && !fticket_answered(ftick)) {
         IOLog("osxfuse: requester was woken up but still no answer");
         err = ENXIO;
     }
+
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
 
     return err;
 }
@@ -1014,7 +1014,7 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
     int err = 0;
 
     fdip->answ_stat = 0;
-    fuse_insert_callback(fdip->tick, fuse_standard_handler);
+    fuse_insert_callback(fdip->tick, &fuse_standard_handler);
     fuse_insert_message(fdip->tick);
 
     err = fticket_wait_answer(fdip->tick);

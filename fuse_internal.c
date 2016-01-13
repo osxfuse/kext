@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011-2012 Anatol Pomozov
- * Copyright (c) 2011-2015 Benjamin Fleischer
+ * Copyright (c) 2011-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -1804,48 +1804,89 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
 
 /* fuse start/stop */
 
-#define FIO ((struct fuse_init_out *)fticket_resp(fdi.tick)->base)
+#if M_OSXFUSE_ENABLE_UNSUPPORTED
 
-__private_extern__
+static
 void
-fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
+fuse_internal_update_vfsstat(void *parameter, __unused wait_result_t wait_result)
 {
     int err = 0;
-    struct fuse_data      *data = (struct fuse_data *)parameter;
-    struct fuse_init_in   *fiii;
-    struct fuse_abi_data   fio;
-    struct fuse_dispatcher fdi;
 
-    fdisp_init(&fdi, sizeof(*fiii));
-    fdisp_make(&fdi, FUSE_INIT, data->mp, 0, vfs_context_current());
-    fiii = fdi.indata;
-    fiii->major = FUSE_KERNEL_VERSION;
-    fiii->minor = FUSE_KERNEL_MINOR_VERSION;
-    fiii->max_readahead = data->iosize * 16;
-    fiii->flags = FUSE_ATOMIC_O_TRUNC | FUSE_ALLOCATE | FUSE_EXCHANGE_DATA | FUSE_CASE_INSENSITIVE | FUSE_VOL_RENAME | FUSE_XTIMES;
+    vnode_t rootvp = (vnode_t)parameter;
+    uint32_t vid = vnode_vid(rootvp);
 
-    err = fdisp_wait_answ(&fdi);
+    vnode_rele(rootvp);
+    err = vnode_getwithvid(rootvp, vid);
+    if (err) {
+        goto out;
+    }
+
+    vfs_context_t context = vfs_context_create(NULL);
+
+    err = vfs_update_vfsstat(vnode_mount(rootvp), context, VFS_KERNEL_EVENT);
+    if (err) {
+        IOLog("osxfuse: failed to update vfsstat (err=%d)\n", err);
+    }
+
+    vfs_context_rele(context);
+
+    (void)vnode_put(rootvp);
+
+out:
+    thread_terminate(current_thread());
+}
+
+#endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
+static
+int
+fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
+{
+    int err = 0;
+
+    struct fuse_data *data = ftick->tk_data;
+    struct fuse_init_out *fio_raw;
+    struct fuse_abi_data fio;
+
+    fuse_lck_mtx_lock(ftick->tk_mtx);
+
+    if (fticket_answered(ftick)) {
+        fuse_lck_mtx_unlock(ftick->tk_mtx);
+        goto out;
+    }
+
+    fticket_set_answered(ftick);
+
+    err = fticket_pull(ftick, uio);
+    ftick->tk_aw_errno = err;
+    if (err) {
+        fuse_lck_mtx_unlock(ftick->tk_mtx);
+        goto out;
+    }
+
+    fuse_lck_mtx_unlock(ftick->tk_mtx);
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_lock(data->biglock);
+#endif
+
+    err = ftick->tk_aw_ohead.error;
     if (err) {
         IOLog("osxfuse: user space initialization failed (%d)\n", err);
         goto out;
     }
 
-    err = fdi.tick->tk_aw_ohead.error;
-    if (err) {
-        IOLog("osxfuse: user space initialization failed (%d)\n", err);
-        goto out_ticket;
-    }
-
-    DTOABI(data)->major = FIO->major;
-    DTOABI(data)->minor = FIO->minor;
+    fio_raw = (struct fuse_init_out *)fticket_resp(ftick)->base;
+    DTOABI(data)->major = fio_raw->major;
+    DTOABI(data)->minor = fio_raw->minor;
 
     if (ABITOI(DTOABI(data)) < FUSE_ABI_VERSION_MIN) {
         IOLog("osxfuse: ABI version of user space library too low\n");
         err = EPROTONOSUPPORT;
-        goto out_ticket;
+        goto out;
     }
 
-    fuse_abi_data_init(&fio, DATOI(data), fticket_resp(fdi.tick)->base);
+    fuse_abi_data_init(&fio, DATOI(data), fticket_resp(ftick)->base);
 
     data->max_write = fuse_init_out_get_max_write(&fio);
 
@@ -1885,31 +1926,55 @@ fuse_internal_init(void *parameter, __unused wait_result_t wait_result)
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-    {
-        vfs_context_t context = vfs_context_create(NULL);
-        err = vfs_update_vfsstat(data->mp, context, VFS_KERNEL_EVENT);
-        vfs_context_rele(context);
+    if (data->rootvp != NULLVP) {
+        kern_return_t kr;
+        thread_t vfsstat_thread;
 
+        err = vnode_ref(data->rootvp);
         if (err) {
-            /*
-             * Do not treat this as a fatal error, the worst that can happen is vfsstat
-             * being stale.
-             */
-            IOLog("osxfuse: failed to update vfsstat (err=%d)\n", err);
-            err = 0;
+            goto out;
+        }
+
+        kr = kernel_thread_start(fuse_internal_update_vfsstat, data->rootvp, &vfsstat_thread);
+        if (kr == KERN_SUCCESS) {
+            thread_deallocate(vfsstat_thread);
+        } else {
+            IOLog("osxfuse: could not start vfsstat update thread\n");
         }
     }
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
-
-out_ticket:
-    fuse_ticket_release(fdi.tick);
 
 out:
     if (err) {
         fdata_set_dead(data, false);
     }
 
-    thread_terminate(current_thread());
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
+
+    return ftick->tk_aw_errno;
+}
+
+__private_extern__
+void
+fuse_internal_init(struct fuse_data *data, vfs_context_t context)
+{
+    struct fuse_init_in *fiii;
+    struct fuse_dispatcher fdi;
+
+    fdisp_init(&fdi, sizeof(*fiii));
+    fdisp_make(&fdi, FUSE_INIT, data->mp, 0, context);
+    fiii = fdi.indata;
+    fiii->major = FUSE_KERNEL_VERSION;
+    fiii->minor = FUSE_KERNEL_MINOR_VERSION;
+    fiii->max_readahead = data->iosize * 16;
+    fiii->flags = FUSE_ATOMIC_O_TRUNC | FUSE_ALLOCATE | FUSE_EXCHANGE_DATA | FUSE_CASE_INSENSITIVE | FUSE_VOL_RENAME | FUSE_XTIMES;
+
+    fuse_insert_callback(fdi.tick, &fuse_internal_init_handler);
+    fuse_insert_message(fdi.tick);
+
+    fuse_ticket_release(fdi.tick);
 }
 
 /* other */
