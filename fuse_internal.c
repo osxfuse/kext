@@ -1438,6 +1438,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                 break;
             }
 
+<<<<<<< HEAD
             left -= size;
             bufdat += size;
             offset += size;
@@ -1448,6 +1449,19 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                  * The write operation could not be fully executed. In case of
                  * synchronous I/O the kernel will report an EIO error back to
                  * the process that issued the I/O.
+=======
+            left -= fwo->size;
+            bufdat += fwo->size;
+            offset += fwo->size;
+            buf_setresid(bp, buf_resid(bp) - fwo->size);
+
+            if (diff) {
+                /*
+                 * Stop when the filesystem stops accepting data.
+                 * At present, the early termination is reported to the
+                 * application as an I/O error rather than as a short count,
+                 * but that's preferable to an infinite loop.
+>>>>>>> origin/osxfuse-2
                  */
                 break;
             }
