@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 45;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -36,6 +36,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		38D776F91C47E16700E14343 /* osxfusefs.exports in Resources */ = {isa = PBXBuildFile; fileRef = 549960D00EC093D800DDFCAD /* osxfusefs.exports */; };
+		38D776FA1C47E16800E14343 /* osxfusefs.exports in CopyFiles */ = {isa = PBXBuildFile; fileRef = 549960D00EC093D800DDFCAD /* osxfusefs.exports */; };
 		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
 		540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966620C33B60B00F5E227 /* mount_osxfusefs.c */; };
 		540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966670C33B61A00F5E227 /* load_osxfusefs.c */; };
@@ -78,6 +80,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		38D776F71C47E15900E14343 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38D776F31C47E15900E14343 /* osxfuse.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 433E5DC113B2D1B300A523B2;
+			remoteInfo = osxfuse;
+		};
 		540966190C33B4DA00F5E227 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 089C1669FE841209C02AAC07 /* Project object */;
@@ -115,6 +124,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
+				38D776FA1C47E16800E14343 /* osxfusefs.exports in CopyFiles */,
 				540966D20C33BB2700F5E227 /* osxfusefs.fs in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -122,6 +132,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		38D776EC1C47E15800E14343 /* ABI.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ABI.txt; sourceTree = "<group>"; };
+		38D776ED1C47E15800E14343 /* common */ = {isa = PBXFileReference; lastKnownFileType = folder; path = common; sourceTree = "<group>"; };
+		38D776EE1C47E15800E14343 /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
+		38D776EF1C47E15800E14343 /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
+		38D776F01C47E15800E14343 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		38D776F11C47E15800E14343 /* osxfuse-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "osxfuse-Info.plist"; sourceTree = "<group>"; };
+		38D776F21C47E15800E14343 /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
+		38D776F31C47E15900E14343 /* osxfuse.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = osxfuse.xcodeproj; sourceTree = "<group>"; };
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC213B2D1B300A523B2 /* load_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = load_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -202,6 +220,14 @@
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
+				38D776EC1C47E15800E14343 /* ABI.txt */,
+				38D776ED1C47E15800E14343 /* common */,
+				38D776EE1C47E15800E14343 /* fuse_notify.c */,
+				38D776EF1C47E15800E14343 /* fuse_notify.h */,
+				38D776F01C47E15800E14343 /* LICENSE.txt */,
+				38D776F11C47E15800E14343 /* osxfuse-Info.plist */,
+				38D776F21C47E15800E14343 /* osxfuse.exports */,
+				38D776F31C47E15900E14343 /* osxfuse.xcodeproj */,
 				437490F413B190D9009EAA5E /* osxfusefs.xcconfig */,
 				549960D00EC093D800DDFCAD /* osxfusefs.exports */,
 				540966510C33B5F500F5E227 /* Common */,
@@ -211,6 +237,14 @@
 				433E5DC813B2D21900A523B2 /* Products */,
 			);
 			name = fusefs;
+			sourceTree = "<group>";
+		};
+		38D776F41C47E15900E14343 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				38D776F81C47E15900E14343 /* osxfuse.kext */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		433E5DC813B2D21900A523B2 /* Products */ = {
@@ -405,9 +439,10 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0720;
 			};
 			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfusefs" */;
-			compatibilityVersion = "Xcode 3.1";
+			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -420,6 +455,12 @@
 			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			productRefGroup = 089C166AFE841209C02AAC07 /* fusefs */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 38D776F41C47E15900E14343 /* Products */;
+					ProjectRef = 38D776F31C47E15900E14343 /* osxfuse.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				54C6DD290B5EE606002D9FD9 /* All */,
@@ -431,11 +472,22 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXReferenceProxy section */
+		38D776F81C47E15900E14343 /* osxfuse.kext */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = osxfuse.kext;
+			remoteRef = 38D776F71C47E15900E14343 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
 /* Begin PBXResourcesBuildPhase section */
 		32A4FEBB0562C75700D090E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				38D776F91C47E16700E14343 /* osxfusefs.exports in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -560,6 +612,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
@@ -568,6 +621,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -607,6 +661,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 437490F413B190D9009EAA5E /* osxfusefs.xcconfig */;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -615,6 +670,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -655,7 +711,7 @@
 		1DEB91C808733DAC0010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ENABLE_TESTABILITY = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -663,6 +719,7 @@
 				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-DOSXFUSE_ENABLE_MACFUSE_MODE=1";
 				SDKROOT = macosx;
 			};
@@ -671,7 +728,6 @@
 		1DEB91C908733DAC0010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
@@ -698,6 +754,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -736,6 +793,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -773,6 +831,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				PRODUCT_NAME = All;
 				VERSIONING_SYSTEM = "";
 			};
@@ -785,6 +844,7 @@
 				CURRENT_PROJECT_VERSION = "";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				PRODUCT_NAME = All;
 				VERSIONING_SYSTEM = "";
 			};
@@ -797,6 +857,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				PRODUCT_NAME = osxfusefs.fs;
 			};
 			name = Debug;
@@ -807,6 +868,7 @@
 				COPY_PHASE_STRIP = YES;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				PRODUCT_NAME = osxfusefs.fs;
 			};
 			name = Release;
@@ -823,6 +885,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -861,6 +924,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
