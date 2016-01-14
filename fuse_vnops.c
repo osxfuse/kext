@@ -1769,6 +1769,7 @@ calldaemon:
          * corruption in case the file is currently being appended.
          *
 <<<<<<< HEAD
+<<<<<<< HEAD
          * // ATTR_FUDGE_CASE
          * if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
          *     VTOFUD(*vpp)->filesize = fuse_attr_get_size(&fattr);
@@ -1779,6 +1780,8 @@ calldaemon:
          * } else {
          *     cache_attrs(*vpp, fuse_entry_out, &feo);
 =======
+=======
+>>>>>>> origin/osxfuse-2
          * if (op == FUSE_GETATTR) {
          *     // ATTR_FUDGE_CASE
          *     if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
@@ -1793,6 +1796,9 @@ calldaemon:
          *             ((struct fuse_entry_out *)fdi.answ)->attr.size;
          *     }
          *     cache_attrs(*vpp, (struct fuse_entry_out *)fdi.answ);
+<<<<<<< HEAD
+>>>>>>> origin/osxfuse-2
+=======
 >>>>>>> origin/osxfuse-2
          * }
          */
@@ -3926,6 +3932,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
                 break;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             } else if (diff > 0) {
                 /*
                  * The write operation could not be fully executed.
@@ -3939,6 +3946,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
                 uio_setresid(uio, uio_resid(uio) + diff);
                 uio_setoffset(uio, uio_offset(uio) - diff);
 =======
+=======
+>>>>>>> origin/osxfuse-2
             if (diff) {
                 /*
                  * Note that merely updating the residue and offset leaves
@@ -3952,6 +3961,9 @@ fuse_vnop_write(struct vnop_write_args *ap)
                  */
                 uio_setresid(uio, (uio_resid(uio) + diff));
                 uio_setoffset(uio, (uio_offset(uio) - diff));
+<<<<<<< HEAD
+>>>>>>> origin/osxfuse-2
+=======
 >>>>>>> origin/osxfuse-2
 
                 break;

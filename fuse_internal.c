@@ -1461,6 +1461,9 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
                  * At present, the early termination is reported to the
                  * application as an I/O error rather than as a short count,
                  * but that's preferable to an infinite loop.
+<<<<<<< HEAD
+>>>>>>> origin/osxfuse-2
+=======
 >>>>>>> origin/osxfuse-2
                  */
                 break;
