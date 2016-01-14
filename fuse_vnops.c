@@ -1768,6 +1768,8 @@ calldaemon:
          * Do not mess with *vpp's filesize or attributes. Doing so can cause data
          * corruption in case the file is currently being appended.
          *
+<<<<<<< HEAD
+<<<<<<< HEAD
          * // ATTR_FUDGE_CASE
          * if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
          *     VTOFUD(*vpp)->filesize = fuse_attr_get_size(&fattr);
@@ -1777,6 +1779,27 @@ calldaemon:
          *     cache_attrs(*vpp, fuse_attr_out, &fao);
          * } else {
          *     cache_attrs(*vpp, fuse_entry_out, &feo);
+=======
+=======
+>>>>>>> origin/osxfuse-2
+         * if (op == FUSE_GETATTR) {
+         *     // ATTR_FUDGE_CASE
+         *     if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
+         *         VTOFUD(*vpp)->filesize =
+         *             ((struct fuse_attr_out *)fdi.answ)->attr.size;
+         *     }
+         *     cache_attrs(*vpp, (struct fuse_attr_out *)fdi.answ);
+         * } else {
+         *     // ATTR_FUDGE_CASE
+         *     if (vnode_isreg(*vpp) && fuse_isnoubc(vp)) {
+         *         VTOFUD(*vpp)->filesize =
+         *             ((struct fuse_entry_out *)fdi.answ)->attr.size;
+         *     }
+         *     cache_attrs(*vpp, (struct fuse_entry_out *)fdi.answ);
+<<<<<<< HEAD
+>>>>>>> origin/osxfuse-2
+=======
+>>>>>>> origin/osxfuse-2
          * }
          */
 
@@ -3908,6 +3931,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
                 error = EINVAL;
                 break;
 
+<<<<<<< HEAD
+<<<<<<< HEAD
             } else if (diff > 0) {
                 /*
                  * The write operation could not be fully executed.
@@ -3920,6 +3945,26 @@ fuse_vnop_write(struct vnop_write_args *ap)
                  */
                 uio_setresid(uio, uio_resid(uio) + diff);
                 uio_setoffset(uio, uio_offset(uio) - diff);
+=======
+=======
+>>>>>>> origin/osxfuse-2
+            if (diff) {
+                /*
+                 * Note that merely updating the residue and offset leaves
+                 * the uio in an inconsistent state, since the iov-related
+                 * fields are not correspondingly adjusted.  Since there
+                 * is no reasonable mechanism for performing this update
+                 * correctly, we hope that the caller doesn't care about
+                 * the inconsistency.
+                 *
+                 * Further uses of uiomove() in this state are illegal.
+                 */
+                uio_setresid(uio, (uio_resid(uio) + diff));
+                uio_setoffset(uio, (uio_offset(uio) - diff));
+<<<<<<< HEAD
+>>>>>>> origin/osxfuse-2
+=======
+>>>>>>> origin/osxfuse-2
 
                 break;
             }
@@ -4034,6 +4079,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
         if (ioflag & IO_UNIT) {
             /*
              * e.g.: detrunc(dep, original_size, ioflag & IO_SYNC, context);
+             */
+            /*
+             * As noted above, the caller better not expect a consistently
+             * reset uio in this (error) case.
              */
             uio_setoffset(uio, original_offset);
             uio_setresid(uio, original_resid);
