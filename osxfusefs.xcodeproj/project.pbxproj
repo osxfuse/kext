@@ -40,6 +40,8 @@
 		38D776FA1C47E16800E14343 /* osxfusefs.exports in CopyFiles */ = {isa = PBXBuildFile; fileRef = 549960D00EC093D800DDFCAD /* osxfusefs.exports */; };
 		38D776FE1C47E40600E14343 /* Property List.plist in Resources */ = {isa = PBXBuildFile; fileRef = 38D777011C47E40600E14343 /* Property List.plist */; };
 		38D776FF1C47E40600E14343 /* Property List.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = 38D777011C47E40600E14343 /* Property List.plist */; };
+		38D777031C47E56200E14343 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 38D777021C47E56200E14343 /* Media.xcassets */; };
+		38D777041C47E56200E14343 /* Media.xcassets in CopyFiles */ = {isa = PBXBuildFile; fileRef = 38D777021C47E56200E14343 /* Media.xcassets */; };
 		540966630C33B60B00F5E227 /* getmntopts.c in Sources */ = {isa = PBXBuildFile; fileRef = 5409665F0C33B60B00F5E227 /* getmntopts.c */; };
 		540966650C33B60B00F5E227 /* mount_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966620C33B60B00F5E227 /* mount_osxfusefs.c */; };
 		540966680C33B61A00F5E227 /* load_osxfusefs.c in Sources */ = {isa = PBXBuildFile; fileRef = 540966670C33B61A00F5E227 /* load_osxfusefs.c */; };
@@ -128,6 +130,7 @@
 			files = (
 				38D776FF1C47E40600E14343 /* Property List.plist in CopyFiles */,
 				38D776FA1C47E16800E14343 /* osxfusefs.exports in CopyFiles */,
+				38D777041C47E56200E14343 /* Media.xcassets in CopyFiles */,
 				540966D20C33BB2700F5E227 /* osxfusefs.fs in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -144,6 +147,7 @@
 		38D776F21C47E15800E14343 /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
 		38D776F31C47E15900E14343 /* osxfuse.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = osxfuse.xcodeproj; sourceTree = "<group>"; };
 		38D777001C47E40600E14343 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = en; path = "en.lproj/Property List.plist"; sourceTree = "<group>"; };
+		38D777021C47E56200E14343 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		433E5DC113B2D1B300A523B2 /* osxfusefs.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfusefs.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC213B2D1B300A523B2 /* load_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = load_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
 		433E5DC413B2D1B300A523B2 /* mount_osxfusefs */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = mount_osxfusefs; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -224,6 +228,7 @@
 		089C166AFE841209C02AAC07 /* fusefs */ = {
 			isa = PBXGroup;
 			children = (
+				38D777021C47E56200E14343 /* Media.xcassets */,
 				38D777011C47E40600E14343 /* Property List.plist */,
 				38D776EC1C47E15800E14343 /* ABI.txt */,
 				38D776ED1C47E15800E14343 /* common */,
@@ -494,6 +499,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				38D776FE1C47E40600E14343 /* Property List.plist in Resources */,
+				38D777031C47E56200E14343 /* Media.xcassets in Resources */,
 				38D776F91C47E16700E14343 /* osxfusefs.exports in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
