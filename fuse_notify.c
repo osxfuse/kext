@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 Benjamin Fleischer
+ * Copyright (c) 2012-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -39,7 +39,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
         goto out;
     }
 
-    fdisp_init_abi(&fdi, fuse_getattr_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_getattr_in, data);
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, vfs_context_current());
     fuse_abi_data_init(&fgi, DATOI(data), fdi.indata);
 

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2013 Benjamin Fleischer
+ * Copyright (c) 2013-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -391,6 +391,9 @@ fdata_alloc(struct proc *p)
     data->rename_lock = lck_rw_alloc_init(fuse_lock_group, fuse_lock_attr);
 #endif
 
+    data->abi_version.major = FUSE_KERNEL_VERSION;
+    data->abi_version.minor = FUSE_KERNEL_MINOR_VERSION;
+
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     data->biglock        = fuse_biglock_alloc();
@@ -482,6 +485,33 @@ fdata_set_dead(struct fuse_data *data, bool fdev_locked)
 }
 
 FUSE_INLINE
+int
+fdata_wait_init_locked(struct fuse_data *data)
+{
+    if (!fdata_dead_get(data) && !(data->dataflags & FSESS_INITED)) {
+        return fuse_msleep(&data->ticketer, data->ticket_mtx, PDROP, "fu_ini", 0, data);
+    } else {
+        fuse_lck_mtx_unlock(data->ticket_mtx);
+        return 0;
+    }
+}
+
+int
+fdata_wait_init(struct fuse_data *data)
+{
+    int err = 0;
+
+    fuse_lck_mtx_lock(data->ticket_mtx);
+    err = fdata_wait_init_locked(data);
+
+    /*
+     * Note: fdata_wait_init_locked() drops ticket_mtx
+     */
+
+    return err;
+}
+
+FUSE_INLINE
 void
 fuse_push_freeticks(struct fuse_ticket *ftick)
 {
@@ -562,9 +592,8 @@ fuse_ticket_fetch(struct fuse_data *data)
     }
     ftick->tk_ref_count = 1;
 
-    if (!(data->dataflags & FSESS_INITED) && data->ticketer > 2) {
-        err = fuse_msleep(&data->ticketer, data->ticket_mtx, PCATCH | PDROP,
-                          "fu_ini", 0, data);
+    if (data->ticketer > 2) {
+        err = fdata_wait_init_locked(data);
     } else {
         if ((fuse_max_tickets != 0) &&
             ((data->ticketer - data->deadticket_counter) > fuse_max_tickets)) {

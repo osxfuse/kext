@@ -128,7 +128,7 @@ fuse_internal_access(vnode_t                   vp,
         mask |= W_OK;
     }
 
-    fdisp_init_abi(&fdi, fuse_access_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_access_in, data);
     fdisp_make_vp(&fdi, FUSE_ACCESS, vp, context);
     fuse_abi_data_init(&fai, DATOI(data), fdi.indata);
 
@@ -209,6 +209,7 @@ fuse_internal_exchange(vnode_t       fvp,
 
     data = fuse_get_mpdata(vnode_mount(fvp));
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, fuse_exchange_in_sizeof(DATOI(data)) + flen + tlen + 2);
     fdisp_make_vp(&fdi, FUSE_EXCHANGE, fvp, context);
     fuse_abi_data_init(&fei, DATOI(data), fdi.indata);
@@ -337,7 +338,7 @@ fuse_internal_fsync_fh(vnode_t                 vp,
 
     fuse_trace_printf_func();
 
-    fdisp_init_abi(&fdi, fuse_fsync_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_fsync_in, data);
     if (vnode_isdir(vp)) {
         op = FUSE_FSYNCDIR;
     }
@@ -784,6 +785,9 @@ fuse_internal_readdir(vnode_t                 vp,
         return 0;
     }
 
+    data = fuse_get_mpdata(vnode_mount(vp));
+
+    fdata_wait_init(data);
     fdisp_init(&fdi, 0);
 
     /* Note that we DO NOT have a UIO_SYSSPACE here (so no need for p2p I/O). */
@@ -998,9 +1002,11 @@ fuse_internal_remove(vnode_t               dvp,
     int need_invalidate = 0;
     uint64_t target_nlink = 0;
     mount_t mp = vnode_mount(vp);
+    struct fuse_data *data = fuse_get_mpdata(mp);
 
     int err = 0;
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, cnp->cn_namelen + 1);
     fdisp_make_vp(&fdi, op, dvp, context);
 
@@ -1033,7 +1039,6 @@ fuse_internal_remove(vnode_t               dvp,
     if (need_invalidate && !err) {
         if (!vfs_busy(mp, LK_NOWAIT)) {
 #if M_OSXFUSE_ENABLE_BIG_LOCK
-            struct fuse_data *data = fuse_get_mpdata(mp);
             fuse_biglock_unlock(data->biglock);
 #endif
             vnode_iterate(mp, 0, fuse_internal_remove_callback,
@@ -1070,6 +1075,7 @@ fuse_internal_rename(vnode_t               fdvp,
 
     data = fuse_get_mpdata(vnode_mount(fdvp));
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, fuse_rename_in_sizeof(DATOI(data)) +
                      fcnp->cn_namelen + tcnp->cn_namelen + 2);
     fdisp_make_vp(&fdi, FUSE_RENAME, fdvp, context);
@@ -1268,6 +1274,7 @@ fuse_internal_strategy(vnode_t vp, buf_t bp)
         goto out;
     }
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, 0);
 
     if (mode == FREAD) {
@@ -1720,7 +1727,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
 
     data = ftick->tk_data;
 
-    fdisp_init_abi(&fdi, fuse_interrupt_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_interrupt_in, data);
     fdisp_make(&fdi, FUSE_INTERRUPT, data->mp, (uint64_t)0, NULL);
     fuse_abi_data_init(&fii, DATOI(data), fdi.indata);
 
@@ -1816,6 +1823,7 @@ fuse_internal_update_vfsstat(void *parameter, __unused wait_result_t wait_result
     uint32_t vid = vnode_vid(rootvp);
 
     vnode_rele(rootvp);
+
     err = vnode_getwithvid(rootvp, vid);
     if (err) {
         goto out;
@@ -1848,6 +1856,8 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     struct fuse_init_out *fio_raw;
     struct fuse_abi_data fio;
 
+    vnode_t rootvp;
+
     fuse_lck_mtx_lock(ftick->tk_mtx);
 
     if (fticket_answered(ftick)) {
@@ -1873,7 +1883,7 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     err = ftick->tk_aw_ohead.error;
     if (err) {
         IOLog("osxfuse: user space initialization failed (%d)\n", err);
-        goto out;
+        goto out_biglock;
     }
 
     fio_raw = (struct fuse_init_out *)fticket_resp(ftick)->base;
@@ -1883,7 +1893,7 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     if (ABITOI(DTOABI(data)) < FUSE_ABI_VERSION_MIN) {
         IOLog("osxfuse: ABI version of user space library too low\n");
         err = EPROTONOSUPPORT;
-        goto out;
+        goto out_biglock;
     }
 
     fuse_abi_data_init(&fio, DATOI(data), fticket_resp(ftick)->base);
@@ -1926,32 +1936,35 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     fuse_lck_mtx_unlock(data->ticket_mtx);
 
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
-    if (data->rootvp != NULLVP) {
+    rootvp = data->rootvp;
+    if (rootvp != NULLVP) {
         kern_return_t kr;
         thread_t vfsstat_thread;
 
-        err = vnode_ref(data->rootvp);
+        err = vnode_ref(rootvp);
         if (err) {
-            goto out;
+            goto out_biglock;
         }
 
-        kr = kernel_thread_start(fuse_internal_update_vfsstat, data->rootvp, &vfsstat_thread);
+        kr = kernel_thread_start(fuse_internal_update_vfsstat, rootvp, &vfsstat_thread);
         if (kr == KERN_SUCCESS) {
             thread_deallocate(vfsstat_thread);
         } else {
             IOLog("osxfuse: could not start vfsstat update thread\n");
+            vnode_rele(rootvp);
         }
     }
 #endif /* M_OSXFUSE_ENABLE_UNSUPPORTED */
+
+out_biglock:
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
 
 out:
     if (err) {
         fdata_set_dead(data, false);
     }
-
-#if M_OSXFUSE_ENABLE_BIG_LOCK
-    fuse_biglock_unlock(data->biglock);
-#endif
 
     return ftick->tk_aw_errno;
 }

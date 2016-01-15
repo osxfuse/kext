@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -68,7 +69,7 @@ fuse_filehandle_get(vnode_t       vp,
         oflags |= O_TRUNC;
     }
 
-    fdisp_init_abi(&fdi, fuse_open_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_open_in, data);
     fdisp_make_vp(&fdi, op, vp, context);
     fuse_abi_data_init(&foi, DATOI(data), fdi.indata);
 
@@ -155,7 +156,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
         op = FUSE_RELEASEDIR;
     }
 
-    fdisp_init_abi(&fdi, fuse_release_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_release_in, data);
     fdisp_make_vp(&fdi, op, vp, context);
     fuse_abi_data_init(&fri, DATOI(data), fdi.indata);
 

@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011-2012 Anatol Pomozov
- * Copyright (c) 2011-2013 Benjamin Fleischer
+ * Copyright (c) 2011-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -154,7 +154,7 @@ fuse_vnop_allocate(struct vnop_allocate_args *ap)
         mode |= ALLOCATEALL;
     }
 
-    fdisp_init_abi(&fdi, fuse_fallocate_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_fallocate_in, data);
     fdisp_make_vp(&fdi, FUSE_FALLOCATE, vp, context);
     fuse_abi_data_init(&ffai, DATOI(data), fdi.indata);
 
@@ -373,7 +373,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
         struct fuse_dispatcher fdi;
         struct fuse_abi_data   ffi;
 
-        fdisp_init_abi(&fdi, fuse_flush_in, DATOI(data));
+        fdisp_init_abi(&fdi, fuse_flush_in, data);
         fdisp_make_vp(&fdi, FUSE_FLUSH, vp, context);
         fuse_abi_data_init(&ffi, DATOI(data), fdi.indata);
 
@@ -452,6 +452,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
 
     data = fuse_get_mpdata(mp);
 
+    fdata_wait_init(data);
     fdisp_init(fdip, 0);
 
     if (!fuse_implemented(data, FSESS_NOIMPLBIT(CREATE)) ||
@@ -829,7 +830,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
      * the vnode name cache.
      */
 
-    fdisp_init_abi(&fdi, fuse_getattr_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_getattr_in, data);
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
     fuse_abi_data_init(&fgi, DATOI(data), fdi.indata);
 
@@ -1001,6 +1002,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 
     namelen = strlen(name);
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, fuse_getxattr_in_sizeof(DATOI(data)) + namelen + 1);
     fdisp_make_vp(&fdi, FUSE_GETXATTR, vp, context);
     fuse_abi_data_init(&fgxi, DATOI(data), fdi.indata);
@@ -1206,6 +1208,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
      * - RETRY from server is not allowed.
 	 */
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, fuse_ioctl_in_sizeof(DATOI(data)) +
                ((cmd & IOC_IN) ? param_len : 0));
     fdisp_make_vp(&fdi, FUSE_IOCTL, vp, context);
@@ -1380,6 +1383,8 @@ fuse_vnop_link(struct vnop_link_args *ap)
 
     data = fuse_get_mpdata(vnode_mount(vp));
 
+    fdata_wait_init(data);
+
     fuse_abi_data_init(&fli, DATOI(data), &fli_data);
 
     fuse_link_in_set_oldnodeid(&fli, VTOI(vp));
@@ -1457,7 +1462,7 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         return ENOTSUP;
     }
 
-    fdisp_init_abi(&fdi, fuse_getxattr_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_getxattr_in, data);
     fdisp_make_vp(&fdi, FUSE_LISTXATTR, vp, context);
     fuse_abi_data_init(&fgxi, DATOI(data), fdi.indata);
 
@@ -1571,12 +1576,12 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
     if (isdotdot) {
         pdp = VTOFUD(dvp)->parentvp;
         nodeid = VTOI(pdp);
-        fdisp_init_abi(&fdi, fuse_getattr_in, DATOI(data));
+        fdisp_init_abi(&fdi, fuse_getattr_in, data);
         op = FUSE_GETATTR;
         goto calldaemon;
     } else if (isdot) {
         nodeid = VTOI(dvp);
-        fdisp_init_abi(&fdi, fuse_getattr_in, DATOI(data));
+        fdisp_init_abi(&fdi, fuse_getattr_in, data);
         op = FUSE_GETATTR;
         goto calldaemon;
     } else {
@@ -1866,6 +1871,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 
     data = fuse_get_mpdata(vnode_mount(dvp));
 
+    fdata_wait_init(data);
     fuse_abi_data_init(&fmdi, DATOI(data), &fmdi_data);
 
     fuse_mkdir_in_set_mode(&fmdi, MAKEIMODE(vap->va_type, vap->va_mode));
@@ -1919,6 +1925,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 
     data = fuse_get_mpdata(vnode_mount(dvp));
 
+    fdata_wait_init(data);
     fuse_abi_data_init(&fmni, DATOI(data), &fmni_data);
 
     fuse_mknod_in_set_mode(&fmni, MAKEIMODE(vap->va_type, vap->va_mode));
@@ -2388,7 +2395,7 @@ ok:
             fuse_invalidate_attr(vp);
             hint |= NOTE_ATTRIB;
 
-            fdisp_init_abi(&fdi, fuse_getattr_in, DATOI(data));
+            fdisp_init_abi(&fdi, fuse_getattr_in, data);
             fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
             fuse_abi_data_init(&fgi, DATOI(data), fdi.indata);
 
@@ -2753,6 +2760,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
             /* Using existing fufh of type fufh_type. */
         }
 
+        fdata_wait_init(data);
         fdisp_init(&fdi, 0);
 
         while (uio_resid(uio) > 0) {
@@ -3048,10 +3056,13 @@ fuse_vnop_reclaim(struct vnop_reclaim_args *ap)
     } /* fufh loop */
 
     if ((!fuse_isdeadfs(vp)) && (fvdat->nlookup)) {
+        mount_t mp = vnode_mount(vp);
+        struct fuse_data *data = fuse_get_mpdata(mp);
         struct fuse_dispatcher fdi;
+
+        fdata_wait_init(data);
         fdisp_init(&fdi, 0);
-        fuse_internal_forget_send(vnode_mount(vp), context, VTOI(vp),
-                                  fvdat->nlookup, &fdi);
+        fuse_internal_forget_send(mp, context, VTOI(vp), fvdat->nlookup, &fdi);
         fuse_ticket_release(fdi.tick);
     }
 
@@ -3428,7 +3439,7 @@ fuse_vnop_setattr(struct vnop_setattr_args *ap)
 
     data = fuse_get_mpdata(vnode_mount(vp));
 
-    fdisp_init_abi(&fdi, fuse_setattr_in, DATOI(data));
+    fdisp_init_abi(&fdi, fuse_setattr_in, data);
     fdisp_make_vp(&fdi, FUSE_SETATTR, vp, context);
     fuse_abi_data_init(&fsai, DATOI(data), fdi.indata);
 
@@ -3609,6 +3620,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
 
     namelen = strlen(name);
 
+    fdata_wait_init(data);
     fdisp_init(&fdi, fuse_setxattr_in_sizeof(DATOI(data)) +
                      namelen + 1 + attrsize);
     err = fdisp_make_vp_canfail(&fdi, FUSE_SETXATTR, vp, ap->a_context);
@@ -3875,6 +3887,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
             /* Using existing fufh of type fufh_type. */
         }
 
+        fdata_wait_init(data);
         fdisp_init(&fdi, 0);
 
         while (uio_resid(uio) > 0) {

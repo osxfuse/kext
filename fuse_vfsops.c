@@ -600,6 +600,16 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 
     fdev = data->fdev;
 
+    /*
+     * Set mount state to FM_UNMOUNTING.
+     *
+     * Note: fdata_set_dead will signal VQ_DEAD if it is called for a volume,
+     * that is still mounted.
+     */
+    fuse_device_lock(fdev);
+    data->mount_state = FM_UNMOUNTING;
+    fuse_device_unlock(fdev);
+
     if (fdata_dead_get(data)) {
 
         /*
@@ -667,16 +677,6 @@ fuse_vfsop_unmount(mount_t mp, int mntflags, vfs_context_t context)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     fuse_biglock_lock(data->biglock);
 #endif
-
-    /*
-     * Set mount state to FM_UNMOUNTING.
-     *
-     * Note: fdata_set_dead will signal VQ_DEAD if it is called for a volume,
-     * that is still mounted.
-     */
-    fuse_device_lock(fdev);
-    data->mount_state = FM_UNMOUNTING;
-    fuse_device_unlock(fdev);
 
     if (!fdata_dead_get(data)) {
         fdisp_init(&fdi, 0 /* no data to send along */);

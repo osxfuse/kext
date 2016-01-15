@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2012-2015 Benjamin Fleischer
+ * Copyright (c) 2012-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -389,6 +389,7 @@ struct fuse_data *fdata_alloc(struct proc *p);
 void fdata_destroy(struct fuse_data *data);
 bool fdata_dead_get(struct fuse_data *data);
 bool fdata_set_dead(struct fuse_data *data, bool fdev_locked);
+int fdata_wait_init(struct fuse_data *data);
 
 struct fuse_dispatcher
 {
@@ -410,8 +411,11 @@ fdisp_init(struct fuse_dispatcher *fdisp, size_t iosize)
     fdisp->tick = NULL;
 }
 
-#define fdisp_init_abi(fdisp, name, abi_version) \
-    fdisp_init((fdisp), name ## _sizeof(abi_version))
+#define fdisp_init_abi(fdisp, name, data) \
+    do { \
+        fdata_wait_init(data); \
+        fdisp_init((fdisp), name ## _sizeof(DATOI(data))); \
+    } while (0)
 
 void fdisp_make(struct fuse_dispatcher *fdip, enum fuse_opcode op,
                 mount_t mp, uint64_t nid, vfs_context_t context);
