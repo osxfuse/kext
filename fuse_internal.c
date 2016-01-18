@@ -87,7 +87,15 @@ fuse_internal_access(vnode_t                   vp,
         return default_error;
     }
 
-    if (!vnode_isvroot(vp)) {
+    if (vnode_isvroot(vp) || fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is running as
+         * root) calls access(2) on behalf of Finder when trying to delete a directory.
+         * Returning EPERM results in Finder aborting the delete process. Therefore we
+         * are no longer blocking calls by root even if allow_root or allow_other is
+         * not set.
+         */
+    } else {
         CHECK_BLANKET_DENIAL(vp, context, EPERM);
     }
 
