@@ -227,6 +227,14 @@ again:
 
     err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
 
+    if (fticket_answered(ftick)) {
+        /*
+         * msleep() has been interrupted or timed out after having received an answer to
+         * this request, but before the handler had a chance to call wakeup().
+         */
+        err = 0;
+    }
+
     if (err == 0) {
         if (fticket_interrupted(ftick) && fticket_answered(ftick) && ftick->tk_aw_ohead.error == EINTR) {
             /*
@@ -236,28 +244,32 @@ again:
              */
             ftick->tk_aw_ohead.error = err_interrupt;
         }
+        goto out;
+    }
 
-    } else if (err == EWOULDBLOCK /* same as EAGAIN */) {
-        /*
-         * We did not receive an answer within the timeout interval. The file system is
-         * considdered dead.
-         */
-
-        fticket_set_answered(ftick);
-        fdata_set_dead(data, false);
-        err = ENOTCONN;
-
-    } else if (err == EINTR || err == ERESTART) {
-        if (fticket_answered(ftick)) {
+    if (err == EWOULDBLOCK /* same as EAGAIN */) {
+        if (fticket_interrupted(ftick)) {
             /*
-             * We have been interrupted by a signal after having received the answer to this
-             * request, but before the handler had a chance to wake us up. No need to send
-             * an interrupt.
+             * We did not receive an answer within the timeout interval. At this point the
+             * file system is considdered dead.
              */
-            err = 0;
-            goto out;
-        }
+            fticket_set_answered(ftick);
+            fdata_set_dead(data, false);
 
+            err = ENOTCONN;
+            goto out;
+
+        } else {
+            /*
+             * Send an interrupt request to give the file system daemon a chance to handle
+             * the timeout. If the daemon does not respond in time the file system will be
+             * marked dead.
+             */
+            err = EINTR;
+        }
+    }
+
+    if (err == EINTR || err == ERESTART) {
         if (!fticket_sent(ftick) && fuse_kludge_thread_should_abort(current_thread())) {
             fticket_set_answered(ftick);
             goto out;
@@ -271,8 +283,8 @@ again:
                 fuse_internal_interrupt_send(ftick);
             } else {
                 /*
-                 * The interrupt will be sent in fuse_device_read() after the original request
-                 * has been sent.
+                 * The interrupt request will be queued in fuse_device_read() after the original
+                 * request has been read by the daemon.
                  */
             }
         }

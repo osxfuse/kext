@@ -469,7 +469,7 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     if (data->daemon_timeout.tv_sec) {
         data->daemon_timeout_p = &(data->daemon_timeout);
     } else {
-        data->daemon_timeout_p = (struct timespec *)0;
+        data->daemon_timeout_p = NULL;
     }
 
     data->max_read = max_read;
