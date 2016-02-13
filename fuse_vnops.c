@@ -2889,6 +2889,9 @@ fuse_vnop_readdir(struct vnop_readdir_args *ap)
 
     fuse_invalidate_attr(vp);
 
+    if (err != 0) {
+        IOLog("osxfuse: fuse_vnop_readdir failed (err=%d)\n", err);
+    }
     return err;
 }
 
