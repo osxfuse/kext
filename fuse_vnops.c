@@ -1137,24 +1137,6 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 
         return fuse_setextendedsecurity(mp, state);
     }
-    if (cmd == FSCTLALTERVNODEFORINODE) {
-        /*
-         * This is the fsctl() version of the AVFI device ioctl's in
-         * fuse_device.c. Since the device ioctl's must be used from within the
-         * file system (we don't allow multiple device opens), it's rather
-         * painful to test/experiment with them. The fsctl version is easier to
-         * use. To simplify things, the "path" in the fsctl() call must be the
-         * root of the file system.
-         */
-        struct fuse_avfi_ioctl * avfi;
-
-        if (!vnode_isvroot(vp)) {
-            return EINVAL;
-        }
-
-        avfi = (struct fuse_avfi_ioctl *)(ap->a_data);
-        return fuse_internal_ioctl_avfi(vp, context, avfi);
-    }
     if (cmd == F_FULLFSYNC) {
         return fuse_internal_fsync_vp(vp, context);
     }

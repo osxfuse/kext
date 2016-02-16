@@ -743,13 +743,6 @@ int
 fuse_internal_fsync_vp(vnode_t       vp,
                        vfs_context_t context);
 
-/* ioctl */
-
-int
-fuse_internal_ioctl_avfi(vnode_t                 vp,
-                         vfs_context_t           context,
-                         struct fuse_avfi_ioctl *avfi);
-
 /* readdir */
 
 int
