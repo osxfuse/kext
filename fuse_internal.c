@@ -244,10 +244,8 @@ fuse_internal_exchange(vnode_t       fvp,
         if (fdvp) {
             fuse_invalidate_attr(fdvp);
         }
-        if (tdvp != fdvp) {
-            if (tdvp) {
-                fuse_invalidate_attr(tdvp);
-            }
+        if (tdvp && tdvp != fdvp) {
+            fuse_invalidate_attr(tdvp);
         }
 
         fuse_invalidate_attr(fvp);
@@ -270,31 +268,39 @@ fuse_internal_exchange(vnode_t       fvp,
         fuse_biglock_lock(data->biglock);
 #endif
 
-        fuse_kludge_exchange(fvp, tvp);
+        /*
+         * We need to increase the iocount of fdvp to make sure it will not be reclaimed
+         * when assiginig fvp a new parent.
+         */
+        vnode_get(fdvp);
+
+        vnode_update_identity(fvp, tdvp, tname, (int)tlen, 0, VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
+        vnode_update_identity(tvp, fdvp, fname, (int)flen, 0, VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
+
+        vnode_put(fdvp);
 
         /*
          * Another approach (will need additional kernel support to work):
          *
-        vnode_t tmpvp = ffud->vp;
-        ffud->vp = tfud->vp;
-        tfud->vp = tmpvp;
-
-        vnode_t tmpparentvp = ffud->parentvp;
-        ffud->parentvp = tfud->parentvp;
-        tfud->parentvp = tmpparentvp;
-
-        off_t tmpfilesize = ffud->filesize;
-        ffud->filesize = tfud->filesize;
-        tfud->filesize = tmpfilesize;
-
-        struct fuse_vnode_data tmpfud;
-        memcpy(&tmpfud, ffud, sizeof(struct fuse_vnode_data));
-        memcpy(ffud, tfud, sizeof(struct fuse_vnode_data));
-        memcpy(tfud, &tmpfud, sizeof(struct fuse_vnode_data));
-
-        HNodeExchangeFromFSNode(ffud, tfud);
-        *
-        */
+         * vnode_t tmpvp = ffud->vp;
+         * ffud->vp = tfud->vp;
+         * tfud->vp = tmpvp;
+         *
+         * vnode_t tmpparentvp = ffud->parentvp;
+         * ffud->parentvp = tfud->parentvp;
+         * tfud->parentvp = tmpparentvp;
+         *
+         * off_t tmpfilesize = ffud->filesize;
+         * ffud->filesize = tfud->filesize;
+         * tfud->filesize = tmpfilesize;
+         *
+         * struct fuse_vnode_data tmpfud;
+         * memcpy(&tmpfud, ffud, sizeof(struct fuse_vnode_data));
+         * memcpy(ffud, tfud, sizeof(struct fuse_vnode_data));
+         * memcpy(tfud, &tmpfud, sizeof(struct fuse_vnode_data));
+         *
+         * HNodeExchangeFromFSNode(ffud, tfud);
+         */
     }
 
     return err;

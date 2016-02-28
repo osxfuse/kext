@@ -1,54 +1,13 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2012 Tuxera Inc.
- * Copyright (c) 2015 Benjamin Fleischer
+ * Copyright (c) 2015-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
 #include "fuse_kludges.h"
 
 #include <libkern/version.h>
-
-#if M_OSXFUSE_ENABLE_EXCHANGE
-
-__private_extern__
-void
-fuse_kludge_exchange(vnode_t v1, vnode_t v2)
-{
-    if (version_major >= 11) {
-        char *tmp_v_name = ((struct fuse_kludge_vnode_11 *)v1)->v_name;
-        ((struct fuse_kludge_vnode_11 *)v1)->v_name =
-            ((struct fuse_kludge_vnode_11 *)v2)->v_name;
-        ((struct fuse_kludge_vnode_11 *)v2)->v_name = tmp_v_name;
-
-        vnode_t tmp_v_parent = ((struct fuse_kludge_vnode_11 *)v1)->v_parent;
-        ((struct fuse_kludge_vnode_11 *)v1)->v_parent =
-            ((struct fuse_kludge_vnode_11 *)v2)->v_parent;
-        ((struct fuse_kludge_vnode_11 *)v2)->v_parent = tmp_v_parent;
-    } else if (version_major >= 10) {
-        char *tmp_v_name = ((struct fuse_kludge_vnode_10 *)v1)->v_name;
-        ((struct fuse_kludge_vnode_10 *)v1)->v_name =
-            ((struct fuse_kludge_vnode_10 *)v2)->v_name;
-        ((struct fuse_kludge_vnode_10 *)v2)->v_name = tmp_v_name;
-
-        vnode_t tmp_v_parent = ((struct fuse_kludge_vnode_10 *)v1)->v_parent;
-        ((struct fuse_kludge_vnode_10 *)v1)->v_parent =
-            ((struct fuse_kludge_vnode_10 *)v2)->v_parent;
-        ((struct fuse_kludge_vnode_10 *)v2)->v_parent = tmp_v_parent;
-    } else {
-        char *tmp_v_name = ((struct fuse_kludge_vnode_9 *)v1)->v_name;
-        ((struct fuse_kludge_vnode_9 *)v1)->v_name =
-            ((struct fuse_kludge_vnode_9 *)v2)->v_name;
-        ((struct fuse_kludge_vnode_9 *)v2)->v_name = tmp_v_name;
-
-        vnode_t tmp_v_parent = ((struct fuse_kludge_vnode_9 *)v1)->v_parent;
-        ((struct fuse_kludge_vnode_9 *)v1)->v_parent =
-            ((struct fuse_kludge_vnode_9 *)v2)->v_parent;
-        ((struct fuse_kludge_vnode_9 *)v2)->v_parent = tmp_v_parent;
-    }
-}
-
-#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
 
 FUSE_INLINE
 lck_mtx_t *
