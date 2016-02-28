@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2012 Tuxera Inc.
- * Copyright (c) 2012-2015 Benjamin Fleischer
+ * Copyright (c) 2012-2016 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -121,11 +121,6 @@ struct fuse_kludge_vnode_11
     vnode_t v_parent;
 } __attribute__ ((packed));
 
-#if M_OSXFUSE_ENABLE_EXCHANGE
-
-void fuse_kludge_exchange(vnode_t v1, vnode_t v2);
-
-#endif /* M_OSXFUSE_ENABLE_EXCHANGE */
 
 int fuse_kludge_vnode_isrecycled(vnode_t vp);
 
