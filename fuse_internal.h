@@ -926,21 +926,6 @@ fuse_clear_implemented(struct fuse_data *data, uint64_t which)
     /* FUSE_DATA_UNLOCK_EXCLUSIVE(data); */
 }
 
-FUSE_INLINE
-int
-fuse_set_implemented_custom(struct fuse_data *data, uint64_t flags)
-{
-    if (!data) {
-        return EINVAL;
-    }
-
-    FUSE_DATA_LOCK_EXCLUSIVE(data);
-    data->noimplflags = flags;
-    FUSE_DATA_UNLOCK_EXCLUSIVE(data);
-
-    return 0;
-}
-
 void
 fuse_internal_print_vnodes(mount_t mp);
 
