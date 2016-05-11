@@ -349,7 +349,7 @@ FUSE_INLINE
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
-    uint32_t result = 512;
+    uint32_t result = 128;
     size = size & 0x7FFFFFFFU; /* clip at 2G */
 
     while (result < size) {
