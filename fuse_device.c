@@ -646,10 +646,6 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
     }
 
     switch (cmd) {
-    case FUSEDEVIOCSETIMPLEMENTEDBITS:
-        ret = fuse_set_implemented_custom(data, *(uint64_t *)udata);
-        break;
-
     case FUSEDEVIOCGETHANDSHAKECOMPLETE:
         if (data->mount_state == FM_NOTMOUNTED) {
             ret = ENXIO;

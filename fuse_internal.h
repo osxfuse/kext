@@ -349,7 +349,7 @@ FUSE_INLINE
 uint32_t
 fuse_round_powerof2(uint32_t size)
 {
-    uint32_t result = 512;
+    uint32_t result = 128;
     size = size & 0x7FFFFFFFU; /* clip at 2G */
 
     while (result < size) {
@@ -917,21 +917,6 @@ fuse_clear_implemented(struct fuse_data *data, uint64_t which)
     /* FUSE_DATA_LOCK_EXCLUSIVE(data); */
     data->noimplflags |= which;
     /* FUSE_DATA_UNLOCK_EXCLUSIVE(data); */
-}
-
-FUSE_INLINE
-int
-fuse_set_implemented_custom(struct fuse_data *data, uint64_t flags)
-{
-    if (!data) {
-        return EINVAL;
-    }
-
-    FUSE_DATA_LOCK_EXCLUSIVE(data);
-    data->noimplflags = flags;
-    FUSE_DATA_UNLOCK_EXCLUSIVE(data);
-
-    return 0;
 }
 
 void
