@@ -704,7 +704,21 @@ fuse_internal_readdir(vnode_t                 vp,
         fdisp_make_vp(&fdi, FUSE_READDIR, vp, context);
         fuse_abi_data_init(&fri, DATOI(data), fdi.indata);
 
-        size = (uint32_t)min((size_t)uio_resid(uio), data->iosize);
+        size = (uint32_t)uio_resid(uio);
+        if (flags & VNODE_READDIR_EXTENDED) {
+            /*
+             * Our user space buffer needs to be smaller since re-packing will
+             * expand each struct fuse_dirent.
+             *
+             * The worse case (when the name length is 8) corresponds to a
+             * struct direntry size of 40 bytes (8-byte aligned) and a struct
+             * fuse_dirent size of 32 bytes (8-byte aligned). So having a buffer
+             * that is 4/5 the size will prevent us from reading more than we
+             * can pack.
+             */
+            size = 4 * size / 5;
+        }
+        size = (uint32_t)min(size, data->iosize);
 
         fuse_read_in_set_fh(&fri, fufh->fh_id);
         fuse_read_in_set_offset(&fri, uio_offset(uio));
@@ -736,11 +750,11 @@ out:
     return ((err == -1) ? 0 : err);
 }
 
-#define GENERIC_DIRSIZ(namlen) \
-    ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1)) + (((namlen) + 1 + 3) & ~3))
+#define DIRENT32_LEN(namlen) \
+    ((sizeof(struct dirent) - (FUSE_MAXNAMLEN + 1) + (namlen) + 1 + 3) & ~3)
 
-#define EXT_DIRSIZ(namlen) \
-    ((sizeof(struct direntry) + (namlen) - (MAXPATHLEN-1) + 7) & ~7)
+#define DIRENT64_LEN(namlen) \
+    ((sizeof(struct direntry) - MAXPATHLEN + (namlen) + 1 + 7) & ~7)
 
 __private_extern__
 int
@@ -755,14 +769,14 @@ fuse_internal_readdir_processdata(vnode_t          vp,
 {
     int err = 0;
     int cou = 0;
-    int n   = 0;
-    bool extended = flags & VNODE_READDIR_EXTENDED;
+    int n = 0;
     size_t bytesavail = 0;
     size_t freclen = 0;
 
-    struct dirent      *de = NULL;
-    struct direntry    *de_ext = NULL;
     struct fuse_dirent *fudge = NULL;
+    struct dirent *de32 = NULL;
+    struct direntry *de64 = NULL;
+    char *de_name = NULL;
 
     if (bufsize < FUSE_NAME_OFFSET) {
         return -1;
@@ -804,10 +818,10 @@ fuse_internal_readdir_processdata(vnode_t          vp,
             break;
         }
 
-        if (extended) {
-            bytesavail = EXT_DIRSIZ(fudge->namelen);
+        if (flags & VNODE_READDIR_EXTENDED) {
+            bytesavail = DIRENT64_LEN(fudge->namelen);
         } else {
-            bytesavail = GENERIC_DIRSIZ(fudge->namelen);
+            bytesavail = DIRENT32_LEN(fudge->namelen);
         }
 
         if (bytesavail > (size_t)uio_resid(uio)) {
@@ -818,41 +832,37 @@ fuse_internal_readdir_processdata(vnode_t          vp,
         fiov_refresh(cookediov);
         fiov_adjust(cookediov, bytesavail);
 
-        if (extended) {
-            de_ext = (struct direntry *)cookediov->base;
-            de_ext->d_ino = fudge->ino;
-            de_ext->d_seekoff = 0;
-            de_ext->d_reclen = bytesavail;
-            de_ext->d_namlen = fudge->namelen;
-            de_ext->d_type   = fudge->type;
+        if (flags & VNODE_READDIR_EXTENDED) {
+            de64 = (struct direntry *)cookediov->base;
+            de64->d_ino = fudge->ino;
+            de64->d_seekoff = 0;
+            de64->d_reclen = bytesavail;
+            de64->d_namlen = fudge->namelen;
+            de64->d_type = fudge->type;
+            de_name = de64->d_name;
         } else {
-            de = (struct dirent *)cookediov->base;
-            de->d_ino = (ino_t)fudge->ino;
-            de->d_reclen = bytesavail;
-            de->d_type   = fudge->type;
-            de->d_namlen = fudge->namelen;
+            de32 = (struct dirent *)cookediov->base;
+            de32->d_ino = (ino_t)fudge->ino;
+            de32->d_reclen = bytesavail;
+            de32->d_type = fudge->type;
+            de32->d_namlen = fudge->namelen;
+            de_name = de32->d_name;
         }
 
-        /* Filter out any ._* files if the mount is configured as such. */
+        // Filter out any ._* files if the mount is configured as such
         if (fuse_skip_apple_double_mp(vnode_mount(vp),
                                       fudge->name, fudge->namelen)) {
-            if (extended) {
-                de_ext->d_ino = 0;
-                de_ext->d_type = DT_WHT;
+            if (flags & VNODE_READDIR_EXTENDED) {
+                de64->d_ino = 0;
+                de64->d_type = DT_WHT;
             } else {
-                de->d_ino = 0;
-                de->d_type = DT_WHT;
+                de32->d_ino = 0;
+                de32->d_type = DT_WHT;
             }
         }
 
-        if (extended) {
-            memcpy(de_ext->d_name, (char *)buf + FUSE_NAME_OFFSET,
-                   fudge->namelen);
-        } else {
-            memcpy(de->d_name, (char *)buf + FUSE_NAME_OFFSET,
-                   fudge->namelen);
-        }
-        ((char *)cookediov->base)[bytesavail] = '\0';
+        memcpy(de_name, (char *)buf + FUSE_NAME_OFFSET, fudge->namelen);
+        de_name[fudge->namelen] = '\0';
 
         err = uiomove(cookediov->base, (int)cookediov->len, uio);
         if (err) {
