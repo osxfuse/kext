@@ -11,7 +11,6 @@
 #include "fuse_file.h"
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
-#include "fuse_knote.h"
 #include "fuse_node.h"
 #include "fuse_nodehash.h"
 
@@ -569,8 +568,6 @@ bringup:
 
     fuse_ticket_release(fdip->tick);
 
-    FUSE_KNOTE(dvp, NOTE_WRITE);
-
     return 0;
 
 undo:
@@ -671,11 +668,6 @@ out:
 
     vnode_putname(fname);
     vnode_putname(tname);
-
-    if (err == 0) {
-        FUSE_KNOTE(fvp, NOTE_ATTRIB);
-        FUSE_KNOTE(tvp, NOTE_ATTRIB);
-    }
 
     return err;
 
@@ -1392,9 +1384,6 @@ fuse_vnop_link(struct vnop_link_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
-
-        FUSE_KNOTE(vp, NOTE_LINK);
-        FUSE_KNOTE(tdvp, NOTE_WRITE);
     }
 
     return err;
@@ -1865,7 +1854,6 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
-        FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_LINK);
     }
 
     return err;
@@ -1920,7 +1908,6 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
-        FUSE_KNOTE(dvp, NOTE_WRITE);
     }
 
     return err;
@@ -2190,7 +2177,6 @@ fuse_vnop_open(struct vnop_open_args *ap)
     struct fuse_filehandle *fufh_rw = NULL;
 
     int error, isdir = 0;
-    long hint = 0;
 
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
@@ -2369,13 +2355,11 @@ ok:
         fuse_biglock_lock(data->biglock);
 #endif
         fufh->fuse_open_flags &= ~FOPEN_PURGE_UBC;
-        hint |= NOTE_WRITE;
         if (fufh->fuse_open_flags & FOPEN_PURGE_ATTR) {
             struct fuse_dispatcher fdi;
             struct fuse_abi_data fgi;
 
             fuse_invalidate_attr(vp);
-            hint |= NOTE_ATTRIB;
 
             fdisp_init_abi(&fdi, fuse_getattr_in, data);
             fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
@@ -2395,9 +2379,6 @@ ok:
                 if ((fuse_attr_get_mode(&fa) & S_IFMT)) {
                     cache_attrs(vp, fuse_attr_out, &fao);
                     off_t new_filesize = fuse_attr_get_size(&fa);
-                    if (new_filesize > VTOFUD(vp)->filesize) {
-                        hint |= NOTE_EXTEND;
-                    }
                     VTOFUD(vp)->filesize = new_filesize;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
                     fuse_biglock_unlock(data->biglock);
@@ -2411,10 +2392,6 @@ ok:
             }
             fufh->fuse_open_flags &= ~FOPEN_PURGE_ATTR;
         }
-    }
-
-    if (hint) {
-        FUSE_KNOTE(vp, hint);
     }
 
     if (fuse_isnoreadahead(vp)) {
@@ -3107,8 +3084,6 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     err = fuse_internal_remove(dvp, vp, cnp, FUSE_UNLINK, context);
 
     if (err == 0) {
-        FUSE_KNOTE(vp, NOTE_DELETE);
-        FUSE_KNOTE(dvp, NOTE_WRITE);
         fuse_vncache_purge(vp);
         fuse_invalidate_attr(dvp);
         /*
@@ -3188,7 +3163,6 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         fuse_ticket_release(fdi.tick);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
         fuse_invalidate_attr(vp);
-        FUSE_KNOTE(vp, NOTE_ATTRIB);
     } else {
         if (err == ENOSYS) {
             fuse_clear_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR));
@@ -3239,18 +3213,15 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
     err = fuse_internal_rename(fdvp, fvp, fcnp, tdvp, tvp, tcnp, ap->a_context);
 
     if (err == 0) {
-        FUSE_KNOTE(fdvp, NOTE_WRITE);
         fuse_invalidate_attr(fdvp);
         if (tdvp != fdvp) {
             fuse_invalidate_attr(tdvp);
-            FUSE_KNOTE(tdvp, NOTE_WRITE);
         }
     }
 
     if (tvp != NULLVP) {
         if (tvp != fvp) {
             fuse_vncache_purge(tvp);
-            FUSE_KNOTE(tvp, NOTE_DELETE);
         }
         if (err == 0) {
 
@@ -3274,10 +3245,6 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
             fuse_vncache_purge(tdvp);
         }
         fuse_vncache_purge(fdvp);
-    }
-
-    if (err == 0) {
-        FUSE_KNOTE(fvp, NOTE_RENAME);
     }
 
     return err;
@@ -3343,8 +3310,6 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
-        FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_LINK);
-        FUSE_KNOTE(vp, NOTE_DELETE);
     }
 
     return err;
@@ -3511,10 +3476,6 @@ out:
 #endif
     }
 
-    if (err == 0) {
-        FUSE_KNOTE(vp, NOTE_ATTRIB);
-    }
-
     return err;
 }
 
@@ -3643,7 +3604,6 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     if (!err) {
         fuse_ticket_release(fdi.tick);
         fuse_invalidate_attr(vp);
-        FUSE_KNOTE(vp, NOTE_ATTRIB);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
     } else {
         if ((err == ENOSYS) || (err == ENOTSUP)) {
@@ -3748,7 +3708,6 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
-        FUSE_KNOTE(dvp, NOTE_WRITE);
     }
 
     return err;
@@ -4008,10 +3967,8 @@ fuse_vnop_write(struct vnop_write_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
-            FUSE_KNOTE(vp, NOTE_WRITE | NOTE_EXTEND);
         } else {
             fvdat->filesize = original_size;
-            FUSE_KNOTE(vp, NOTE_WRITE);
         }
         fuse_invalidate_attr(vp);
     }

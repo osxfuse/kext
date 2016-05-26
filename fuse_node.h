@@ -10,7 +10,6 @@
 #include "fuse.h"
 
 #include "fuse_file.h"
-#include "fuse_knote.h"
 #include "fuse_nodehash.h"
 
 #include <stdbool.h>

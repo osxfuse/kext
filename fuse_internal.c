@@ -1713,7 +1713,7 @@ fuse_internal_vnode_disappear(vnode_t vp, vfs_context_t context, int how)
          * flow of a recycle operation, but it seems that we shouldn't call this again
          * if a recycle operation was the reason that we got here.
          */
-        if (!fuse_kludge_vnode_isrecycled(vp)) {
+        if (!vnode_isrecycled(vp)) {
             err = vnode_recycle(vp);
             if (err) {
                 IOLog("osxfuse: disappearing act: recycle failed (%d)\n", err);

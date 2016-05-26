@@ -8,7 +8,6 @@
 #include "fuse_biglock_vnops.h"
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
-#include "fuse_knote.h"
 #include "fuse_node.h"
 
 #include <sys/ubc.h>
@@ -88,8 +87,6 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     }
 
 out:
-    FUSE_KNOTE(vp, NOTE_ATTRIB);
-
     /*
      * Note: We need to unlock the node and decrement the vnode's iocount. See
      * fuse_notify_inval_inode for details.
@@ -173,7 +170,6 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
     }
 
     fuse_invalidate_attr(dvp);
-    FUSE_KNOTE(dvp, NOTE_ATTRIB);
 
 out:
     fuse_nodelock_unlock(VTOFUD(dvp));
@@ -259,7 +255,6 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
         }
     }
 
-    FUSE_KNOTE(vp, NOTE_ATTRIB);
     fuse_nodelock_unlock(VTOFUD(vp));
     vnode_put(vp);
 

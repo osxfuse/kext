@@ -790,13 +790,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_FMT_OPENDENYMODES
         | VOL_CAP_FMT_HIDDEN_FILES
 //      | VOL_CAP_FMT_PATH_FROM_ID
-#if VERSION_MAJOR >= 10
 //      | VOL_CAP_FMT_NO_VOLUME_SIZES
 //      | VOL_CAP_FMT_DECMPFS_COMPRESSION
-#endif
-#if VERSION_MAJOR >= 11
 //      | VOL_CAP_FMT_64BIT_OBJECT_IDS
-#endif
         ;
 
     if (data->dataflags & FSESS_CASE_INSENSITIVE) {
@@ -825,13 +821,9 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_FMT_OPENDENYMODES
         | VOL_CAP_FMT_HIDDEN_FILES
         | VOL_CAP_FMT_PATH_FROM_ID
-#if VERSION_MAJOR >= 10
         | VOL_CAP_FMT_NO_VOLUME_SIZES
         | VOL_CAP_FMT_DECMPFS_COMPRESSION
-#endif
-#if VERSION_MAJOR >= 11
         | VOL_CAP_FMT_64BIT_OBJECT_IDS
-#endif
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
@@ -925,12 +917,8 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_CMN_GRPUUID
 //      | ATTR_CMN_FILEID
 //      | ATTR_CMN_PARENTID
-#if VERSION_MAJOR >= 10
 //      | ATTR_CMN_FULLPATH
-#endif
-#if VERSION_MAJOR >= 11
 //      | ATTR_CMN_ADDEDTIME
-#endif
         ;
 
     attr->f_attributes.validattr.volattr = 0

@@ -13,7 +13,6 @@
 		540966AA0C33BA3900F5E227 /* fuse_internal.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBC0B5EEB44002D9FD9 /* fuse_internal.c */; };
 		540966AC0C33BA3900F5E227 /* fuse_ipc.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */; };
 		540966AF0C33BA3900F5E227 /* fuse_kludges.c in Sources */ = {isa = PBXBuildFile; fileRef = 54F862610B8029A400416A6F /* fuse_kludges.c */; };
-		540966B10C33BA3900F5E227 /* fuse_knote.c in Sources */ = {isa = PBXBuildFile; fileRef = 5434066A0B79C3AA00471672 /* fuse_knote.c */; };
 		540966B30C33BA3900F5E227 /* fuse_locking.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */; };
 		540966B50C33BA3900F5E227 /* fuse_main.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */; };
 		540966B60C33BA3900F5E227 /* fuse_node.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC40B5EEB44002D9FD9 /* fuse_node.c */; };
@@ -33,8 +32,6 @@
 		540966530C33B5F500F5E227 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_mount.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		540966540C33B5F500F5E227 /* fuse_param.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_param.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		540966550C33B5F500F5E227 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_version.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		5434066A0B79C3AA00471672 /* fuse_knote.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_knote.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		5434066B0B79C3AA00471672 /* fuse_knote.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_knote.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		549960D00EC093D800DDFCAD /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
 		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
@@ -132,8 +129,6 @@
 				54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */,
 				54F862610B8029A400416A6F /* fuse_kludges.c */,
 				54F862620B8029A400416A6F /* fuse_kludges.h */,
-				5434066A0B79C3AA00471672 /* fuse_knote.c */,
-				5434066B0B79C3AA00471672 /* fuse_knote.h */,
 				54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */,
 				54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */,
 				54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */,
@@ -232,7 +227,6 @@
 				540966AA0C33BA3900F5E227 /* fuse_internal.c in Sources */,
 				540966AC0C33BA3900F5E227 /* fuse_ipc.c in Sources */,
 				540966AF0C33BA3900F5E227 /* fuse_kludges.c in Sources */,
-				540966B10C33BA3900F5E227 /* fuse_knote.c in Sources */,
 				540966B30C33BA3900F5E227 /* fuse_locking.c in Sources */,
 				540966B50C33BA3900F5E227 /* fuse_main.c in Sources */,
 				540966B60C33BA3900F5E227 /* fuse_node.c in Sources */,

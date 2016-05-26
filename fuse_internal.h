@@ -382,18 +382,7 @@ FUSE_INLINE
 uint32_t
 fuse_round_iosize(uint32_t size)
 {
-    uint32_t max_iosize = FUSE_MAX_IOSIZE;
-
-    if (version_major < 11) {
-        /*
-         * Note: Because of a bug in Mac OS X 10.6 and earlier versions there
-         * is an increased probability of kernel panics due to potentially
-         * running out of vm maps when using I/O sizes greater than 16 MiB.
-         */
-        max_iosize = min(max_iosize, 16 * 1024 * 1024);
-    }
-
-    return fuse_round_size(size, FUSE_MIN_IOSIZE, max_iosize);
+    return fuse_round_size(size, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
 }
 
 FUSE_INLINE
@@ -575,7 +564,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     struct vnode_attr *in_vap = VTOVA(vp);
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int purged = 0;
-    long hint = 0;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *data;
 #endif
@@ -613,7 +601,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     } else {
         /* The size might have changed remotely. */
         if (fvdat->filesize != (off_t)in_vap->va_data_size) {
-            hint |= NOTE_WRITE;
             /* Remote size overrides what we have. */
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -624,9 +611,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
             fuse_biglock_lock(data->biglock);
 #endif
             purged = 1;
-            if (fvdat->filesize > (off_t)in_vap->va_data_size) {
-                hint |= NOTE_EXTEND;
-            }
             fvdat->filesize = in_vap->va_data_size;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -672,7 +656,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         (fvdat->modify_time.tv_nsec != in_vap->va_modify_time.tv_nsec)) {
         fvdat->modify_time.tv_sec = in_vap->va_modify_time.tv_sec;
         fvdat->modify_time.tv_nsec = in_vap->va_modify_time.tv_nsec;
-        hint |= NOTE_ATTRIB;
         if (fuse_isautocache_mp(mp) && !purged) {
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -689,10 +672,6 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         (VATTR_IS_ACTIVE(out_vap, va_create_time) &&
          !VATTR_IS_SUPPORTED(out_vap, va_create_time))) {
         (void)fuse_internal_loadxtimes(vp, out_vap, context);
-    }
-
-    if (hint) {
-        FUSE_KNOTE(vp, hint);
     }
 }
 
