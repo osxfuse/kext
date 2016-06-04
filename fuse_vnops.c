@@ -787,14 +787,10 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         return 0;
     }
 
-    if (!(dataflags & FSESS_INITED)) {
-        if (!vnode_isvroot(vp)) {
-            fdata_set_dead(data, false);
-            err = ENOTCONN;
-            return err;
-        } else {
-            goto fake;
-        }
+    if (!(dataflags & FSESS_INITED) && !vnode_isvroot(vp)) {
+        fdata_set_dead(data, false);
+        err = ENOTCONN;
+        return err;
     }
 
     /*
@@ -822,6 +818,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
      * the vnode name cache.
      */
 
+    fdata_wait_init(data);
     fdisp_init_abi(&fdi, fuse_getattr_in, data);
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
     fuse_abi_data_init(&fgi, DATOI(data), fdi.indata);
