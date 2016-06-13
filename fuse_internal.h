@@ -386,9 +386,9 @@ fuse_round_iosize(uint32_t size)
 
     if (version_major < 11) {
         /*
-         * Note: Because of a bug in Mac OS X 10.6 and earlier versions there
-         * is an increased probability of kernel panics due to potentially
-         * running out of vm maps when using I/O sizes greater than 16 MiB.
+         * Note: Because of a bug in Mac OS X 10.6 and earlier versions there is
+         * an increased probability of kernel panics due to potentially running
+         * out of vm maps when using I/O sizes greater than 16 MiB.
          */
         max_iosize = min(max_iosize, 16 * 1024 * 1024);
     }

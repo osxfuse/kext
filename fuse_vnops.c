@@ -769,11 +769,11 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     if (fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is running as
-         * root) calls stat(2) on behalf of Finder when trying to delete a directory.
-         * Returning ENOENT results in Finder aborting the delete process. Therefore
-         * we are no longer blocking calls by root even if allow_root or allow_other
-         * is not set.
+         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is
+         * running as root) calls stat(2) on behalf of Finder when trying to
+         * delete a directory. Returning ENOENT results in Finder aborting the
+         * delete process. Therefore we are no longer blocking calls by root
+         * even if allow_root or allow_other is not set.
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -969,10 +969,11 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
 
     if (fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Starting with OS X 10.9 syspolicyd (which is running as root) calls
-         * getxattr(2) when opening items in Finder. Blocking these calls results in
-         * Finder displaying an error message. Therefore we are no longer blocking
-         * calls by root even if allow_root or allow_other is not set.
+         * Note: Starting with OS X 10.9 syspolicyd (which is running as root)
+         * calls getxattr(2) when opening items in Finder. Blocking these calls
+         * results in Finder displaying an error message. Therefore we are no
+         * longer blocking calls by root even if allow_root or allow_other is
+         * not set.
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -1197,7 +1198,7 @@ fuse_vnop_ioctl(struct vnop_ioctl_args *ap)
 
     /*
 	 * Note: Linux FUSE IOCTL flags like FUSE_IOCTL_UNRESTRICTED are not
-     * supported on OS X. Enabling unrestricted mode by default would result in
+     * supported on macOS. Enabling unrestricted mode by default would result in
      * security implications. We don't trust the FUSE file system
      * implementation. Therefor fall back on restricted mode.
      *

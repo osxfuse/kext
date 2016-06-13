@@ -1133,10 +1133,10 @@ dostatfs:
      * __u32   namelen; // maximum length of filenames
      * __u32   frsize;  // fundamental file system block size
      *
-     * On Mac OS X, we will map this data to struct vfs_attr as follows:
+     * On macOS, we will map this data to struct vfs_attr as follows:
      *
-     *  Mac OS X                     FUSE
-     *  --------                     ----
+     *  macOS                        FUSE
+     *  -----                        ----
      *  uint64_t f_supported   <-    // handled here
      *  uint64_t f_active      <-    // handled here
      *  uint64_t f_objcount    <-    -

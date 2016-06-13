@@ -87,11 +87,11 @@ fuse_internal_access(vnode_t                   vp,
 
     if (vnode_isvroot(vp) || fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is running as
-         * root) calls access(2) on behalf of Finder when trying to delete a directory.
-         * Returning EPERM results in Finder aborting the delete process. Therefore we
-         * are no longer blocking calls by root even if allow_root or allow_other is
-         * not set.
+         * Note: Starting with OS X 10.11 DesktopServicesHelper (which is
+         * running as root) calls access(2) on behalf of Finder when trying to
+         * delete a directory. Returning EPERM results in Finder aborting the
+         * delete process. Therefore we are no longer blocking calls by root
+         * even if allow_root or allow_other is not set.
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, EPERM);
@@ -595,7 +595,7 @@ fuse_internal_attr_vat2fsai(mount_t               mp,
     /*
      * Possible timestamps:
      *
-     * Mac OS X                                          Linux  FUSE API
+     * macOS                                             Linux  FUSE API
      *
      * va_access_time    last access time                atime  atime
      * va_backup_time    last backup time                -      -
@@ -1941,9 +1941,9 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     }
 
     /*
-     * Ignore the congestion_threshold field of struct fuse_init_out because there
-     * is no equivalent to the Linux backing device info concept (struct
-     * backing_dev_info) on OS X.
+     * Ignore the congestion_threshold field of struct fuse_init_out because
+     * there is no equivalent to the Linux backing device info concept (struct
+     * backing_dev_info) on macOS.
      */
 
     fuse_lck_mtx_lock(data->ticket_mtx);

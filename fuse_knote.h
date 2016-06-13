@@ -16,7 +16,7 @@
 #if M_OSXFUSE_ENABLE_KQUEUE
 
 #if VERSION_MAJOR > 9
-    #error kqueue events handled by Mac OS X
+    #error kqueue events handled by macOS
 #endif
 
 /* What a kludge! */

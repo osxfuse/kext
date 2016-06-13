@@ -492,12 +492,12 @@ fuse_devices_start(void)
     bzero((void *)fuse_device_table, sizeof(fuse_device_table));
 
     /*
-     * If index is negative, we start looking for a free slot at the absolute value
-     * of index, instead of starting at 0.
+     * If index is negative, we start looking for a free slot at the absolute
+     * value of index, instead of starting at 0.
      *
      * In practice, -1 is unusable, since there are kernel internal devices that
-     * call this function with absolute index values, which will stomp on free-slot
-     * based assignments that happen before them.
+     * call this function with absolute index values, which will stomp on
+     * free-slot based assignments that happen before them.
      *
      * 12 is considered a safe starting index for Mac OS X 10.5 to 10.7, 24 for
      * OS X 10.8 and later. See bsd/kern/bsd_stubs.c for details.
