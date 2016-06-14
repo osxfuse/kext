@@ -14,8 +14,8 @@ OSMallocTag  fuse_malloc_tag = NULL;
 extern struct vfs_fsentry fuse_vfs_entry;
 extern vfstable_t         fuse_vfs_table_ref;
 
-kern_return_t fusefs_start(kmod_info_t *ki, void *d);
-kern_return_t fusefs_stop(kmod_info_t *ki, void *d);
+kern_return_t fuse_start(kmod_info_t *ki, void *d);
+kern_return_t fuse_stop(kmod_info_t *ki, void *d);
 
 static void
 fini_stuff(void)
@@ -120,7 +120,7 @@ init_stuff(void)
 }
 
 kern_return_t
-fusefs_start(__unused kmod_info_t *ki, __unused void *d)
+fuse_start(__unused kmod_info_t *ki, __unused void *d)
 {
     int ret;
 
@@ -164,7 +164,7 @@ error:
 }
 
 kern_return_t
-fusefs_stop(__unused kmod_info_t *ki, __unused void *d)
+fuse_stop(__unused kmod_info_t *ki, __unused void *d)
 {
     int ret;
 
