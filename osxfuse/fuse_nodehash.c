@@ -30,10 +30,12 @@
 #  include "fuse_locking.h"
 #endif
 
-#if M_OSXFUSE_ENABLE_UNSUPPORTED
-#  define LCK_MTX_ASSERT lck_mtx_assert
-#else
-#  define LCK_MTX_ASSERT(gHashMutex, LCK_MTX_ASSERT_OWNED) do { } while (0)
+#if VERSION_MAJOR < 16
+#  if M_OSXFUSE_ENABLE_UNSUPPORTED
+#    define LCK_MTX_ASSERT lck_mtx_assert
+#  else
+#    define LCK_MTX_ASSERT(gHashMutex, LCK_MTX_ASSERT_OWNED) do { } while (0)
+#  endif
 #endif
 
 /*

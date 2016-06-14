@@ -121,7 +121,19 @@ static struct vfsops fuse_vfs_ops = {
     NULL,               // vfs_sysctl
     fuse_vfsop_setattr, // vfs_setattr
 #endif
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL } // vfs_reserved[]
+#if VERSION_MAJOR < 16
+    {
+#endif
+    NULL,               // vfs_ioctl
+    NULL,               // vfs_vget_snapdir
+    NULL,               // vfs_reserved5
+    NULL,               // vfs_reserved4
+    NULL,               // vfs_reserved3
+    NULL,               // vfs_reserved2
+    NULL                // vfs_reserved1
+#if VERSION_MAJOR < 16
+    }
+#endif
 };
 
 struct vfs_fsentry fuse_vfs_entry = {
