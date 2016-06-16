@@ -39,10 +39,14 @@
 		<string>OSXFUSE_KPI_VERSION</string>
 		<key>com.apple.kpi.mach</key>
 		<string>OSXFUSE_KPI_VERSION</string>
+<!--
 #if M_OSXFUSE_ENABLE_UNSUPPORTED
+-->
 		<key>com.apple.kpi.unsupported</key>
 		<string>OSXFUSE_KPI_VERSION</string>
+<!--
 #endif
+-->
 	</dict>
 </dict>
 </plist>

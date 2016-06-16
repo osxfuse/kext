@@ -7,199 +7,257 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		43D6261A1538949F00303F1A /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 43D626181538949F00303F1A /* fuse_notify.c */; };
-		540966A60C33BA3900F5E227 /* fuse_device.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */; };
-		540966A80C33BA3900F5E227 /* fuse_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBA0B5EEB44002D9FD9 /* fuse_file.c */; };
-		540966AA0C33BA3900F5E227 /* fuse_internal.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBC0B5EEB44002D9FD9 /* fuse_internal.c */; };
-		540966AC0C33BA3900F5E227 /* fuse_ipc.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */; };
-		540966AF0C33BA3900F5E227 /* fuse_kludges.c in Sources */ = {isa = PBXBuildFile; fileRef = 54F862610B8029A400416A6F /* fuse_kludges.c */; };
-		540966B30C33BA3900F5E227 /* fuse_locking.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */; };
-		540966B50C33BA3900F5E227 /* fuse_main.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */; };
-		540966B60C33BA3900F5E227 /* fuse_node.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC40B5EEB44002D9FD9 /* fuse_node.c */; };
-		540966B80C33BA3900F5E227 /* fuse_nodehash.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC60B5EEB44002D9FD9 /* fuse_nodehash.c */; };
-		540966BA0C33BA3900F5E227 /* fuse_sysctl.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDC80B5EEB44002D9FD9 /* fuse_sysctl.c */; };
-		540966BC0C33BA3900F5E227 /* fuse_vfsops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCA0B5EEB44002D9FD9 /* fuse_vfsops.c */; };
-		540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */; };
-		54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */; };
+		4332BED21D10900700F84D51 /* fuse_biglock_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEB31D10900700F84D51 /* fuse_biglock_vnops.c */; };
+		4332BED31D10900700F84D51 /* fuse_biglock_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEB41D10900700F84D51 /* fuse_biglock_vnops.h */; };
+		4332BED41D10900700F84D51 /* fuse_device.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEB51D10900700F84D51 /* fuse_device.c */; };
+		4332BED51D10900700F84D51 /* fuse_device.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEB61D10900700F84D51 /* fuse_device.h */; };
+		4332BED61D10900700F84D51 /* fuse_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEB71D10900700F84D51 /* fuse_file.c */; };
+		4332BED71D10900700F84D51 /* fuse_file.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEB81D10900700F84D51 /* fuse_file.h */; };
+		4332BED81D10900700F84D51 /* fuse_internal.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEB91D10900700F84D51 /* fuse_internal.c */; };
+		4332BED91D10900700F84D51 /* fuse_internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEBA1D10900700F84D51 /* fuse_internal.h */; };
+		4332BEDA1D10900700F84D51 /* fuse_ipc.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEBB1D10900700F84D51 /* fuse_ipc.c */; };
+		4332BEDB1D10900700F84D51 /* fuse_ipc.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEBC1D10900700F84D51 /* fuse_ipc.h */; };
+		4332BEDC1D10900700F84D51 /* fuse_kernel.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEBD1D10900700F84D51 /* fuse_kernel.h */; };
+		4332BEDD1D10900700F84D51 /* fuse_kludges.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEBE1D10900700F84D51 /* fuse_kludges.c */; };
+		4332BEDE1D10900700F84D51 /* fuse_kludges.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEBF1D10900700F84D51 /* fuse_kludges.h */; };
+		4332BEE11D10900700F84D51 /* fuse_locking.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEC21D10900700F84D51 /* fuse_locking.c */; };
+		4332BEE21D10900700F84D51 /* fuse_locking.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEC31D10900700F84D51 /* fuse_locking.h */; };
+		4332BEE31D10900700F84D51 /* fuse_main.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEC41D10900700F84D51 /* fuse_main.c */; };
+		4332BEE41D10900700F84D51 /* fuse_node.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEC51D10900700F84D51 /* fuse_node.c */; };
+		4332BEE51D10900700F84D51 /* fuse_node.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEC61D10900700F84D51 /* fuse_node.h */; };
+		4332BEE61D10900700F84D51 /* fuse_nodehash.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEC71D10900700F84D51 /* fuse_nodehash.c */; };
+		4332BEE71D10900700F84D51 /* fuse_nodehash.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEC81D10900700F84D51 /* fuse_nodehash.h */; };
+		4332BEE81D10900700F84D51 /* fuse_notify.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BEC91D10900700F84D51 /* fuse_notify.c */; };
+		4332BEE91D10900700F84D51 /* fuse_notify.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BECA1D10900700F84D51 /* fuse_notify.h */; };
+		4332BEEA1D10900700F84D51 /* fuse_sysctl.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BECB1D10900700F84D51 /* fuse_sysctl.c */; };
+		4332BEEB1D10900700F84D51 /* fuse_sysctl.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BECC1D10900700F84D51 /* fuse_sysctl.h */; };
+		4332BEEC1D10900700F84D51 /* fuse_vfsops.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BECD1D10900700F84D51 /* fuse_vfsops.c */; };
+		4332BEED1D10900700F84D51 /* fuse_vfsops.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BECE1D10900700F84D51 /* fuse_vfsops.h */; };
+		4332BEEE1D10900700F84D51 /* fuse_vnops.c in Sources */ = {isa = PBXBuildFile; fileRef = 4332BECF1D10900700F84D51 /* fuse_vnops.c */; };
+		4332BEEF1D10900700F84D51 /* fuse_vnops.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BED01D10900700F84D51 /* fuse_vnops.h */; };
+		4332BEF01D10900700F84D51 /* fuse.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BED11D10900700F84D51 /* fuse.h */; };
+		4332BEF91D10926200F84D51 /* fuse_ioctl.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF41D10926200F84D51 /* fuse_ioctl.h */; };
+		4332BEFA1D10926200F84D51 /* fuse_mount.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF51D10926200F84D51 /* fuse_mount.h */; };
+		4332BEFB1D10926200F84D51 /* fuse_param.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF61D10926200F84D51 /* fuse_param.h */; };
+		4332BEFC1D10926200F84D51 /* fuse_preprocessor.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF71D10926200F84D51 /* fuse_preprocessor.h */; };
+		4332BEFD1D10926200F84D51 /* fuse_version.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF81D10926200F84D51 /* fuse_version.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		433E5DC113B2D1B300A523B2 /* osxfuse.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfuse.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		43A3741E1A58AD04007A64F9 /* fuse_preprocessor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fuse_preprocessor.h; sourceTree = "<group>"; };
-		43D626181538949F00303F1A /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
-		43D626191538949F00303F1A /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
-		540966520C33B5F500F5E227 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
-		540966530C33B5F500F5E227 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_mount.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		540966540C33B5F500F5E227 /* fuse_param.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_param.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		540966550C33B5F500F5E227 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_version.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		549960D00EC093D800DDFCAD /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
-		54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_biglock_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_biglock_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDB70B5EEB44002D9FD9 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_device.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_device.h; sourceTree = "<group>"; };
-		54C6DDBA0B5EEB44002D9FD9 /* fuse_file.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_file.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDBB0B5EEB44002D9FD9 /* fuse_file.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_file.h; sourceTree = "<group>"; };
-		54C6DDBC0B5EEB44002D9FD9 /* fuse_internal.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_internal.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDBD0B5EEB44002D9FD9 /* fuse_internal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_internal.h; sourceTree = "<group>"; };
-		54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_ipc.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDBF0B5EEB44002D9FD9 /* fuse_ipc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_ipc.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 30; indentWidth = 8; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kernel.h; sourceTree = "<group>"; tabWidth = 8; usesTabs = 1; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_locking.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_locking.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_main.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDC40B5EEB44002D9FD9 /* fuse_node.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_node.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDC50B5EEB44002D9FD9 /* fuse_node.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_node.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDC60B5EEB44002D9FD9 /* fuse_nodehash.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_nodehash.c; sourceTree = "<group>"; };
-		54C6DDC70B5EEB44002D9FD9 /* fuse_nodehash.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_nodehash.h; sourceTree = "<group>"; };
-		54C6DDC80B5EEB44002D9FD9 /* fuse_sysctl.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_sysctl.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDC90B5EEB44002D9FD9 /* fuse_sysctl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = fuse_sysctl.h; sourceTree = "<group>"; };
-		54C6DDCA0B5EEB44002D9FD9 /* fuse_vfsops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_vfsops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vfsops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = fuse_vnops.c; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_vnops.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		54C6DDD80B5EEB44002D9FD9 /* osxfuse-Info.plist */ = {isa = PBXFileReference; explicitFileType = text; fileEncoding = 4; path = "osxfuse-Info.plist"; sourceTree = "<group>"; };
-		54F862610B8029A400416A6F /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
-		54F862620B8029A400416A6F /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = fuse_kludges.h; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4332BEA81D108F4000F84D51 /* osxfuse.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = osxfuse.kext; sourceTree = BUILT_PRODUCTS_DIR; };
+		4332BEAD1D108F4000F84D51 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4332BEB31D10900700F84D51 /* fuse_biglock_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_biglock_vnops.c; sourceTree = "<group>"; };
+		4332BEB41D10900700F84D51 /* fuse_biglock_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_biglock_vnops.h; sourceTree = "<group>"; };
+		4332BEB51D10900700F84D51 /* fuse_device.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_device.c; sourceTree = "<group>"; };
+		4332BEB61D10900700F84D51 /* fuse_device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_device.h; sourceTree = "<group>"; };
+		4332BEB71D10900700F84D51 /* fuse_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_file.c; sourceTree = "<group>"; };
+		4332BEB81D10900700F84D51 /* fuse_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_file.h; sourceTree = "<group>"; };
+		4332BEB91D10900700F84D51 /* fuse_internal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_internal.c; sourceTree = "<group>"; };
+		4332BEBA1D10900700F84D51 /* fuse_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_internal.h; sourceTree = "<group>"; };
+		4332BEBB1D10900700F84D51 /* fuse_ipc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_ipc.c; sourceTree = "<group>"; };
+		4332BEBC1D10900700F84D51 /* fuse_ipc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_ipc.h; sourceTree = "<group>"; };
+		4332BEBD1D10900700F84D51 /* fuse_kernel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_kernel.h; sourceTree = "<group>"; };
+		4332BEBE1D10900700F84D51 /* fuse_kludges.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_kludges.c; sourceTree = "<group>"; };
+		4332BEBF1D10900700F84D51 /* fuse_kludges.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_kludges.h; sourceTree = "<group>"; };
+		4332BEC21D10900700F84D51 /* fuse_locking.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_locking.c; sourceTree = "<group>"; };
+		4332BEC31D10900700F84D51 /* fuse_locking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_locking.h; sourceTree = "<group>"; };
+		4332BEC41D10900700F84D51 /* fuse_main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_main.c; sourceTree = "<group>"; };
+		4332BEC51D10900700F84D51 /* fuse_node.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_node.c; sourceTree = "<group>"; };
+		4332BEC61D10900700F84D51 /* fuse_node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_node.h; sourceTree = "<group>"; };
+		4332BEC71D10900700F84D51 /* fuse_nodehash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_nodehash.c; sourceTree = "<group>"; };
+		4332BEC81D10900700F84D51 /* fuse_nodehash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_nodehash.h; sourceTree = "<group>"; };
+		4332BEC91D10900700F84D51 /* fuse_notify.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_notify.c; sourceTree = "<group>"; };
+		4332BECA1D10900700F84D51 /* fuse_notify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_notify.h; sourceTree = "<group>"; };
+		4332BECB1D10900700F84D51 /* fuse_sysctl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_sysctl.c; sourceTree = "<group>"; };
+		4332BECC1D10900700F84D51 /* fuse_sysctl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_sysctl.h; sourceTree = "<group>"; };
+		4332BECD1D10900700F84D51 /* fuse_vfsops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_vfsops.c; sourceTree = "<group>"; };
+		4332BECE1D10900700F84D51 /* fuse_vfsops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_vfsops.h; sourceTree = "<group>"; };
+		4332BECF1D10900700F84D51 /* fuse_vnops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_vnops.c; sourceTree = "<group>"; };
+		4332BED01D10900700F84D51 /* fuse_vnops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_vnops.h; sourceTree = "<group>"; };
+		4332BED11D10900700F84D51 /* fuse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse.h; sourceTree = "<group>"; };
+		4332BEF21D10923F00F84D51 /* osxfuse.exports */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = osxfuse.exports; sourceTree = "<group>"; };
+		4332BEF41D10926200F84D51 /* fuse_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_ioctl.h; sourceTree = "<group>"; };
+		4332BEF51D10926200F84D51 /* fuse_mount.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_mount.h; sourceTree = "<group>"; };
+		4332BEF61D10926200F84D51 /* fuse_param.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_param.h; sourceTree = "<group>"; };
+		4332BEF71D10926200F84D51 /* fuse_preprocessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_preprocessor.h; sourceTree = "<group>"; };
+		4332BEF81D10926200F84D51 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_version.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		4332BEA41D108F4000F84D51 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
-		089C166AFE841209C02AAC07 /* fusefs */ = {
+		4332BE9E1D108F4000F84D51 = {
 			isa = PBXGroup;
 			children = (
-				540966510C33B5F500F5E227 /* Common */,
-				54C6DD780B5EEB44002D9FD9 /* osxfuse */,
-				5409662C0C33B54300F5E227 /* Frameworks */,
-				433E5DC813B2D21900A523B2 /* Products */,
+				4332BEF11D10920D00F84D51 /* Common */,
+				4332BEAA1D108F4000F84D51 /* osxfuse */,
+				4332BEA91D108F4000F84D51 /* Products */,
 			);
-			name = fusefs;
 			sourceTree = "<group>";
 		};
-		4331900E1693E27000DE73A9 /* Supporting Files */ = {
+		4332BEA91D108F4000F84D51 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				549960D00EC093D800DDFCAD /* osxfuse.exports */,
-				54C6DDD80B5EEB44002D9FD9 /* osxfuse-Info.plist */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		433E5DC813B2D21900A523B2 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				433E5DC113B2D1B300A523B2 /* osxfuse.kext */,
+				4332BEA81D108F4000F84D51 /* osxfuse.kext */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5409662C0C33B54300F5E227 /* Frameworks */ = {
+		4332BEAA1D108F4000F84D51 /* osxfuse */ = {
 			isa = PBXGroup;
 			children = (
+				4332BEB31D10900700F84D51 /* fuse_biglock_vnops.c */,
+				4332BEB41D10900700F84D51 /* fuse_biglock_vnops.h */,
+				4332BEB51D10900700F84D51 /* fuse_device.c */,
+				4332BEB61D10900700F84D51 /* fuse_device.h */,
+				4332BEB71D10900700F84D51 /* fuse_file.c */,
+				4332BEB81D10900700F84D51 /* fuse_file.h */,
+				4332BEB91D10900700F84D51 /* fuse_internal.c */,
+				4332BEBA1D10900700F84D51 /* fuse_internal.h */,
+				4332BEBB1D10900700F84D51 /* fuse_ipc.c */,
+				4332BEBC1D10900700F84D51 /* fuse_ipc.h */,
+				4332BEBD1D10900700F84D51 /* fuse_kernel.h */,
+				4332BEBE1D10900700F84D51 /* fuse_kludges.c */,
+				4332BEBF1D10900700F84D51 /* fuse_kludges.h */,
+				4332BEC21D10900700F84D51 /* fuse_locking.c */,
+				4332BEC31D10900700F84D51 /* fuse_locking.h */,
+				4332BEC41D10900700F84D51 /* fuse_main.c */,
+				4332BEC51D10900700F84D51 /* fuse_node.c */,
+				4332BEC61D10900700F84D51 /* fuse_node.h */,
+				4332BEC71D10900700F84D51 /* fuse_nodehash.c */,
+				4332BEC81D10900700F84D51 /* fuse_nodehash.h */,
+				4332BEC91D10900700F84D51 /* fuse_notify.c */,
+				4332BECA1D10900700F84D51 /* fuse_notify.h */,
+				4332BECB1D10900700F84D51 /* fuse_sysctl.c */,
+				4332BECC1D10900700F84D51 /* fuse_sysctl.h */,
+				4332BECD1D10900700F84D51 /* fuse_vfsops.c */,
+				4332BECE1D10900700F84D51 /* fuse_vfsops.h */,
+				4332BECF1D10900700F84D51 /* fuse_vnops.c */,
+				4332BED01D10900700F84D51 /* fuse_vnops.h */,
+				4332BED11D10900700F84D51 /* fuse.h */,
+				4332BEAD1D108F4000F84D51 /* Info.plist */,
+				4332BEF21D10923F00F84D51 /* osxfuse.exports */,
 			);
-			name = Frameworks;
+			path = osxfuse;
 			sourceTree = "<group>";
 		};
-		540966510C33B5F500F5E227 /* Common */ = {
+		4332BEF11D10920D00F84D51 /* Common */ = {
 			isa = PBXGroup;
 			children = (
-				540966520C33B5F500F5E227 /* fuse_ioctl.h */,
-				540966530C33B5F500F5E227 /* fuse_mount.h */,
-				540966540C33B5F500F5E227 /* fuse_param.h */,
-				43A3741E1A58AD04007A64F9 /* fuse_preprocessor.h */,
-				540966550C33B5F500F5E227 /* fuse_version.h */,
+				4332BEF41D10926200F84D51 /* fuse_ioctl.h */,
+				4332BEF51D10926200F84D51 /* fuse_mount.h */,
+				4332BEF61D10926200F84D51 /* fuse_param.h */,
+				4332BEF71D10926200F84D51 /* fuse_preprocessor.h */,
+				4332BEF81D10926200F84D51 /* fuse_version.h */,
 			);
 			name = Common;
 			path = ../common;
 			sourceTree = "<group>";
 		};
-		54C6DD780B5EEB44002D9FD9 /* osxfuse */ = {
-			isa = PBXGroup;
-			children = (
-				54B05C2B0EB5AD8200C02D6D /* fuse_biglock_vnops.c */,
-				54B05C2C0EB5AD8200C02D6D /* fuse_biglock_vnops.h */,
-				54C6DDB70B5EEB44002D9FD9 /* fuse.h */,
-				54C6DDB80B5EEB44002D9FD9 /* fuse_device.c */,
-				54C6DDB90B5EEB44002D9FD9 /* fuse_device.h */,
-				54C6DDBA0B5EEB44002D9FD9 /* fuse_file.c */,
-				54C6DDBB0B5EEB44002D9FD9 /* fuse_file.h */,
-				54C6DDBC0B5EEB44002D9FD9 /* fuse_internal.c */,
-				54C6DDBD0B5EEB44002D9FD9 /* fuse_internal.h */,
-				54C6DDBE0B5EEB44002D9FD9 /* fuse_ipc.c */,
-				54C6DDBF0B5EEB44002D9FD9 /* fuse_ipc.h */,
-				54C6DDC00B5EEB44002D9FD9 /* fuse_kernel.h */,
-				54F862610B8029A400416A6F /* fuse_kludges.c */,
-				54F862620B8029A400416A6F /* fuse_kludges.h */,
-				54C6DDC10B5EEB44002D9FD9 /* fuse_locking.c */,
-				54C6DDC20B5EEB44002D9FD9 /* fuse_locking.h */,
-				54C6DDC30B5EEB44002D9FD9 /* fuse_main.c */,
-				54C6DDC40B5EEB44002D9FD9 /* fuse_node.c */,
-				54C6DDC50B5EEB44002D9FD9 /* fuse_node.h */,
-				54C6DDC60B5EEB44002D9FD9 /* fuse_nodehash.c */,
-				54C6DDC70B5EEB44002D9FD9 /* fuse_nodehash.h */,
-				43D626181538949F00303F1A /* fuse_notify.c */,
-				43D626191538949F00303F1A /* fuse_notify.h */,
-				54C6DDC80B5EEB44002D9FD9 /* fuse_sysctl.c */,
-				54C6DDC90B5EEB44002D9FD9 /* fuse_sysctl.h */,
-				54C6DDCA0B5EEB44002D9FD9 /* fuse_vfsops.c */,
-				54C6DDCB0B5EEB44002D9FD9 /* fuse_vfsops.h */,
-				54C6DDCC0B5EEB44002D9FD9 /* fuse_vnops.c */,
-				54C6DDCD0B5EEB44002D9FD9 /* fuse_vnops.h */,
-				4331900E1693E27000DE73A9 /* Supporting Files */,
-			);
-			name = osxfuse;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
+/* Begin PBXHeadersBuildPhase section */
+		4332BEA51D108F4000F84D51 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4332BEF91D10926200F84D51 /* fuse_ioctl.h in Headers */,
+				4332BEED1D10900700F84D51 /* fuse_vfsops.h in Headers */,
+				4332BEFB1D10926200F84D51 /* fuse_param.h in Headers */,
+				4332BEEB1D10900700F84D51 /* fuse_sysctl.h in Headers */,
+				4332BEDC1D10900700F84D51 /* fuse_kernel.h in Headers */,
+				4332BEDE1D10900700F84D51 /* fuse_kludges.h in Headers */,
+				4332BEFC1D10926200F84D51 /* fuse_preprocessor.h in Headers */,
+				4332BEE21D10900700F84D51 /* fuse_locking.h in Headers */,
+				4332BEEF1D10900700F84D51 /* fuse_vnops.h in Headers */,
+				4332BEE71D10900700F84D51 /* fuse_nodehash.h in Headers */,
+				4332BEDB1D10900700F84D51 /* fuse_ipc.h in Headers */,
+				4332BED91D10900700F84D51 /* fuse_internal.h in Headers */,
+				4332BED71D10900700F84D51 /* fuse_file.h in Headers */,
+				4332BED31D10900700F84D51 /* fuse_biglock_vnops.h in Headers */,
+				4332BED51D10900700F84D51 /* fuse_device.h in Headers */,
+				4332BEE91D10900700F84D51 /* fuse_notify.h in Headers */,
+				4332BEFD1D10926200F84D51 /* fuse_version.h in Headers */,
+				4332BEE51D10900700F84D51 /* fuse_node.h in Headers */,
+				4332BEF01D10900700F84D51 /* fuse.h in Headers */,
+				4332BEFA1D10926200F84D51 /* fuse_mount.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
 /* Begin PBXNativeTarget section */
-		32A4FEB80562C75700D090E7 /* osxfuse */ = {
+		4332BEA71D108F4000F84D51 /* osxfuse */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfuse" */;
+			buildConfigurationList = 4332BEB01D108F4000F84D51 /* Build configuration list for PBXNativeTarget "osxfuse" */;
 			buildPhases = (
-				32A4FEBD0562C75700D090E7 /* Sources */,
-				432D7C891556EAE800E82CC8 /* Copy Unstripped Kernel Extension */,
+				4332BEA31D108F4000F84D51 /* Sources */,
+				4332BEA41D108F4000F84D51 /* Frameworks */,
+				4332BEA51D108F4000F84D51 /* Headers */,
+				4332BEA61D108F4000F84D51 /* Resources */,
+				4332BEFE1D10968400F84D51 /* Copy Unstripped Kernel Extension */,
 			);
 			buildRules = (
 			);
-			comments = "MacFUSE: An implementation of the FUSE API for Mac OS X (Kernel Extension)";
 			dependencies = (
 			);
 			name = osxfuse;
-			productInstallPath = "$(SYSTEM_LIBRARY_DIR)/Extensions";
-			productName = fusefs;
-			productReference = 433E5DC113B2D1B300A523B2 /* osxfuse.kext */;
+			productName = osxfuse;
+			productReference = 4332BEA81D108F4000F84D51 /* osxfuse.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		089C1669FE841209C02AAC07 /* Project object */ = {
+		4332BE9F1D108F4000F84D51 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = osxfuse;
+				TargetAttributes = {
+					4332BEA71D108F4000F84D51 = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Manual;
+					};
+				};
 			};
-			buildConfigurationList = 1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfuse" */;
+			buildConfigurationList = 4332BEA21D108F4000F84D51 /* Build configuration list for PBXProject "osxfuse" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
-			hasScannedForEncodings = 1;
+			hasScannedForEncodings = 0;
 			knownRegions = (
-				English,
-				Japanese,
-				French,
-				German,
 				en,
 			);
-			mainGroup = 089C166AFE841209C02AAC07 /* fusefs */;
-			productRefGroup = 089C166AFE841209C02AAC07 /* fusefs */;
+			mainGroup = 4332BE9E1D108F4000F84D51;
+			productRefGroup = 4332BEA91D108F4000F84D51 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				32A4FEB80562C75700D090E7 /* osxfuse */,
+				4332BEA71D108F4000F84D51 /* osxfuse */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		4332BEA61D108F4000F84D51 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXShellScriptBuildPhase section */
-		432D7C891556EAE800E82CC8 /* Copy Unstripped Kernel Extension */ = {
+		4332BEFE1D10968400F84D51 /* Copy Unstripped Kernel Extension */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -213,78 +271,141 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "for (( i=0 ; i < ${SCRIPT_INPUT_FILE_COUNT} && i < ${SCRIPT_OUTPUT_FILE_COUNT}; i++ ))\ndo\n    input_file_p=\"SCRIPT_INPUT_FILE_${i}\"\n    output_file_p=\"SCRIPT_OUTPUT_FILE_${i}\"\n\n    if [[ -e \"${!output_file_p}\" ]]\n    then\n        rm -rf \"${!output_file_p}\"\n    fi\n    cp -PpR \"${!input_file_p}\" \"${!output_file_p}\"\ndone";
+			shellScript = "for (( i=0; i < ${SCRIPT_INPUT_FILE_COUNT} && i < ${SCRIPT_OUTPUT_FILE_COUNT}; i++ ))\ndo\n    input_file_p=\"SCRIPT_INPUT_FILE_${i}\"\n    output_file_p=\"SCRIPT_OUTPUT_FILE_${i}\"\n\n    if [ -e \"${!output_file_p}\" ]\n    then\n        rm -rf \"${!output_file_p}\"\n    fi\n    cp -PpR \"${!input_file_p}\" \"${!output_file_p}\"\ndone";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		32A4FEBD0562C75700D090E7 /* Sources */ = {
+		4332BEA31D108F4000F84D51 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				540966A60C33BA3900F5E227 /* fuse_device.c in Sources */,
-				540966A80C33BA3900F5E227 /* fuse_file.c in Sources */,
-				540966AA0C33BA3900F5E227 /* fuse_internal.c in Sources */,
-				540966AC0C33BA3900F5E227 /* fuse_ipc.c in Sources */,
-				540966AF0C33BA3900F5E227 /* fuse_kludges.c in Sources */,
-				540966B30C33BA3900F5E227 /* fuse_locking.c in Sources */,
-				540966B50C33BA3900F5E227 /* fuse_main.c in Sources */,
-				540966B60C33BA3900F5E227 /* fuse_node.c in Sources */,
-				540966B80C33BA3900F5E227 /* fuse_nodehash.c in Sources */,
-				540966BA0C33BA3900F5E227 /* fuse_sysctl.c in Sources */,
-				540966BC0C33BA3900F5E227 /* fuse_vfsops.c in Sources */,
-				540966BE0C33BA3900F5E227 /* fuse_vnops.c in Sources */,
-				54B05C2D0EB5AD8200C02D6D /* fuse_biglock_vnops.c in Sources */,
-				43D6261A1538949F00303F1A /* fuse_notify.c in Sources */,
+				4332BEE11D10900700F84D51 /* fuse_locking.c in Sources */,
+				4332BEE81D10900700F84D51 /* fuse_notify.c in Sources */,
+				4332BEDA1D10900700F84D51 /* fuse_ipc.c in Sources */,
+				4332BED61D10900700F84D51 /* fuse_file.c in Sources */,
+				4332BEE61D10900700F84D51 /* fuse_nodehash.c in Sources */,
+				4332BEE31D10900700F84D51 /* fuse_main.c in Sources */,
+				4332BEE41D10900700F84D51 /* fuse_node.c in Sources */,
+				4332BEDD1D10900700F84D51 /* fuse_kludges.c in Sources */,
+				4332BED41D10900700F84D51 /* fuse_device.c in Sources */,
+				4332BED21D10900700F84D51 /* fuse_biglock_vnops.c in Sources */,
+				4332BEEE1D10900700F84D51 /* fuse_vnops.c in Sources */,
+				4332BED81D10900700F84D51 /* fuse_internal.c in Sources */,
+				4332BEEA1D10900700F84D51 /* fuse_sysctl.c in Sources */,
+				4332BEEC1D10900700F84D51 /* fuse_vfsops.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		1DEB91C408733DAC0010E9CD /* Debug */ = {
+		4332BEAE1D108F4000F84D51 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
-				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = NO;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = NO;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = "osxfuse-Info.plist";
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OSXFUSE_NAME = osxfuse;
+				OSXFUSE_VERSION = 3.0.0;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		4332BEAF1D108F4000F84D51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OSXFUSE_NAME = osxfuse;
+				OSXFUSE_VERSION = 3.0.0;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		4332BEB11D108F4000F84D51 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID";
+				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				INFOPLIST_FILE = osxfuse/Info.plist;
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -I\"$(SDKROOT)/System/Library/Frameworks/Kernel.framework/Headers\" -I\"$(SRCROOT)/../common\" -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = KERNEL;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
-				MODULE_START = fusefs_start;
-				MODULE_STOP = fusefs_stop;
+				MODULE_START = fuse_start;
+				MODULE_STOP = fuse_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				OTHER_CODE_SIGN_FLAGS = "--identifier $(MODULE_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.github.osxfuse.osxfuse;
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
@@ -294,122 +415,63 @@
 			};
 			name = Debug;
 		};
-		1DEB91C508733DAC0010E9CD /* Release */ = {
+		4332BEB21D108F4000F84D51 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID";
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
-				EXPORTED_SYMBOLS_FILE = osxfuse.exports;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
-				GCC_TREAT_NONCONFORMANT_CODE_ERRORS_AS_WARNINGS = YES;
+				EXPORTED_SYMBOLS_FILE = osxfuse/osxfuse.exports;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
-				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
-				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = YES;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
-				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
-				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
-				GCC_WARN_MISSING_PARENTHESES = YES;
-				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
-				GCC_WARN_PEDANTIC = NO;
-				GCC_WARN_PROTOTYPE_CONVERSION = NO;
-				GCC_WARN_SHADOW = YES;
-				GCC_WARN_SIGN_COMPARE = YES;
-				GCC_WARN_TYPECHECK_CALLS_TO_PRINTF = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNKNOWN_PRAGMAS = YES;
-				GCC_WARN_UNUSED_FUNCTION = NO;
-				GCC_WARN_UNUSED_LABEL = YES;
-				GCC_WARN_UNUSED_PARAMETER = YES;
-				GCC_WARN_UNUSED_VALUE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_FILE = "osxfuse-Info.plist";
+				INFOPLIST_FILE = osxfuse/Info.plist;
 				INFOPLIST_OTHER_PREPROCESSOR_FLAGS = "-isysroot \"$(SDKROOT)\" -I\"$(SDKROOT)/System/Library/Frameworks/Kernel.framework/Headers\" -I\"$(SRCROOT)/../common\" -std=gnu99";
 				INFOPLIST_PREPROCESS = YES;
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = KERNEL;
 				MODULE_NAME = com.github.osxfuse.filesystems.osxfuse;
-				MODULE_START = fusefs_start;
-				MODULE_STOP = fusefs_stop;
+				MODULE_START = fuse_start;
+				MODULE_STOP = fuse_stop;
 				MODULE_VERSION = "$(OSXFUSE_VERSION)";
 				OTHER_CODE_SIGN_FLAGS = "--identifier $(MODULE_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.github.osxfuse.osxfuse;
 				PRODUCT_NAME = "$(OSXFUSE_NAME)";
 				SEPARATE_STRIP = YES;
 				STRIP_STYLE = "non-global";
 				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.8]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.9]" = x86_64;
 				WRAPPER_EXTENSION = kext;
-			};
-			name = Release;
-		};
-		1DEB91C808733DAC0010E9CD /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"DEBUG=1",
-				);
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OSXFUSE_NAME = osxfuse;
-				OSXFUSE_VERSION = 3.0.0;
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		1DEB91C908733DAC0010E9CD /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEPLOYMENT_POSTPROCESSING = YES;
-				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				INFOPLIST_EXPAND_BUILD_SETTINGS = YES;
-				INFOPLIST_PREPROCESS = YES;
-				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
-				OSXFUSE_NAME = osxfuse;
-				OSXFUSE_VERSION = 3.0.0;
-				SDKROOT = macosx;
-				SEPARATE_STRIP = YES;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1DEB91C308733DAC0010E9CD /* Build configuration list for PBXNativeTarget "osxfuse" */ = {
+		4332BEA21D108F4000F84D51 /* Build configuration list for PBXProject "osxfuse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1DEB91C408733DAC0010E9CD /* Debug */,
-				1DEB91C508733DAC0010E9CD /* Release */,
+				4332BEAE1D108F4000F84D51 /* Debug */,
+				4332BEAF1D108F4000F84D51 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1DEB91C708733DAC0010E9CD /* Build configuration list for PBXProject "osxfuse" */ = {
+		4332BEB01D108F4000F84D51 /* Build configuration list for PBXNativeTarget "osxfuse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1DEB91C808733DAC0010E9CD /* Debug */,
-				1DEB91C908733DAC0010E9CD /* Release */,
+				4332BEB11D108F4000F84D51 /* Debug */,
+				4332BEB21D108F4000F84D51 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 089C1669FE841209C02AAC07 /* Project object */;
+	rootObject = 4332BE9F1D108F4000F84D51 /* Project object */;
 }
