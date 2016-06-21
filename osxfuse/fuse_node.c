@@ -67,6 +67,14 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
 
     err = HNodeLookupCreatingIfNecessary(dummy_device, fuse_entry_out_get_nodeid(feo),
                                          0 /* fork index */, &hn, &vn);
+
+    if ((err == 0) && (vn != NULL)) {
+        /* If the vnode is re-used, we may have to clear FN_REVOKED.
+         * This can happen, for instance, if a directory is created,
+         * removed and re-created in the underlying filesystem. */
+        VTOFUD(vn)->flag &= ~FN_REVOKED;
+    }
+
     if ((err == 0) && (vn == NULL)) {
 
         struct vnode_fsparam params;
