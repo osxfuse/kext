@@ -373,11 +373,6 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
         vfs_setflags(mp, MNT_SYNCHRONOUS);
     }
 
-    if (mntopts & FSESS_NO_UBC) {
-        /* If no buffer cache, disallow exec from file system. */
-        vfs_setflags(mp, MNT_NOEXEC);
-    }
-
     vfs_setauthopaque(mp);
     vfs_setauthopaqueaccess(mp);
 
