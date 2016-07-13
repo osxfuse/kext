@@ -469,7 +469,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fuse_abi_data_init(&fci, DATOI(data), fdip->indata);
 
     /* XXX: We /always/ creat() like this. Wish we were on Linux. */
-    fuse_create_in_set_flags(&fci, O_CREAT | O_RDWR);
+    fuse_create_in_set_flags(&fci, O_CREAT | O_EXCL | O_RDWR);
 
     fuse_create_in_set_mode(&fci, mode);
     fuse_create_in_set_umask(&fci, 0);
