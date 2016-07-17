@@ -266,9 +266,9 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     }
 
     /*
-     * Note that unlike Linux, which keeps allow_root in user-space and
-     * passes allow_other in that case to the kernel, we let allow_root
-     * reach the kernel. The 'if' ordering is important here.
+     * Note that unlike Linux, which keeps allow_root in user-space and passes
+     * allow_other in that case to the kernel, we let allow_root reach the
+     * kernel. The 'if' ordering is important here.
      */
     if (fusefs_args.altflags & FUSE_MOPT_ALLOW_ROOT) {
         int is_member = 0;
@@ -398,6 +398,10 @@ fuse_vfsop_mount(mount_t mp, __unused vnode_t devvp, user_addr_t udata,
     if (fusefs_args.altflags & FUSE_MOPT_LOCALVOL) {
         mntopts |= FSESS_LOCALVOL;
         vfs_setflags(mp, MNT_LOCAL);
+    }
+
+    if (fusefs_args.altflags & FUSE_MOPT_EXCL_CREATE) {
+        mntopts |= FSESS_EXCL_CREATE;
     }
 
     /* done checking incoming option bits */
