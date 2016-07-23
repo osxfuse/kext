@@ -368,7 +368,7 @@ fuse_internal_fsync_fh(vnode_t                 vp,
             goto out;
         }
     } else {
-        fuse_insert_callback(fdi.tick, fuse_internal_fsync_fh_callback);
+        fuse_insert_callback(fdi.tick, &fuse_internal_fsync_fh_callback);
         fuse_insert_message(fdi.tick);
     }
 
@@ -1757,7 +1757,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
      * - The FUSE server responds to the interrupted request before processing
      *   our interupt request.
      * - We drop the interrupt request ticket and reuse it for a new request.
-     * - The server answeres our interrupt request.
+     * - The server answers our interrupt request.
      */
     fticket_set_kill(fdi.tick);
 

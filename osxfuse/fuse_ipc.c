@@ -225,22 +225,26 @@ again:
         goto out;
     }
 
-    err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
+    err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans",
+                      data->daemon_timeout_p, data);
 
     if (fticket_answered(ftick)) {
         /*
-         * msleep() has been interrupted or timed out after having received an answer to
-         * this request, but before the handler had a chance to call wakeup().
+         * msleep() has been interrupted or timed out after having received an
+         * answer to this request, but before the handler had a chance to call
+         * wakeup().
          */
         err = 0;
     }
 
     if (err == 0) {
-        if (fticket_interrupted(ftick) && fticket_answered(ftick) && ftick->tk_aw_ohead.error == EINTR) {
+        if (fticket_interrupted(ftick) && fticket_answered(ftick)
+            && ftick->tk_aw_ohead.error == EINTR) {
             /*
-             * The request has been interrupted in user space. It will not be restarted
-             * automatically unless SA_RESTART is set and we return ERESTART instead of
-             * EINTR. Therefore we need to restore the original msleep error code.
+             * The request has been interrupted in user space. It will not be
+             * restarted automatically unless SA_RESTART is set and we return
+             * ERESTART instead of EINTR. Therefore we need to restore the
+             * original msleep error code.
              */
             ftick->tk_aw_ohead.error = err_interrupt;
         }
@@ -250,8 +254,8 @@ again:
     if (err == EWOULDBLOCK /* same as EAGAIN */) {
         if (fticket_interrupted(ftick)) {
             /*
-             * We did not receive an answer within the timeout interval. At this point the
-             * file system is considdered dead.
+             * We did not receive an answer within the timeout interval. At this
+             * point the file system is considdered dead.
              */
             fticket_set_answered(ftick);
             fdata_set_dead(data, false);
@@ -261,9 +265,9 @@ again:
 
         } else {
             /*
-             * Send an interrupt request to give the file system daemon a chance to handle
-             * the timeout. If the daemon does not respond in time the file system will be
-             * marked dead.
+             * Send an interrupt request to give the file system daemon a chance
+             * to handle the timeout. If the daemon does not respond in time the
+             * file system will be marked dead.
              */
             err = EINTR;
         }

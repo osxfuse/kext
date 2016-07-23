@@ -41,7 +41,7 @@ struct fuse_device {
 
 static struct fuse_device fuse_device_table[OSXFUSE_NDEVICES];
 
-#define FUSE_DEVICE_FROM_UNIT_FAST(u) (fuse_device_t)&(fuse_device_table[(u)])
+#define FUSE_DEVICE_FROM_UNIT(u) (fuse_device_t)&(fuse_device_table[(u)])
 
 /* Interface for VFS */
 
@@ -55,7 +55,7 @@ fuse_device_get(dev_t dev)
         return NULL;
     }
 
-    return FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    return FUSE_DEVICE_FROM_UNIT(unit);
 }
 
 __inline__
@@ -178,7 +178,7 @@ fuse_device_open(dev_t dev, __unused int flags, __unused int devtype,
         return ENOENT;
     }
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT(unit);
     if (!fdev) {
         FUSE_DEVICE_GLOBAL_UNLOCK();
         IOLog("osxfuse: device found with no softc\n");
@@ -247,7 +247,7 @@ fuse_device_close(dev_t dev, __unused int flags, __unused int devtype,
         return ENOENT;
     }
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT(unit);
     if (!fdev) {
         return ENXIO;
     }
@@ -295,10 +295,11 @@ int
 fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 {
     int err = 0;
-    int i;
 
     size_t buflen[3];
     void *buf[] = { NULL, NULL, NULL };
+    bool answered = false;
+    bool short_read = false;
 
     struct fuse_device *fdev;
     struct fuse_data   *data;
@@ -306,36 +307,68 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 
     fuse_trace_printf_func();
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
+    fdev = FUSE_DEVICE_FROM_UNIT(minor(dev));
     if (!fdev) {
         return ENXIO;
     }
 
     data = fdev->data;
 
-    /* The (non-)blocking read loop */
     fuse_lck_mtx_lock(data->ms_mtx);
-    while (!ftick) {
-        if (fdata_dead_get(data)) {
-            err = ENODEV;
-        }
-        if (err) {
-            fuse_lck_mtx_unlock(data->ms_mtx);
-            return err;
-        }
 
-        ftick = fuse_ms_pop(data);
-        if (!ftick) {
-            if (ioflag & IO_NDELAY) {
-                err = EAGAIN;
-            } else {
-                err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
-            }
-        }
+    /*
+     * Dequeue pending ticket. In case there are no pending tickets and this is
+     * a non-blocking read return immediately, otherwise wait for a ticket to be
+     * enqueued.
+     */
+
+    if (fdata_dead_get(data)) {
+        fuse_lck_mtx_unlock(data->ms_mtx);
+        return ENODEV;
     }
+
+    ftick = fuse_ms_pop(data);
+    if (!ftick) {
+        if (ioflag & IO_NDELAY) {
+            fuse_lck_mtx_unlock(data->ms_mtx);
+            return EAGAIN;
+        }
+        do {
+            err = fuse_msleep(data, data->ms_mtx, PCATCH, "fu_msg", NULL, data);
+            if (fdata_dead_get(data)) {
+                err = ENODEV;
+            }
+            if (err) {
+                fuse_lck_mtx_unlock(data->ms_mtx);
+                return err;
+            }
+
+            ftick = fuse_ms_pop(data);
+        } while (!ftick);
+    }
+
     fuse_lck_mtx_unlock(data->ms_mtx);
 
-    /* Handle different message types */
+    fuse_lck_mtx_lock(ftick->tk_mtx);
+
+    /*
+     * Filter out tickets, that have already been marked as answered and return
+     * EINTR.
+     */
+    if (fticket_answered(ftick)) {
+        answered = true;
+        err = EINTR;
+        goto out_ticket;
+    }
+
+    /*
+     * Transfer the ticket's data to user space.
+     *
+     * Note: This needs to be done while holding tk_aw_mtx. Otherwise the
+     * ticket's data buffer tk_ms_bufdata might disappear on us, causing a
+     * kernel panic.
+     */
+
     switch (ftick->tk_ms_type) {
         case FT_M_BUF:
             buf[1]    = ftick->tk_ms_bufdata;
@@ -347,56 +380,59 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
             break;
 
         default:
-            panic("osxfuse: unknown message type %d for ticket %p", ftick->tk_ms_type, ftick);
+            panic("osxfuse: unknown message type %d for ticket %p",
+                  ftick->tk_ms_type, ftick);
     }
 
-    fuse_lck_mtx_lock(ftick->tk_mtx);
-
-    if (fticket_answered(ftick)) {
-        /*
-         * Filter out tickets, that have already been marked as answered by returning
-         * EINTR.
-         */
-        fuse_remove_callback(ftick);
-        err = EINTR;
-        goto out;
+    for (int i = 0; buf[i]; i++) {
+        err = EIO;
+        if ((user_ssize_t)buflen[i] <= uio_resid(uio)) {
+            err = uiomove(buf[i], (int)buflen[i], uio);
+        }
+        if (err) {
+            short_read = true;
+            goto out_ticket;
+        }
     }
 
     fticket_set_sent(ftick);
 
+    /*
+     * Queue interrupt ticket if this ticket has been interrupted before it has
+     * been sent to user space.
+     */
     if (fticket_interrupted(ftick)) {
-        /*
-         * The ticket has been interrupted before beeing sent to user space. We need to
-         * queue the corresponding interrupt.
-         */
         fuse_internal_interrupt_send(ftick);
     }
 
-    /*
-     * Transfer the ticket's data to user space.
-     *
-     * This needs to be done while holding tk_aw_mtx. Otherwise the ticket's data
-     * buffer tk_ms_bufdata might disappear on us, resulting in a kernel panic.
-     */
-    for (i = 0; buf[i]; i++) {
-        if (uio_resid(uio) < (user_ssize_t)buflen[i]) {
-            fdata_set_dead(data, false);
-            break;
-        }
-        err = uiomove(buf[i], (int)buflen[i], uio);
-        if (err) {
-            break;
-        }
-    }
-
-out:
+out_ticket:
     fuse_lck_mtx_unlock(ftick->tk_mtx);
 
-    if (fdata_dead_get(data)) {
-        err = ENODEV;
+    if (err) {
+        /*
+         * The ticket has not been sent to user space and we don't expect an
+         * answer, so remove its callback.
+         */
+        fuse_remove_callback(ftick);
+
+        if (!answered && ftick->tk_aw_handler) {
+            struct fuse_out_header *ohead = &ftick->tk_aw_ohead;
+            ohead->unique = ftick->tk_unique;
+            ohead->error = EIO;
+
+            if (short_read) {
+                struct fuse_in_header *ihead = buf[0];
+                if (ihead->opcode == FUSE_SETXATTR) {
+                    ohead->error = E2BIG;
+                }
+            }
+
+            ftick->tk_aw_handler(ftick, NULL);
+        }
     }
 
     fuse_ticket_release(ftick);
+
     return err;
 }
 
@@ -412,7 +448,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
 
     fuse_trace_printf_func();
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
+    fdev = FUSE_DEVICE_FROM_UNIT(minor(dev));
     if (!fdev) {
         return ENXIO;
     }
@@ -428,7 +464,7 @@ fuse_device_write(dev_t dev, uio_t uio, __unused int ioflag)
         return EINVAL;
     }
 
-    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(struct fuse_out_header), uio))) {
+    if ((err = uiomove((caddr_t)&ohead, (int)sizeof(ohead), uio))) {
         return err;
     }
 
@@ -486,7 +522,7 @@ fuse_devices_start(void)
 {
     int cdevsw_index = -1;
     int i = 0;
-    
+
     fuse_trace_printf_func();
 
     bzero((void *)fuse_device_table, sizeof(fuse_device_table));
@@ -632,7 +668,7 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
     fuse_trace_printf_func();
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(minor(dev));
+    fdev = FUSE_DEVICE_FROM_UNIT(minor(dev));
     if (!fdev) {
         return ENXIO;
     }
@@ -726,7 +762,7 @@ fuse_device_select(dev_t dev, int which, void *wql, struct proc *p)
         return 1;
     }
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT(unit);
     if (!fdev) {
         return 1;
     }
@@ -780,7 +816,7 @@ fuse_device_kill(int unit, struct proc *p)
         return EINVAL;
     }
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT(unit);
     if (!fdev) {
         return ENOENT;
     }
@@ -822,7 +858,7 @@ fuse_device_print_vnodes(int unit_flags, struct proc *p)
         return EINVAL;
     }
 
-    fdev = FUSE_DEVICE_FROM_UNIT_FAST(unit);
+    fdev = FUSE_DEVICE_FROM_UNIT(unit);
     if (!fdev) {
         return ENOENT;
     }
