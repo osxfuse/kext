@@ -408,14 +408,14 @@ fuse_device_read(dev_t dev, uio_t uio, int ioflag)
 out_ticket:
     fuse_lck_mtx_unlock(ftick->tk_mtx);
 
-    if (err) {
+    if (err && !answered) {
         /*
          * The ticket has not been sent to user space and we don't expect an
          * answer, so remove its callback.
          */
         fuse_remove_callback(ftick);
 
-        if (!answered && ftick->tk_aw_handler) {
+        if (ftick->tk_aw_handler) {
             struct fuse_out_header *ohead = &ftick->tk_aw_ohead;
             ohead->unique = ftick->tk_unique;
             ohead->error = EIO;
