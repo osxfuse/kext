@@ -427,6 +427,7 @@ fuse_vnop_create(struct vnop_create_args *ap)
     struct fuse_dispatcher  fdi;
     struct fuse_dispatcher *fdip = &fdi;
 
+    uint32_t flags;
     int err;
     bool gone_good_old = false;
     void *next;
@@ -467,9 +468,15 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
     fuse_abi_data_init(&fci, DATOI(data), fdip->indata);
 
-    /* XXX: We /always/ creat() like this. Wish we were on Linux. */
-    fuse_create_in_set_flags(&fci, O_CREAT | O_RDWR);
+    /* We always creat() like this. Wish we were on Linux. */
+    flags = O_CREAT | O_RDWR;
 
+    if ((data->dataflags & FSESS_EXCL_CREATE) == 0 ||
+        vap->va_vaflags & VA_EXCLUSIVE) {
+        flags |= O_EXCL;
+    }
+
+    fuse_create_in_set_flags(&fci, flags);
     fuse_create_in_set_mode(&fci, mode);
     fuse_create_in_set_umask(&fci, 0);
 
@@ -1558,7 +1565,11 @@ fuse_vnop_lookup(struct vnop_lookup_args *ap)
         switch (err) {
 
         case -1: /* positive match */
-            if (fuse_isnovncache(*vpp)) {
+            /* We ignore cache hits when trying to create a file.
+             * Indeed, the file could have disappeared below us,
+             * and we do not want to return EEXIST in that case,
+             * so we let the underlying filesystem decide. */
+            if (fuse_isnovncache(*vpp) || (nameiop == CREATE)) {
                 fuse_vncache_purge(*vpp);
 #if M_OSXFUSE_ENABLE_BIG_LOCK
                 fuse_biglock_unlock(data->biglock);

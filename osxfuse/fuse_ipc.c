@@ -208,6 +208,7 @@ fticket_wait_answer(struct fuse_ticket *ftick)
     int err_interrupt = 0;
     struct fuse_data *data;
     int pri;
+    bool remove_callback = true;
 
     fuse_lck_mtx_lock(ftick->tk_mtx);
 
@@ -218,29 +219,33 @@ fticket_wait_answer(struct fuse_ticket *ftick)
     data = ftick->tk_data;
     pri = PCATCH;
 
-again:
+restart:
     if (fdata_dead_get(data)) {
         fticket_set_answered(ftick);
         err = ENOTCONN;
         goto out;
     }
 
-    err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans", data->daemon_timeout_p, data);
+    err = fuse_msleep(ftick, ftick->tk_mtx, pri, "fu_ans",
+                      data->daemon_timeout_p, data);
 
-    if (fticket_answered(ftick)) {
+    if (err && fticket_answered(ftick)) {
         /*
-         * msleep() has been interrupted or timed out after having received an answer to
-         * this request, but before the handler had a chance to call wakeup().
+         * msleep() has been interrupted or timed out after having received an
+         * answer to this request, but before the handler had a chance to call
+         * wakeup().
          */
         err = 0;
     }
 
-    if (err == 0) {
-        if (fticket_interrupted(ftick) && fticket_answered(ftick) && ftick->tk_aw_ohead.error == EINTR) {
+    if (!err) {
+        if (fticket_interrupted(ftick) && fticket_answered(ftick)
+            && ftick->tk_aw_ohead.error == EINTR) {
             /*
-             * The request has been interrupted in user space. It will not be restarted
-             * automatically unless SA_RESTART is set and we return ERESTART instead of
-             * EINTR. Therefore we need to restore the original msleep error code.
+             * The request has been interrupted in user space. It will not be
+             * restarted automatically unless SA_RESTART is set and we return
+             * ERESTART instead of EINTR. Therefore we need to restore the
+             * original msleep error code.
              */
             ftick->tk_aw_ohead.error = err_interrupt;
         }
@@ -250,8 +255,8 @@ again:
     if (err == EWOULDBLOCK /* same as EAGAIN */) {
         if (fticket_interrupted(ftick)) {
             /*
-             * We did not receive an answer within the timeout interval. At this point the
-             * file system is considdered dead.
+             * We did not receive an answer within the timeout interval. At this
+             * point the file system is considered dead.
              */
             fticket_set_answered(ftick);
             fdata_set_dead(data, false);
@@ -261,17 +266,19 @@ again:
 
         } else {
             /*
-             * Send an interrupt request to give the file system daemon a chance to handle
-             * the timeout. If the daemon does not respond in time the file system will be
-             * marked dead.
+             * Send an interrupt request to give the file system daemon a chance
+             * to handle the timeout. If the daemon does not respond in time the
+             * file system will be marked dead.
              */
             err = EINTR;
         }
     }
 
     if (err == EINTR || err == ERESTART) {
-        if (!fticket_sent(ftick) && fuse_kludge_thread_should_abort(current_thread())) {
+        if (!fticket_sent(ftick)
+            && fuse_kludge_thread_should_abort(current_thread())) {
             fticket_set_answered(ftick);
+            remove_callback = true;
             goto out;
         }
 
@@ -283,8 +290,8 @@ again:
                 fuse_internal_interrupt_send(ftick);
             } else {
                 /*
-                 * The interrupt request will be queued in fuse_device_read() after the original
-                 * request has been read by the daemon.
+                 * The interrupt request will be queued in fuse_device_read()
+                 * after the original request has been read by the daemon.
                  */
             }
         }
@@ -292,16 +299,29 @@ again:
         if (fticket_sent(ftick)) {
             pri &= ~PCATCH;
         }
-        goto again;
+        goto restart;
     }
 
 out:
-    if (err == 0 && !fticket_answered(ftick)) {
-        IOLog("osxfuse: requester was woken up but still no answer");
-        err = ENXIO;
+    if (!fticket_answered(ftick)) {
+        /*
+         * We are no longer interested in an answer, therefore mark the ticket
+         * as answered and remove its callback.
+         */
+        fticket_set_answered(ftick);
+        remove_callback = true;
+
+        if (!err) {
+            IOLog("osxfuse: requester was woken up but still no answer");
+            err = ENXIO;
+        }
     }
 
     fuse_lck_mtx_unlock(ftick->tk_mtx);
+
+    if (remove_callback) {
+        fuse_remove_callback(ftick);
+    }
 
     return err;
 }
@@ -1060,14 +1080,6 @@ fdisp_wait_answ(struct fuse_dispatcher *fdip)
 
     err = fticket_wait_answer(fdip->tick);
     if (err) {
-        /*
-         * We are no longer interested in an answer, therefore mark the ticket
-         * as answered.
-         */
-        fuse_lck_mtx_lock(fdip->tick->tk_mtx);
-        fticket_set_answered(fdip->tick);
-        fuse_lck_mtx_unlock(fdip->tick->tk_mtx);
-
         goto out;
     }
 

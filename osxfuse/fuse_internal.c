@@ -368,7 +368,7 @@ fuse_internal_fsync_fh(vnode_t                 vp,
             goto out;
         }
     } else {
-        fuse_insert_callback(fdi.tick, fuse_internal_fsync_fh_callback);
+        fuse_insert_callback(fdi.tick, &fuse_internal_fsync_fh_callback);
         fuse_insert_message(fdi.tick);
     }
 
@@ -1656,7 +1656,7 @@ fuse_internal_interrupt_send(struct fuse_ticket *ftick)
      * - The FUSE server responds to the interrupted request before processing
      *   our interupt request.
      * - We drop the interrupt request ticket and reuse it for a new request.
-     * - The server answeres our interrupt request.
+     * - The server answers our interrupt request.
      */
     fticket_set_kill(fdi.tick);
 
@@ -1675,8 +1675,6 @@ __private_extern__
 void
 fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
 {
-    fuse_lck_mtx_lock(interrupt->tk_mtx);
-
     /*
      * Set interrupt ticket state to answered and remove the callback. Pending
      * requests, that are already marked as answered, will not be sent to user
@@ -1685,10 +1683,12 @@ fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
      * Note: Simply removing the ticket from the message queue would break
      * fuse_device_select.
      */
-    fticket_set_answered(interrupt);
-    fuse_remove_callback(interrupt);
 
+    fuse_lck_mtx_lock(interrupt->tk_mtx);
+    fticket_set_answered(interrupt);
     fuse_lck_mtx_unlock(interrupt->tk_mtx);
+
+    fuse_remove_callback(interrupt);
 }
 
 __private_extern__
