@@ -1776,8 +1776,6 @@ __private_extern__
 void
 fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
 {
-    fuse_lck_mtx_lock(interrupt->tk_mtx);
-
     /*
      * Set interrupt ticket state to answered and remove the callback. Pending
      * requests, that are already marked as answered, will not be sent to user
@@ -1786,10 +1784,12 @@ fuse_internal_interrupt_remove(struct fuse_ticket *interrupt)
      * Note: Simply removing the ticket from the message queue would break
      * fuse_device_select.
      */
-    fticket_set_answered(interrupt);
-    fuse_remove_callback(interrupt);
 
+    fuse_lck_mtx_lock(interrupt->tk_mtx);
+    fticket_set_answered(interrupt);
     fuse_lck_mtx_unlock(interrupt->tk_mtx);
+
+    fuse_remove_callback(interrupt);
 }
 
 __private_extern__
