@@ -534,7 +534,7 @@ FUSE_VNOP_EXPORT
 int
 fuse_biglock_vnop_remove(struct vnop_remove_args *ap)
 {
-	nodelocked_vnop(ap->a_vp, fuse_vnop_remove, ap);
+	nodelocked_pair_vnop(ap->a_dvp, ap->a_vp, fuse_vnop_remove, ap);
 }
 
 #if M_OSXFUSE_ENABLE_XATTR
