@@ -1658,6 +1658,8 @@ calldaemon:
             fuse_ticket_release(fdi.tick);
             fdi.tick = NULL;
         }
+    } else {
+        feo.fad_data = NULL;
     }
 
     /*
@@ -1711,7 +1713,6 @@ calldaemon:
             fuse_abi_data_init(&fao, DATOI(data), fdi.answ);
             fuse_abi_data_init(&fattr, fao.fad_version, fuse_attr_out_get_attr(&fao));
         } else {
-            fuse_abi_data_init(&feo, DATOI(data), fdi.answ);
             fuse_abi_data_init(&fattr, feo.fad_version, fuse_entry_out_get_attr(&feo));
         }
 
@@ -1722,27 +1723,6 @@ calldaemon:
             goto out;
         }
 
-        if ((nameiop == DELETE) && islastcn) {
-
-            if (isdot) {
-                err = vnode_get(dvp);
-                if (err == 0) {
-                    *vpp = dvp;
-                }
-                goto out;
-            }
-
-            if ((err  = fuse_vget_i(&vp, 0 /* flags */, &feo, cnp, dvp,
-                                    mp, context))) {
-                goto out;
-            }
-
-            *vpp = vp;
-
-            goto out;
-
-        }
-
         if ((nameiop == RENAME) && islastcn && wantparent) {
 
             if (isdot) {
@@ -1750,8 +1730,8 @@ calldaemon:
                 goto out;
             }
 
-            if ((err  = fuse_vget_i(&vp, 0 /* flags */, &feo, cnp, dvp,
-                                    mp, context))) {
+            if ((err = fuse_vget_i(&vp, 0 /* flags */, &feo, cnp, dvp, mp,
+                                   context))) {
                 goto out;
             }
 
