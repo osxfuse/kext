@@ -252,7 +252,7 @@ fuse_vget_i(vnode_t              *vpp,
 {
     int err = 0;
 
-    if (!feo) {
+    if (!feo || !feo->fad_data) {
         return EINVAL;
     }
 
