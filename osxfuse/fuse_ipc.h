@@ -256,14 +256,13 @@ struct fuse_data {
 #define FSESS_NO_UBC              0x00100000
 #define FSESS_NO_VNCACHE          0x00200000
 #define FSESS_CASE_INSENSITIVE    0x00400000
-#define FSESS_VOL_RENAME          0x00800000
-#define FSESS_XTIMES              0x01000000
-#define FSESS_AUTO_CACHE          0x02000000
-#define FSESS_NATIVE_XATTR        0x04000000
-#define FSESS_SPARSE              0x08000000
-#define FSESS_SLOW_STATFS         0x10000000
-#define FSESS_ATOMIC_O_TRUNC      0x20000000
-#define FSESS_EXCL_CREATE         0x40000000
+#define FSESS_XTIMES              0x00800000
+#define FSESS_AUTO_CACHE          0x01000000
+#define FSESS_NATIVE_XATTR        0x02000000
+#define FSESS_SPARSE              0x04000000
+#define FSESS_SLOW_STATFS         0x08000000
+#define FSESS_ATOMIC_O_TRUNC      0x10000000
+#define FSESS_EXCL_CREATE         0x20000000
 
 FUSE_INLINE
 struct fuse_data *
