@@ -1829,11 +1829,13 @@ fuse_internal_init_handler(struct fuse_ticket *ftick, __unused uio_t uio)
     if (flags & FUSE_CASE_INSENSITIVE) {
         data->dataflags |= FSESS_CASE_INSENSITIVE;
     }
-    if (flags & FUSE_VOL_RENAME) {
-        data->dataflags |= FSESS_VOL_RENAME;
+    if (!(flags & FUSE_VOL_RENAME)) {
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
     }
     if (flags & FUSE_XTIMES) {
         data->dataflags |= FSESS_XTIMES;
+    } else {
+        fuse_clear_implemented(data, FSESS_NOIMPLBIT(GETXTIMES));
     }
     if (flags & FUSE_ATOMIC_O_TRUNC) {
         data->dataflags |= FSESS_ATOMIC_O_TRUNC;

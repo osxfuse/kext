@@ -855,11 +855,6 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_EXTENDED_ATTR
         ;
 
-    if (data->dataflags & FSESS_NATIVE_XATTR) {
-        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
-            VOL_CAP_INT_EXTENDED_ATTR;
-    }
-
     /*
      * Don't set the EXCHANGEDATA capability if it's known not to be
      * implemented in the FUSE daemon.
@@ -876,6 +871,24 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
     if (fuse_implemented(data, FSESS_NOIMPLBIT(FALLOCATE))) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
             VOL_CAP_INT_ALLOCATE;
+    }
+
+    /*
+    if (fuse_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME))) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_VOL_RENAME;
+    }
+    */
+    /* Not yet. */
+
+    if (data->dataflags & FSESS_XTIMES) {
+        attr->f_attributes.validattr.commonattr |=
+            (ATTR_CMN_BKUPTIME | ATTR_CMN_CHGTIME | ATTR_CMN_CRTIME);
+    }
+
+    if (data->dataflags & FSESS_NATIVE_XATTR) {
+        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
+            VOL_CAP_INT_EXTENDED_ATTR;
     }
 
     attr->f_capabilities.valid[VOL_CAPABILITIES_INTERFACES] = 0
@@ -977,26 +990,6 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | ATTR_FORK_TOTALSIZE
 //      | ATTR_FORK_ALLOCSIZE
         ;
-
-    // Handle some special cases
-
-    /*
-    if (data->dataflags & FSESS_VOL_RENAME) {
-        attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
-            VOL_CAP_INT_VOL_RENAME;
-    } else {
-        fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
-    }
-    */
-    /* Not yet. */
-    fuse_clear_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME));
-
-    if (data->dataflags & FSESS_XTIMES) {
-        attr->f_attributes.validattr.commonattr |=
-            (ATTR_CMN_BKUPTIME | ATTR_CMN_CHGTIME | ATTR_CMN_CRTIME);
-    } else {
-        fuse_clear_implemented(data, FSESS_NOIMPLBIT(GETXTIMES));
-    }
 
     // All attributes that we do support, we support natively.
 
@@ -1196,7 +1189,7 @@ dostatfs:
     if (VFSATTR_IS_ACTIVE(attr, f_vol_name)) {
         if (data->volname[0] != 0) {
             strncpy(attr->f_vol_name, data->volname, MAXPATHLEN);
-            attr->f_vol_name[MAXPATHLEN - 1] = 0;
+            attr->f_vol_name[MAXPATHLEN - 1] = '\0';
             VFSATTR_SET_SUPPORTED(attr, f_vol_name);
         }
     }
@@ -1336,7 +1329,6 @@ fuse_vfsop_setattr(mount_t mp, struct vfs_attr *fsap, vfs_context_t context)
     struct fuse_data *data = fuse_get_mpdata(mp);
 
     if (VFSATTR_IS_ACTIVE(fsap, f_vol_name)) {
-
         if (!fuse_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME))) {
             error = ENOTSUP;
             goto out;
