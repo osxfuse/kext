@@ -201,6 +201,12 @@ struct fuse_kludge_thread_13
     uint32_t sched_flags;
 } __attribute__ ((packed));
 
+struct fuse_kludge_thread_16
+{
+    char dummy[136];
+    uint32_t sched_flags;
+} __attribute__ ((packed));
+
 boolean_t fuse_kludge_thread_should_abort(thread_t th);
 
 #endif /* _FUSE_KLUDGES_H_ */

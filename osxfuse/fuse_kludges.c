@@ -79,7 +79,9 @@ fuse_kludge_thread_should_abort(thread_t th)
 {
     uint32_t sched_mode;
 
-    if (version_major >= 13) {
+    if (version_major >= 16) {
+        sched_mode = ((struct fuse_kludge_thread_16 *)th)->sched_flags;
+    } else if (version_major >= 13) {
         sched_mode = ((struct fuse_kludge_thread_13 *)th)->sched_flags;
     } else if (version_major >= 11) {
         sched_mode = ((struct fuse_kludge_thread_11 *)th)->sched_flags;
