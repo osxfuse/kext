@@ -20,6 +20,13 @@ __private_extern__
 boolean_t
 fuse_kludge_thread_should_abort(thread_t th)
 {
-    uint32_t sched_flags = ((struct fuse_kludge_thread_13 *)th)->sched_flags;
+    uint32_t sched_flags;
+
+    if (version_major >= 16) {
+        sched_flags = ((struct fuse_kludge_thread_16 *)th)->sched_flags;
+    } else {
+        sched_flags = ((struct fuse_kludge_thread_13 *)th)->sched_flags;
+    }
+
     return ((sched_flags & FUSE_KLUDGE_TH_SFLAG_ABORTED_MASK) == FUSE_KLUDGE_TH_SFLAG_ABORT);
 }
