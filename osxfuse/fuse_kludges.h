@@ -175,6 +175,7 @@ struct fuse_kludge_thread_10
  *     10.7    i386       88
  *     10.7    x86_64    140
  *     10.9              132
+ *     10.12             136
  */
 
 #ifdef __LP64__
