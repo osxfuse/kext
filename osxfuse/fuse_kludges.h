@@ -37,6 +37,7 @@ struct fuse_selinfo {
  *     10.7    i386       88
  *     10.7    x86_64    140
  *     10.9              132
+ *     10.12             136
  */
 
 struct fuse_kludge_thread_13 {

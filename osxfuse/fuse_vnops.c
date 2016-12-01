@@ -3837,7 +3837,13 @@ fuse_vnop_write(struct vnop_write_args *ap)
             fuse_write_in_set_size(&fwi, (uint32_t)chunksize);
             fuse_write_in_set_flags(&fwi, 0);
 
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_unlock(data->biglock);
+#endif
             error = uiomove(next, (int)chunksize, uio);
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+            fuse_biglock_lock(data->biglock);
+#endif
             if (error) {
                 break;
             }
