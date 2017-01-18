@@ -1455,7 +1455,14 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         return ENXIO;
     }
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Do not block calls by root even if allow_root or allow_other
+         * is not set. For details see fuse_vnop_getxattr().
+         */
+    } else {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     data = fuse_get_mpdata(vnode_mount(vp));
 
