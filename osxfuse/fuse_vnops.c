@@ -2198,6 +2198,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
     int           mode    = ap->a_mode;
     vfs_context_t context = ap->a_context;
 
+    bool blanket_allow = false;
+
     fufh_type_t             fufh_type;
     struct fuse_vnode_data *fvdat;
     struct fuse_filehandle *fufh = NULL;
@@ -2220,7 +2222,20 @@ fuse_vnop_open(struct vnop_open_args *ap)
     }
 #endif
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Do not block calls from syspolicyd even if allow_root or
+         * allow_other is not set. For details see fuse_vnop_getxattr().
+         */
+
+        char name[MAXCOMLEN + 1];
+        proc_selfname(name, sizeof(name));
+        blanket_allow = strncmp(name, "syspolicyd", sizeof("syspolicyd")) == 0;
+    }
+
+    if (!blanket_allow) {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     fvdat = VTOFUD(vp);
 
