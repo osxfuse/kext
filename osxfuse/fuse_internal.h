@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011 Anatol Pomozov
- * Copyright (c) 2011-2013 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -385,11 +385,12 @@ fuse_round_iosize(uint32_t size)
     return fuse_round_size(size, FUSE_MIN_IOSIZE, FUSE_MAX_IOSIZE);
 }
 
+#define DS_STORE ".DS_Store"
+
 FUSE_INLINE
 int
 fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
 {
-#define DS_STORE ".DS_Store"
     int ismpoption = fuse_get_mpdata(mp)->dataflags & FSESS_NO_APPLEDOUBLE;
 
     if (ismpoption && nameptr) {
@@ -403,10 +404,11 @@ fuse_skip_apple_double_mp(mount_t mp, char *nameptr, long namelen)
             }
         }
     }
-#undef DS_STORE
 
     return 0;
 }
+
+#undef DS_STORE
 
 FUSE_INLINE
 int

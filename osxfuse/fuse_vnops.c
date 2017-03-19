@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011-2012 Anatol Pomozov
- * Copyright (c) 2011-2016 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -468,12 +468,29 @@ fuse_vnop_create(struct vnop_create_args *ap)
     fdisp_make(fdip, FUSE_CREATE, vnode_mount(dvp), parent_nodeid, context);
     fuse_abi_data_init(&fci, DATOI(data), fdip->indata);
 
-    /* We always creat() like this. Wish we were on Linux. */
+    /* We always create files like this. Wish we were on Linux. */
     flags = O_CREAT | O_RDWR;
 
-    if ((data->dataflags & FSESS_EXCL_CREATE) == 0 ||
-        vap->va_vaflags & VA_EXCLUSIVE) {
+    if (!(data->dataflags & FSESS_EXCL_CREATE)
+        || vap->va_vaflags & VA_EXCLUSIVE) {
+        /*
+         * Note: The kernel expects creat to return EEXIST in case the file
+         * already exists. If FSESS_EXCL_CREATE is set, O_EXCL will only be set
+         * for "truly" exclusive create calls. This allows network file systems
+         * to determine whether or not to acquire a potentially costly lock to
+         * prevent remote create races.
+         */
         flags |= O_EXCL;
+    }
+
+    if (cnp->cn_nameptr && cnp->cn_namelen > 2
+        && cnp->cn_nameptr[0] == '.' && cnp->cn_nameptr[1] == '_') {
+        /*
+         * Note: The kernel's fallback mechanism for managing extended
+         * attributes is not thread-safe. Creating Apple Double files with
+         * O_EXCL set might result in setxattr(2) failing.
+         */
+        flags &= ~O_EXCL;
     }
 
     fuse_create_in_set_flags(&fci, flags);
@@ -1426,7 +1443,14 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
         return ENXIO;
     }
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Do not block calls by root even if allow_root or allow_other
+         * is not set. For details see fuse_vnop_getxattr().
+         */
+    } else {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     data = fuse_get_mpdata(vnode_mount(vp));
 
@@ -2160,6 +2184,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
     int           mode    = ap->a_mode;
     vfs_context_t context = ap->a_context;
 
+    bool blanket_allow = false;
+
     fufh_type_t             fufh_type;
     struct fuse_vnode_data *fvdat;
     struct fuse_filehandle *fufh = NULL;
@@ -2181,7 +2207,20 @@ fuse_vnop_open(struct vnop_open_args *ap)
     }
 #endif
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: Do not block calls from syspolicyd even if allow_root or
+         * allow_other is not set. For details see fuse_vnop_getxattr().
+         */
+
+        char name[MAXCOMLEN + 1];
+        proc_selfname(name, sizeof(name));
+        blanket_allow = strncmp(name, "syspolicyd", sizeof("syspolicyd")) == 0;
+    }
+
+    if (!blanket_allow) {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     fvdat = VTOFUD(vp);
 
