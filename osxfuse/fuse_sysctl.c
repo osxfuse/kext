@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2011 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -8,6 +8,7 @@
 
 #include "fuse_device.h"
 
+#include <fuse_param.h>
 #include <fuse_version.h>
 
 #include <sys/sysctl.h>
@@ -25,7 +26,7 @@ static void osxfuse_thread_macfuse_mode(void *, wait_result_t);
 /* NB: none of these are bigger than unsigned 32-bit. */
 
 int32_t  fuse_admin_group            = 0;                                  // rw
-int32_t  fuse_allow_other            = 0;                                  // rw
+int32_t  fuse_allow_other            = FUSE_DEFAULT_ALLOW_OTHER;           // rw
 uint32_t fuse_abi_major              = FUSE_KERNEL_VERSION;                // r
 uint32_t fuse_abi_minor              = FUSE_KERNEL_MINOR_VERSION;          // r
 int32_t  fuse_fh_current             = 0;                                  // r
