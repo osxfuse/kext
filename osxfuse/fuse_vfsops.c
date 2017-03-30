@@ -873,13 +873,10 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
             VOL_CAP_INT_ALLOCATE;
     }
 
-    /*
     if (fuse_implemented(data, FSESS_NOIMPLBIT(SETVOLNAME))) {
         attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] |=
             VOL_CAP_INT_VOL_RENAME;
     }
-    */
-    /* Not yet. */
 
     if (data->dataflags & FSESS_XTIMES) {
         attr->f_attributes.validattr.commonattr |=
