@@ -2610,6 +2610,8 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
 
     int err;
 
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+
     fuse_trace_printf_vnop();
 
     if (fuse_isdeadfs(vp)) {
@@ -2642,7 +2644,11 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
             *retvalPtr = 255;   // chars as opposed to bytes
             break;
         case _PC_CASE_SENSITIVE:
-            *retvalPtr = 1;
+            if (data->dataflags & FSESS_CASE_INSENSITIVE) {
+                *retvalPtr = 0;
+            } else {
+                *retvalPtr = 0;
+            }
             break;
         case _PC_CASE_PRESERVING:
             *retvalPtr = 1;
