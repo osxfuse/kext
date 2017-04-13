@@ -2647,6 +2647,9 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
         case _PC_CASE_PRESERVING:
             *retvalPtr = 1;
             break;
+        case _PC_FILESIZEBITS:
+            *retvalPtr = 64;
+            break;
 
         /*
          * _PC_EXTENDED_SECURITY_NP and _PC_AUTH_OPAQUE_NP are handled
