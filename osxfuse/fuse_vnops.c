@@ -2655,7 +2655,7 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
             if (data->dataflags & FSESS_CASE_INSENSITIVE) {
                 *retvalPtr = 0;
             } else {
-                *retvalPtr = 0;
+                *retvalPtr = 1;
             }
             break;
         case _PC_CASE_PRESERVING:
