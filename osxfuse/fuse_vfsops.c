@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011 Anatol Pomozov
- * Copyright (c) 2012-2016 Benjamin Fleischer
+ * Copyright (c) 2012-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -1023,7 +1023,8 @@ static errno_t
 fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 {
     int err = 0;
-    bool deading = false, faking = false;
+    bool deading = false;
+    bool faking = false;
 
     struct fuse_dispatcher  fdi;
     struct fuse_data       *data;
@@ -1045,9 +1046,9 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
 
     if (!(data->dataflags & FSESS_INITED)) {
         /*
-         * coreservices process requests ATTR_VOL_CAPABILITIES on the mount
-         * point right before returning from syscall mount. We need to fake
-         * the output because the FUSE server might not be ready to respond yet.
+         * Note: coreservicesd requests ATTR_VOL_CAPABILITIES on the mount point
+         * right before returning from mount(2). We need to fake the output
+         * because the FUSE server might not be ready to respond yet.
          */
         faking = true;
         goto dostatfs;
@@ -1058,12 +1059,13 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
     err = fdisp_wait_answ(&fdi);
     if (err) {
         /*
-         * If we cannot communicate with the daemon (most likely because
-         * it's dead), we still want to portray that we are a bonafide
-         * file system so that we can be gracefully unmounted.
+         * If we cannot communicate with the daemon (most likely because it's
+         * dead), we still want to portray that we are a bonafide file system so
+         * that we can be gracefully unmounted.
          */
         if (err == ENOTCONN) {
-            deading = faking = true;
+            deading = true;
+            faking = true;
             goto dostatfs;
         }
 
@@ -1181,8 +1183,8 @@ dostatfs:
     /* f_fsid and f_owner handled elsewhere. */
 
     /* Handle capabilities and attributes. */
-    if (VFSATTR_IS_ACTIVE(attr, f_capabilities) ||
-        VFSATTR_IS_ACTIVE(attr, f_attributes)) {
+    if (VFSATTR_IS_ACTIVE(attr, f_capabilities)
+        || VFSATTR_IS_ACTIVE(attr, f_attributes)) {
         handle_capabilities_and_attributes(mp, attr);
     }
 

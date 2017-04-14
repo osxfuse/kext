@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011-2012 Anatol Pomozov
- * Copyright (c) 2011-2016 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -91,7 +91,7 @@ fuse_internal_access(vnode_t                   vp,
          * running as root) calls access(2) on behalf of Finder when trying to
          * delete a directory. Returning EPERM results in Finder aborting the
          * delete process. Therefore we are no longer blocking calls by root
-         * even if allow_root or allow_other is not set.
+         * even if allow_root and allow_other are not set.
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, EPERM);

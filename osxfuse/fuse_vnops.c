@@ -797,7 +797,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
          * running as root) calls stat(2) on behalf of Finder when trying to
          * delete a directory. Returning ENOENT results in Finder aborting the
          * delete process. Therefore we are no longer blocking calls by root
-         * even if allow_root or allow_other is not set.
+         * even if allow_root and allow_other are not set.
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -996,7 +996,7 @@ fuse_vnop_getxattr(struct vnop_getxattr_args *ap)
          * Note: Starting with OS X 10.9 syspolicyd (which is running as root)
          * calls getxattr(2) when opening items in Finder. Blocking these calls
          * results in Finder displaying an error message. Therefore we are no
-         * longer blocking calls by root even if allow_root or allow_other is
+         * longer blocking calls by root even if allow_root and allow_other are
          * not set.
          */
     } else {
@@ -1474,8 +1474,8 @@ fuse_vnop_listxattr(struct vnop_listxattr_args *ap)
 
     if (fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Do not block calls by root even if allow_root or allow_other
-         * is not set. For details see fuse_vnop_getxattr().
+         * Note: Do not block calls by root even if allow_root and allow_other
+         * are not set. For details see fuse_vnop_getxattr().
          */
     } else {
         CHECK_BLANKET_DENIAL(vp, context, ENOENT);
@@ -2241,8 +2241,8 @@ fuse_vnop_open(struct vnop_open_args *ap)
 
     if (fuse_vfs_context_issuser(context)) {
         /*
-         * Note: Do not block calls from syspolicyd even if allow_root or
-         * allow_other is not set. For details see fuse_vnop_getxattr().
+         * Note: Do not block calls from syspolicyd even if allow_root and
+         * allow_other are not set. For details see fuse_vnop_getxattr().
          */
 
         char name[MAXCOMLEN + 1];
@@ -2618,7 +2618,15 @@ fuse_vnop_pathconf(struct vnop_pathconf_args *ap)
         return ENXIO;
     }
 
-    CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    if (fuse_vfs_context_issuser(context)) {
+        /*
+         * Note: coreservicesd calls pathconf(2) to determine the maximum
+         * supported file size. Do not block calls from root even if allow_root
+         * and allow_other are not set.
+         */
+    } else {
+        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    }
 
     err = 0;
     switch (name) {
