@@ -541,7 +541,7 @@ fuse_devices_start(void)
     fuse_cdev_major = cdevsw_add(-24, &fuse_device_cdevsw);
     if (fuse_cdev_major == -1) {
         IOLog("osxfuse: Failed to register major device number\n");
-        goto error;
+        return KERN_RESOURCE_SHORTAGE;
     }
 
     for (i = 0; i < OSXFUSE_NDEVICES; i++) {
