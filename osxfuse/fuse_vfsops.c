@@ -1029,16 +1029,6 @@ fuse_vfsop_getattr(mount_t mp, struct vfs_attr *attr, vfs_context_t context)
         panic("osxfuse: no private data for mount point?");
     }
 
-    if (!(data->dataflags & FSESS_INITED)) {
-        /*
-         * Note: coreservicesd requests ATTR_VOL_CAPABILITIES on the mount point
-         * right before returning from mount(2). We need to fake the output
-         * because the FUSE server might not be ready to respond yet.
-         */
-        faking = true;
-        goto dostatfs;
-    }
-
     fdisp_init(&fdi, 0);
     fdisp_make(&fdi, FUSE_STATFS, mp, FUSE_ROOT_ID, context);
     err = fdisp_wait_answ(&fdi);
