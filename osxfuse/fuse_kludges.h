@@ -121,7 +121,6 @@ struct fuse_kludge_vnode_11
     vnode_t v_parent;
 } __attribute__ ((packed));
 
-
 int fuse_kludge_vnode_isrecycled(vnode_t vp);
 
 /*
@@ -176,6 +175,7 @@ struct fuse_kludge_thread_10
  *     10.7    x86_64    140
  *     10.9              132
  *     10.12             136
+ *     10.13             136
  */
 
 #ifdef __LP64__

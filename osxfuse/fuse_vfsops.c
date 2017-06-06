@@ -808,6 +808,13 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 #if VERSION_MAJOR >= 11
 //      | VOL_CAP_FMT_64BIT_OBJECT_IDS
 #endif
+#if VERSION_MAJOR >= 16
+//      | VOL_CAP_FMT_DIR_HARDLINKS
+//      | VOL_CAP_FMT_DOCUMENT_ID
+//      | VOL_CAP_FMT_WRITE_GENERATION_COUNT
+//      | VOL_CAP_FMT_NO_IMMUTABLE_FILES
+//      | VOL_CAP_FMT_NO_PERMISSIONS
+#endif
         ;
 
     if (data->dataflags & FSESS_CASE_INSENSITIVE) {
@@ -843,6 +850,13 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 #if VERSION_MAJOR >= 11
         | VOL_CAP_FMT_64BIT_OBJECT_IDS
 #endif
+#if VERSION_MAJOR >= 16
+        | VOL_CAP_FMT_DIR_HARDLINKS
+        | VOL_CAP_FMT_DOCUMENT_ID
+        | VOL_CAP_FMT_WRITE_GENERATION_COUNT
+        | VOL_CAP_FMT_NO_IMMUTABLE_FILES
+        | VOL_CAP_FMT_NO_PERMISSIONS
+#endif
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_INTERFACES] = 0
@@ -861,6 +875,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 //      | VOL_CAP_INT_MANLOCK
 //      | VOL_CAP_INT_NAMEDSTREAMS
 //      | VOL_CAP_INT_EXTENDED_ATTR
+#if VERSION_MAJOR >= 16
+//      | VOL_CAP_INT_CLONE
+//      | VOL_CAP_INT_RENAME_SWAP
+//      | VOL_CAP_INT_RENAME_EXCL
+#endif
         ;
 
     /*
@@ -915,6 +934,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | VOL_CAP_INT_MANLOCK
         | VOL_CAP_INT_NAMEDSTREAMS
         | VOL_CAP_INT_EXTENDED_ATTR
+#if VERSION_MAJOR >= 16
+        | VOL_CAP_INT_CLONE
+        | VOL_CAP_INT_RENAME_SWAP
+        | VOL_CAP_INT_RENAME_EXCL
+#endif
         ;
 
     attr->f_capabilities.capabilities[VOL_CAPABILITIES_RESERVED1] = 0;
@@ -955,6 +979,10 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
 #if VERSION_MAJOR >= 11
 //      | ATTR_CMN_ADDEDTIME
 #endif
+#if VERSION_MAJOR >= 14
+//      | ATTR_CMN_ERROR
+//      | ATTR_CMN_DATA_PROTECT_FLAGS
+#endif
         ;
 
     attr->f_attributes.validattr.volattr = 0
@@ -983,6 +1011,11 @@ handle_capabilities_and_attributes(mount_t mp, struct vfs_attr *attr)
         | ATTR_DIR_LINKCOUNT
 //      | ATTR_DIR_ENTRYCOUNT
 //      | ATTR_DIR_MOUNTSTATUS
+#if VERSION_MAJOR >= 16
+//      | ATTR_DIR_ALLOCSIZE
+//      | ATTR_DIR_IOBLOCKSIZE
+//      | ATTR_DIR_DATALENGTH
+#endif
         ;
     attr->f_attributes.validattr.fileattr = 0
         | ATTR_FILE_LINKCOUNT
