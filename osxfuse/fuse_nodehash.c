@@ -427,6 +427,19 @@ HNodeLookupCreatingIfNecessary(fuse_device_t dev,
          * have to loop.
          */
 
+        /*
+         * If the vnode is re-used, it may have been revoked.
+         * This can happen, for instance, if a directory is created,
+         * removed and re-created in the underlying filesystem.
+         * In this case, we want to return a new node.
+         */
+        if (thisNode != NULL) {
+            struct fuse_vnode_data *fvdat = (struct fuse_vnode_data *)FSNodeGenericFromHNode(thisNode);
+            if (fvdat && fvdat->flag & FN_REVOKED) {
+                 thisNode = NULL;
+            }
+        }
+
         /* If we do have a newNode at hand, use that. */
 
         if (thisNode == NULL) {
