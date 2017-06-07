@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2011 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -29,6 +29,8 @@
 #if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_locking.h"
 #endif
+
+#include <libkern/version.h>
 
 #if VERSION_MAJOR < 16
 #  if M_OSXFUSE_ENABLE_UNSUPPORTED

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
+ * Copyright (c) 2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -7,6 +8,8 @@
 #define _FUSE_VNOPS_H_
 
 #include "fuse.h"
+
+#include <libkern/version.h>
 
 typedef int (*fuse_vnode_op_t)(void *);
 
@@ -34,6 +37,8 @@ FUSE_VNOP_EXPORT int fuse_vnop_blockmap(struct vnop_blockmap_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_bwrite(struct vnop_bwrite_args *ap);
 
+// FUSE_VNOP_EXPORT int fuse_vnop_clonefile(struct vnop_clonefile_args *ap);
+
 FUSE_VNOP_EXPORT int fuse_vnop_close(struct vnop_close_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_copyfile(struct vnop_copyfile_args *ap);
@@ -46,7 +51,9 @@ FUSE_VNOP_EXPORT int fuse_vnop_fsync(struct vnop_fsync_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_getattr(struct vnop_getattr_args *ap);
 
-// FUSE_VNOP_EXPORT int fuse_vnop_getattrlist(struct vnop_getattrlist_args *ap);
+#if VERSION_MAJOR >= 14
+// FUSE_VNOP_EXPORT int fuse_vnop_getattrlistbulk(struct vnop_getattrlistbulk_args *ap);
+#endif
 
 // FUSE_VNOP_EXPORT int fuse_vnop_getnamedstream(struct vnop_getnamedstream_args *ap);
 
@@ -112,6 +119,10 @@ FUSE_VNOP_EXPORT int fuse_vnop_removexattr(struct vnop_removexattr_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_rename(struct vnop_rename_args *ap);
 
+#if VERSION_MAJOR >= 16
+// FUSE_VNOP_EXPORT int fuse_vnop_renamex(struct vnop_renamex_args *ap);
+#endif
+
 FUSE_VNOP_EXPORT int fuse_vnop_revoke(struct vnop_revoke_args *ap);
 
 FUSE_VNOP_EXPORT int fuse_vnop_rmdir(struct vnop_rmdir_args *ap);
@@ -123,8 +134,6 @@ FUSE_VNOP_EXPORT int fuse_vnop_select(struct vnop_select_args *ap);
 FUSE_VNOP_EXPORT int fuse_vnop_setattr(struct vnop_setattr_args *ap);
 
 // FUSE_VNOP_EXPORT int fuse_vnop_setlabel(struct vnop_setlabel_args *ap);
-
-// FUSE_VNOP_EXPORT int fuse_vnop_setattrlist (struct vnop_setattrlist_args *ap);
 
 #if M_OSXFUSE_ENABLE_XATTR
 FUSE_VNOP_EXPORT int fuse_vnop_setxattr(struct vnop_setxattr_args *ap);
