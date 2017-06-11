@@ -3365,7 +3365,7 @@ fuse_vnop_revoke(struct vnop_revoke_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context, 1);
+    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context, REVOKE_SOFT);
 }
 
 /*
