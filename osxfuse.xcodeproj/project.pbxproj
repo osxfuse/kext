@@ -225,6 +225,7 @@
 				TargetAttributes = {
 					4332BEA71D108F4000F84D51 = {
 						CreatedOnToolsVersion = 8.0;
+						DevelopmentTeam = 3T5GSNBU6W;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -389,7 +390,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				CODE_SIGN_IDENTITY = "Developer ID";
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				DEVELOPMENT_TEAM = 3T5GSNBU6W;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				INFOPLIST_FILE = osxfuse/Info.plist;
@@ -406,6 +408,7 @@
 				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.13]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
@@ -419,9 +422,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				CODE_SIGN_IDENTITY = "Developer ID";
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
+				DEVELOPMENT_TEAM = 3T5GSNBU6W;
 				DWARF_DSYM_FOLDER_PATH = "$(CONFIGURATION_BUILD_DIR)/Debug";
 				EXPORTED_SYMBOLS_FILE = osxfuse/osxfuse.exports;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -441,6 +445,7 @@
 				"VALID_ARCHS[sdk=macosx10.10]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.13]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";

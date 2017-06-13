@@ -3314,7 +3314,7 @@ fuse_vnop_revoke(struct vnop_revoke_args *ap)
 
     CHECK_BLANKET_DENIAL(vp, context, ENOENT);
 
-    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context, 1);
+    return fuse_internal_revoke(ap->a_vp, ap->a_flags, ap->a_context, REVOKE_SOFT);
 }
 
 /*
@@ -4138,66 +4138,71 @@ fuse_spec_vnop_write(struct vnop_write_args *ap)
 #endif /* M_OSXFUSE_ENABLE_SPECFS */
 
 struct vnodeopv_entry_desc fuse_vnode_operation_entries[] = {
-    { &vnop_access_desc,        (fuse_vnode_op_t) fuse_vnop_access        },
-    { &vnop_advlock_desc,       (fuse_vnode_op_t) err_advlock             },
-    { &vnop_allocate_desc,      (fuse_vnode_op_t) fuse_vnop_allocate      },
-    { &vnop_blktooff_desc,      (fuse_vnode_op_t) fuse_vnop_blktooff      },
-    { &vnop_blockmap_desc,      (fuse_vnode_op_t) fuse_vnop_blockmap      },
-//  { &vnop_bwrite_desc,        (fuse_vnode_op_t) fuse_vnop_bwrite        },
-    { &vnop_close_desc,         (fuse_vnode_op_t) fuse_vnop_close         },
-//  { &vnop_copyfile_desc,      (fuse_vnode_op_t) fuse_vnop_copyfile      },
-    { &vnop_create_desc,        (fuse_vnode_op_t) fuse_vnop_create        },
-    { &vnop_default_desc,       (fuse_vnode_op_t) vn_default_error        },
-    { &vnop_exchange_desc,      (fuse_vnode_op_t) fuse_vnop_exchange      },
-    { &vnop_fsync_desc,         (fuse_vnode_op_t) fuse_vnop_fsync         },
-    { &vnop_getattr_desc,       (fuse_vnode_op_t) fuse_vnop_getattr       },
-//  { &vnop_getattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_getattrlist   },
+    { &vnop_access_desc,          (fuse_vnode_op_t)fuse_vnop_access          },
+    { &vnop_advlock_desc,         (fuse_vnode_op_t)err_advlock               },
+    { &vnop_allocate_desc,        (fuse_vnode_op_t)fuse_vnop_allocate        },
+    { &vnop_blktooff_desc,        (fuse_vnode_op_t)fuse_vnop_blktooff        },
+    { &vnop_blockmap_desc,        (fuse_vnode_op_t)fuse_vnop_blockmap        },
+//  { &vnop_bwrite_desc,          (fuse_vnode_op_t)fuse_vnop_bwrite          },
+//  { &vnop_clonefile_desc,       (fuse_vnode_op_t)fuse_vnop_clonefile       },
+    { &vnop_close_desc,           (fuse_vnode_op_t)fuse_vnop_close           },
+//  { &vnop_copyfile_desc,        (fuse_vnode_op_t)fuse_vnop_copyfile        },
+    { &vnop_create_desc,          (fuse_vnode_op_t)fuse_vnop_create          },
+    { &vnop_default_desc,         (fuse_vnode_op_t)vn_default_error          },
+    { &vnop_exchange_desc,        (fuse_vnode_op_t)fuse_vnop_exchange        },
+    { &vnop_fsync_desc,           (fuse_vnode_op_t)fuse_vnop_fsync           },
+    { &vnop_getattr_desc,         (fuse_vnode_op_t)fuse_vnop_getattr         },
+#if VERSION_MAJOR >= 14
+//  { &vnop_getattrlistbulk_desc, (fuse_vnode_op_t)fuse_vnop_getattrlistbulk },
+#endif
 #if M_OSXFUSE_ENABLE_XATTR
-    { &vnop_getxattr_desc,      (fuse_vnode_op_t) fuse_vnop_getxattr      },
+    { &vnop_getxattr_desc,        (fuse_vnode_op_t)fuse_vnop_getxattr        },
 #endif /* M_OSXFUSE_ENABLE_XATTR */
-    { &vnop_inactive_desc,      (fuse_vnode_op_t) fuse_vnop_inactive      },
-    { &vnop_ioctl_desc,         (fuse_vnode_op_t) fuse_vnop_ioctl         },
-    { &vnop_link_desc,          (fuse_vnode_op_t) fuse_vnop_link          },
+    { &vnop_inactive_desc,        (fuse_vnode_op_t)fuse_vnop_inactive        },
+    { &vnop_ioctl_desc,           (fuse_vnode_op_t)fuse_vnop_ioctl           },
+    { &vnop_link_desc,            (fuse_vnode_op_t)fuse_vnop_link            },
 #if M_OSXFUSE_ENABLE_XATTR
-    { &vnop_listxattr_desc,     (fuse_vnode_op_t) fuse_vnop_listxattr     },
+    { &vnop_listxattr_desc,       (fuse_vnode_op_t)fuse_vnop_listxattr       },
 #endif /* M_OSXFUSE_ENABLE_XATTR */
-    { &vnop_lookup_desc,        (fuse_vnode_op_t) fuse_vnop_lookup        },
 #if M_OSXFUSE_ENABLE_KQUEUE
-    { &vnop_kqfilt_add_desc,    (fuse_vnode_op_t) fuse_vnop_kqfilt_add    },
-    { &vnop_kqfilt_remove_desc, (fuse_vnode_op_t) fuse_vnop_kqfilt_remove },
+    { &vnop_kqfilt_add_desc,      (fuse_vnode_op_t)fuse_vnop_kqfilt_add      },
+    { &vnop_kqfilt_remove_desc,   (fuse_vnode_op_t)fuse_vnop_kqfilt_remove   },
 #endif /* M_OSXFUSE_ENABLE_KQUEUE */
-    { &vnop_mkdir_desc,         (fuse_vnode_op_t) fuse_vnop_mkdir         },
-    { &vnop_mknod_desc,         (fuse_vnode_op_t) fuse_vnop_mknod         },
-    { &vnop_mmap_desc,          (fuse_vnode_op_t) fuse_vnop_mmap          },
-    { &vnop_mnomap_desc,        (fuse_vnode_op_t) fuse_vnop_mnomap        },
-    { &vnop_offtoblk_desc,      (fuse_vnode_op_t) fuse_vnop_offtoblk      },
-    { &vnop_open_desc,          (fuse_vnode_op_t) fuse_vnop_open          },
-    { &vnop_pagein_desc,        (fuse_vnode_op_t) fuse_vnop_pagein        },
-    { &vnop_pageout_desc,       (fuse_vnode_op_t) fuse_vnop_pageout       },
-    { &vnop_pathconf_desc,      (fuse_vnode_op_t) fuse_vnop_pathconf      },
-    { &vnop_read_desc,          (fuse_vnode_op_t) fuse_vnop_read          },
-    { &vnop_readdir_desc,       (fuse_vnode_op_t) fuse_vnop_readdir       },
-//  { &vnop_readdirattr_desc,   (fuse_vnode_op_t) fuse_vnop_readdirattr   },
-    { &vnop_readlink_desc,      (fuse_vnode_op_t) fuse_vnop_readlink      },
-    { &vnop_reclaim_desc,       (fuse_vnode_op_t) fuse_vnop_reclaim       },
-    { &vnop_remove_desc,        (fuse_vnode_op_t) fuse_vnop_remove        },
+    { &vnop_lookup_desc,          (fuse_vnode_op_t)fuse_vnop_lookup          },
+    { &vnop_mkdir_desc,           (fuse_vnode_op_t)fuse_vnop_mkdir           },
+    { &vnop_mknod_desc,           (fuse_vnode_op_t)fuse_vnop_mknod           },
+    { &vnop_mmap_desc,            (fuse_vnode_op_t)fuse_vnop_mmap            },
+    { &vnop_mnomap_desc,          (fuse_vnode_op_t)fuse_vnop_mnomap          },
+    { &vnop_offtoblk_desc,        (fuse_vnode_op_t)fuse_vnop_offtoblk        },
+    { &vnop_open_desc,            (fuse_vnode_op_t)fuse_vnop_open            },
+    { &vnop_pagein_desc,          (fuse_vnode_op_t)fuse_vnop_pagein          },
+    { &vnop_pageout_desc,         (fuse_vnode_op_t)fuse_vnop_pageout         },
+    { &vnop_pathconf_desc,        (fuse_vnode_op_t)fuse_vnop_pathconf        },
+    { &vnop_read_desc,            (fuse_vnode_op_t)fuse_vnop_read            },
+    { &vnop_readdir_desc,         (fuse_vnode_op_t)fuse_vnop_readdir         },
+//  { &vnop_readdirattr_desc,     (fuse_vnode_op_t)fuse_vnop_readdirattr     },
+    { &vnop_readlink_desc,        (fuse_vnode_op_t)fuse_vnop_readlink        },
+    { &vnop_reclaim_desc,         (fuse_vnode_op_t)fuse_vnop_reclaim         },
+    { &vnop_remove_desc,          (fuse_vnode_op_t)fuse_vnop_remove          },
 #if M_OSXFUSE_ENABLE_XATTR
-    { &vnop_removexattr_desc,   (fuse_vnode_op_t) fuse_vnop_removexattr   },
+    { &vnop_removexattr_desc,     (fuse_vnode_op_t)fuse_vnop_removexattr     },
 #endif /* M_OSXFUSE_ENABLE_XATTR */
-    { &vnop_rename_desc,        (fuse_vnode_op_t) fuse_vnop_rename        },
-    { &vnop_revoke_desc,        (fuse_vnode_op_t) fuse_vnop_revoke        },
-    { &vnop_rmdir_desc,         (fuse_vnode_op_t) fuse_vnop_rmdir         },
-//  { &vnop_searchfs_desc,      (fuse_vnode_op_t) fuse_vnop_searchfs      },
-    { &vnop_select_desc,        (fuse_vnode_op_t) fuse_vnop_select        },
-    { &vnop_setattr_desc,       (fuse_vnode_op_t) fuse_vnop_setattr       },
-//  { &vnop_setattrlist_desc,   (fuse_vnode_op_t) fuse_vnop_setattrlist   },
+    { &vnop_rename_desc,          (fuse_vnode_op_t)fuse_vnop_rename          },
+#if VERSION_MAJOR >= 16
+//  { &vnop_renamex_desc,         (fuse_vnode_op_t)fuse_vnop_renamex         },
+#endif
+    { &vnop_revoke_desc,          (fuse_vnode_op_t)fuse_vnop_revoke          },
+    { &vnop_rmdir_desc,           (fuse_vnode_op_t)fuse_vnop_rmdir           },
+//  { &vnop_searchfs_desc,        (fuse_vnode_op_t)fuse_vnop_searchfs        },
+    { &vnop_select_desc,          (fuse_vnode_op_t)fuse_vnop_select          },
+    { &vnop_setattr_desc,         (fuse_vnode_op_t)fuse_vnop_setattr         },
 #if M_OSXFUSE_ENABLE_XATTR
-    { &vnop_setxattr_desc,      (fuse_vnode_op_t) fuse_vnop_setxattr      },
+    { &vnop_setxattr_desc,        (fuse_vnode_op_t)fuse_vnop_setxattr        },
 #endif /* M_OSXFUSE_ENABLE_XATTR */
-    { &vnop_strategy_desc,      (fuse_vnode_op_t) fuse_vnop_strategy      },
-    { &vnop_symlink_desc,       (fuse_vnode_op_t) fuse_vnop_symlink       },
-//  { &vnop_whiteout_desc,      (fuse_vnode_op_t) fuse_vnop_whiteout      },
-    { &vnop_write_desc,         (fuse_vnode_op_t) fuse_vnop_write         },
+    { &vnop_strategy_desc,        (fuse_vnode_op_t)fuse_vnop_strategy        },
+    { &vnop_symlink_desc,         (fuse_vnode_op_t)fuse_vnop_symlink         },
+//  { &vnop_whiteout_desc,        (fuse_vnode_op_t)fuse_vnop_whiteout        },
+    { &vnop_write_desc,           (fuse_vnode_op_t)fuse_vnop_write           },
     { NULL, NULL }
 };
 

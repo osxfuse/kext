@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2011 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -29,6 +29,8 @@
 #if M_OSXFUSE_ENABLE_BIG_LOCK
 #  include "fuse_locking.h"
 #endif
+
+#include <libkern/version.h>
 
 #if VERSION_MAJOR < 16
 #  if M_OSXFUSE_ENABLE_UNSUPPORTED
@@ -424,6 +426,19 @@ HNodeLookupCreatingIfNecessary(fuse_device_t dev,
          * so the hash table might have been changed by someone else, so we
          * have to loop.
          */
+
+        /*
+         * If the vnode is re-used, it may have been revoked.
+         * This can happen, for instance, if a directory is created,
+         * removed and re-created in the underlying filesystem.
+         * In this case, we want to return a new node.
+         */
+        if (thisNode != NULL) {
+            struct fuse_vnode_data *fvdat = (struct fuse_vnode_data *)FSNodeGenericFromHNode(thisNode);
+            if (fvdat && fvdat->flag & FN_REVOKED) {
+                 thisNode = NULL;
+            }
+        }
 
         /* If we do have a newNode at hand, use that. */
 
