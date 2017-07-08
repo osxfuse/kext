@@ -676,15 +676,6 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
     }
 
     switch (cmd) {
-    case FUSEDEVIOCGETHANDSHAKECOMPLETE:
-        if (data->mount_state == FM_NOTMOUNTED) {
-            ret = ENXIO;
-        } else {
-            *(u_int32_t *)udata = (data->dataflags & FSESS_INITED);
-            ret = 0;
-        }
-        break;
-
     case FUSEDEVIOCSETDAEMONDEAD:
         fdata_set_dead(data, true);
         ret = 0;
