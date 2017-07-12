@@ -41,6 +41,8 @@
 		4332BEFB1D10926200F84D51 /* fuse_param.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF61D10926200F84D51 /* fuse_param.h */; };
 		4332BEFC1D10926200F84D51 /* fuse_preprocessor.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF71D10926200F84D51 /* fuse_preprocessor.h */; };
 		4332BEFD1D10926200F84D51 /* fuse_version.h in Headers */ = {isa = PBXBuildFile; fileRef = 4332BEF81D10926200F84D51 /* fuse_version.h */; };
+		8B7108E91D9AE876005BE2C6 /* fuse_fsevents.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B7108E71D9AE876005BE2C6 /* fuse_fsevents.c */; };
+		8B7108EA1D9AE876005BE2C6 /* fuse_fsevents.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B7108E81D9AE876005BE2C6 /* fuse_fsevents.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +83,8 @@
 		4332BEF61D10926200F84D51 /* fuse_param.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_param.h; sourceTree = "<group>"; };
 		4332BEF71D10926200F84D51 /* fuse_preprocessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_preprocessor.h; sourceTree = "<group>"; };
 		4332BEF81D10926200F84D51 /* fuse_version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_version.h; sourceTree = "<group>"; };
+		8B7108E71D9AE876005BE2C6 /* fuse_fsevents.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fuse_fsevents.c; sourceTree = "<group>"; };
+		8B7108E81D9AE876005BE2C6 /* fuse_fsevents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fuse_fsevents.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +145,8 @@
 				4332BECD1D10900700F84D51 /* fuse_vfsops.c */,
 				4332BECE1D10900700F84D51 /* fuse_vfsops.h */,
 				4332BECF1D10900700F84D51 /* fuse_vnops.c */,
+				8B7108E71D9AE876005BE2C6 /* fuse_fsevents.c */,
+				8B7108E81D9AE876005BE2C6 /* fuse_fsevents.h */,
 				4332BED01D10900700F84D51 /* fuse_vnops.h */,
 				4332BED11D10900700F84D51 /* fuse.h */,
 				4332BEAD1D108F4000F84D51 /* Info.plist */,
@@ -176,6 +182,7 @@
 				4332BEDC1D10900700F84D51 /* fuse_kernel.h in Headers */,
 				4332BEDE1D10900700F84D51 /* fuse_kludges.h in Headers */,
 				4332BEFC1D10926200F84D51 /* fuse_preprocessor.h in Headers */,
+				8B7108EA1D9AE876005BE2C6 /* fuse_fsevents.h in Headers */,
 				4332BEE21D10900700F84D51 /* fuse_locking.h in Headers */,
 				4332BEEF1D10900700F84D51 /* fuse_vnops.h in Headers */,
 				4332BEE71D10900700F84D51 /* fuse_nodehash.h in Headers */,
@@ -281,6 +288,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8B7108E91D9AE876005BE2C6 /* fuse_fsevents.c in Sources */,
 				4332BEE11D10900700F84D51 /* fuse_locking.c in Sources */,
 				4332BEE81D10900700F84D51 /* fuse_notify.c in Sources */,
 				4332BEDA1D10900700F84D51 /* fuse_ipc.c in Sources */,

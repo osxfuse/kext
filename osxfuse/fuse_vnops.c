@@ -9,6 +9,7 @@
 #include "fuse_vnops.h"
 
 #include "fuse_file.h"
+#include "fuse_fsevents.h"
 #include "fuse_internal.h"
 #include "fuse_ipc.h"
 #include "fuse_node.h"
@@ -592,6 +593,8 @@ bringup:
 
     fuse_ticket_release(fdip->tick);
 
+    FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE);
+
     return 0;
 
 undo:
@@ -692,6 +695,11 @@ out:
 
     vnode_putname(fname);
     vnode_putname(tname);
+
+    if (err == 0) {
+        FUSE_FSEVENT(fvp, VNODE_EVENT_ATTRIB);
+        FUSE_FSEVENT(tvp, VNODE_EVENT_ATTRIB);
+    }
 
     return err;
 
@@ -1406,6 +1414,9 @@ fuse_vnop_link(struct vnop_link_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_lock(data->biglock);
 #endif
+
+        FUSE_FSEVENT(vp, VNODE_EVENT_LINK);
+        FUSE_FSEVENT(tdvp, VNODE_EVENT_WRITE);
     }
 
     return err;
@@ -1867,6 +1878,7 @@ fuse_vnop_mkdir(struct vnop_mkdir_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
+        FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE | VNODE_EVENT_LINK);
     }
 
     return err;
@@ -1921,6 +1933,7 @@ fuse_vnop_mknod(struct vnop_mknod_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
+        FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE);
     }
 
     return err;
@@ -3129,6 +3142,8 @@ fuse_vnop_remove(struct vnop_remove_args *ap)
     err = fuse_internal_remove(dvp, vp, cnp, FUSE_UNLINK, context);
 
     if (err == 0) {
+        FUSE_FSEVENT(vp, VNODE_EVENT_DELETE);
+        FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE);
         fuse_vncache_purge(vp);
         fuse_invalidate_attr(dvp);
         /*
@@ -3208,6 +3223,7 @@ fuse_vnop_removexattr(struct vnop_removexattr_args *ap)
         fuse_ticket_release(fdi.tick);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
         fuse_invalidate_attr(vp);
+        FUSE_FSEVENT(vp, VNODE_EVENT_ATTRIB);
     } else {
         if (err == ENOSYS) {
             fuse_clear_implemented(data, FSESS_NOIMPLBIT(REMOVEXATTR));
@@ -3259,14 +3275,17 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(fdvp);
+        FUSE_FSEVENT(fdvp, VNODE_EVENT_WRITE);
         if (tdvp != fdvp) {
             fuse_invalidate_attr(tdvp);
+            FUSE_FSEVENT(tdvp, VNODE_EVENT_WRITE);
         }
     }
 
     if (tvp != NULLVP) {
         if (tvp != fvp) {
             fuse_vncache_purge(tvp);
+            FUSE_FSEVENT(tvp, VNODE_EVENT_DELETE);
         }
         if (err == 0) {
 
@@ -3290,6 +3309,10 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
             fuse_vncache_purge(tdvp);
         }
         fuse_vncache_purge(fdvp);
+    }
+
+    if (err == 0) {
+        FUSE_FSEVENT(fvp, VNODE_EVENT_RENAME);
     }
 
     return err;
@@ -3355,6 +3378,8 @@ fuse_vnop_rmdir(struct vnop_rmdir_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
+        FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE | VNODE_EVENT_LINK);
+        FUSE_FSEVENT(vp, VNODE_EVENT_DELETE);
     }
 
     return err;
@@ -3521,6 +3546,10 @@ out:
 #endif
     }
 
+    if (err == 0) {
+        FUSE_FSEVENT(vp, VNODE_EVENT_ATTRIB);
+    }
+
     return err;
 }
 
@@ -3649,6 +3678,7 @@ fuse_vnop_setxattr(struct vnop_setxattr_args *ap)
     if (!err) {
         fuse_ticket_release(fdi.tick);
         fuse_invalidate_attr(vp);
+        FUSE_FSEVENT(vp, VNODE_EVENT_ATTRIB);
         VTOFUD(vp)->c_flag |= C_TOUCH_CHGTIME;
     } else {
         if ((err == ENOSYS) || (err == ENOTSUP)) {
@@ -3753,6 +3783,7 @@ fuse_vnop_symlink(struct vnop_symlink_args *ap)
 
     if (err == 0) {
         fuse_invalidate_attr(dvp);
+        FUSE_FSEVENT(dvp, VNODE_EVENT_WRITE);
     }
 
     return err;
@@ -4018,8 +4049,10 @@ fuse_vnop_write(struct vnop_write_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
+            FUSE_FSEVENT(vp, VNODE_EVENT_WRITE | VNODE_EVENT_EXTEND);
         } else {
             fvdat->filesize = original_size;
+            FUSE_FSEVENT(vp, VNODE_EVENT_WRITE);
         }
         fuse_invalidate_attr(vp);
     }
