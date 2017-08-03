@@ -11,9 +11,39 @@
 #include "fuse_knote.h"
 #include "fuse_node.h"
 
+#include <libkern/version.h>
 #include <sys/ubc.h>
 
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
+
+static
+void
+fuse_vnotify(vnode_t vp) {
+    // Those flag constants are not available in
+    // headers, so we need to copy them here.
+    static const int VNODE_EVENT_WRITE  = 0x2;
+    static const int VNODE_EVENT_ATTRIB = 0x8;
+
+#if VERSION_MAJOR >= 15
+    struct vnode_attr vattr;
+    vfs_get_notify_attributes(&vattr);
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
+    fuse_biglock_lock(data->biglock);
+#endif
+
+    fuse_internal_attr_loadvap(vp, &vattr, NULL);
+
+#if M_OSXFUSE_ENABLE_BIG_LOCK
+    fuse_biglock_unlock(data->biglock);
+#endif
+
+    vnode_notify(vp, VNODE_EVENT_ATTRIB | VNODE_EVENT_WRITE, &vattr);
+#else
+    (void) vp; // Unused parameter.
+#endif
+}
 
 static
 void
@@ -89,6 +119,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
 
 out:
     FUSE_KNOTE(vp, NOTE_ATTRIB);
+    fuse_vnotify(vp);
 
     /*
      * Note: We need to unlock the node and decrement the vnode's iocount. See
@@ -174,6 +205,7 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
 
     fuse_invalidate_attr(dvp);
     FUSE_KNOTE(dvp, NOTE_ATTRIB);
+    fuse_vnotify(dvp);
 
 out:
     fuse_nodelock_unlock(VTOFUD(dvp));
@@ -260,6 +292,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
     }
 
     FUSE_KNOTE(vp, NOTE_ATTRIB);
+    fuse_vnotify(vp);
     fuse_nodelock_unlock(VTOFUD(vp));
     vnode_put(vp);
 
