@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2016 Benjamin Fleischer
+ * Copyright (c) 2012-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -16,12 +16,11 @@
 #if M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK
 
 static
-void
-fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
+int
+fuse_notify_getattr(vnode_t vp)
 {
     int err;
 
-    vnode_t vp = (vnode_t)parameter;
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
@@ -33,9 +32,11 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     off_t old_filesize;
     off_t new_filesize;
 
+    fuse_nodelock_lock(fvdat, FUSEFS_EXCLUSIVE_LOCK);
     fuse_biglock_lock(data->biglock);
 
     if (fuse_isdeadfs(vp)) {
+        err = ENXIO;
         goto out;
     }
 
@@ -50,7 +51,8 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     if (err) {
         if (err == ENOENT) {
             fuse_biglock_unlock(data->biglock);
-            fuse_internal_vnode_disappear(vp, vfs_context_current(), REVOKE_SOFT);
+            fuse_internal_vnode_disappear(vp, vfs_context_current(),
+                                          REVOKE_SOFT);
             fuse_biglock_lock(data->biglock);
         }
         goto out;
@@ -73,14 +75,16 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
 
         if (new_filesize > old_filesize) {
             /*
-             * Note: Unless the file did end on a page boundary we need to invalidate the
-             * last page of the file's unified buffer cache maunally. ubc_setsize does not
-             * take care of this when expanding files.
+             * Note: Unless the file did end on a page boundary we need to
+             * invalidate the last page of the file's unified buffer cache
+             * maunally. ubc_setsize() does not take care of this when expanding
+             * files.
              */
 
             off_t end_off = round_page_64(old_filesize);
             if (end_off != old_filesize) {
-                ubc_msync(vp, trunc_page_64(old_filesize), end_off, NULL, UBC_INVALIDATE);
+                ubc_msync(vp, trunc_page_64(old_filesize), end_off, NULL,
+                          UBC_INVALIDATE);
             }
         }
 
@@ -91,14 +95,31 @@ out:
     FUSE_KNOTE(vp, NOTE_ATTRIB);
 
     /*
-     * Note: We need to unlock the node and decrement the vnode's iocount. See
+     * Note: We need to unlock the node and notify other waiting threads. See
      * fuse_notify_inval_inode for details.
      */
 
+    fvdat->flag &= ~FN_GETATTR;
+    fuse_lck_mtx_lock(fvdat->getattr_lock);
+
     fuse_biglock_unlock(data->biglock);
     fuse_nodelock_unlock(VTOFUD(vp));
-    vnode_put(vp);
 
+    wakeup(fvdat->getattr_thread);
+    fuse_lck_mtx_unlock(fvdat->getattr_lock);
+
+    return err;
+}
+
+static
+void
+fuse_notify_getattr_thread(void *parameter, __unused wait_result_t wait_result)
+{
+    vnode_t vp = (vnode_t)parameter;
+
+    (void)fuse_notify_getattr(vp);
+
+    vnode_put(vp);
     thread_terminate(current_thread());
 }
 
@@ -195,15 +216,16 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 
     HNodeRef hp;
     vnode_t vp;
+    struct fuse_vnode_data *fvdat;
 
     kern_return_t kr;
     thread_t getattr_thread;
 
     if (!vfs_issynchronous(data->mp)) {
         /*
-         * Enabling asynchronous writes for distributed file systems is not supported.
-         * Files might end up in an inconsitent state. Therefore we do the only sane
-         * thing and ignore this notification.
+         * Enabling asynchronous writes for distributed file systems is not
+         * supported. Files might end up in an inconsitent state. Therefore we
+         * do the only sane thing and ignore this notification.
          */
         err = ENOSYS;
         goto out;
@@ -215,13 +237,15 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
     off = fuse_notify_inval_inode_out_get_off(&fniio);
     len = fuse_notify_inval_inode_out_get_len(&fniio);
 
-    err = (int)HNodeLookupRealQuickIfExists(data->fdev, ino, 0 /* fork index */, &hp, &vp);
+    err = (int)HNodeLookupRealQuickIfExists(data->fdev, ino, 0 /* fork index */,
+                                            &hp, &vp);
     if (err) {
         return err;
     }
     assert(vp != NULL);
 
-    fuse_nodelock_lock(VTOFUD(vp), FUSEFS_EXCLUSIVE_LOCK);
+    fvdat = VTOFUD(vp);
+    fuse_nodelock_lock(fvdat, FUSEFS_EXCLUSIVE_LOCK);
     fuse_biglock_lock(data->biglock);
 
     fuse_invalidate_attr(vp);
@@ -242,14 +266,19 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 
     if (vnode_isreg(vp)) {
         // Update the file's attributes to detect file size changes
-        kr = kernel_thread_start(fuse_notify_getattr, vp, &getattr_thread);
+        kr = kernel_thread_start(fuse_notify_getattr_thread, vp,
+                                 &getattr_thread);
 
         if (kr == KERN_SUCCESS) {
             /*
-             * Note: We will unlock the node and derement the vnode's iocount after updating
-             * the file's attributes in fuse_notify_getattr.
+             * Note: We will derement the vnode's iocount after updating the
+             * file's attributes in fuse_notify_getattr_thread().
              */
 
+            fvdat->flag |= FN_GETATTR;
+            fvdat->getattr_thread = getattr_thread;
+
+            fuse_nodelock_unlock(fvdat);
             thread_deallocate(getattr_thread);
             goto out;
 
@@ -260,7 +289,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
     }
 
     FUSE_KNOTE(vp, NOTE_ATTRIB);
-    fuse_nodelock_unlock(VTOFUD(vp));
+    fuse_nodelock_unlock(fvdat);
     vnode_put(vp);
 
 out:

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2012 Benjamin Fleischer
+ * Copyright (c) 2012-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -28,7 +28,11 @@ enum fusefslocktype {
     FUSEFS_FORCE_LOCK     = 3
 };
 
-#define FUSEFS_SHARED_OWNER (void *)0xffffffff
+#if __LP64__
+#  define FUSEFS_SHARED_OWNER (void *)0xffffffffffffffff
+#else
+#  define FUSEFS_SHARED_OWNER (void *)0xffffffff
+#endif
 
 /* Locking */
 extern int fusefs_lock(fusenode_t, enum fusefslocktype);
