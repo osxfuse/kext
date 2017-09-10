@@ -549,7 +549,7 @@ fuse_attr_sizeof(int abi_version)
         return 96;
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_attr);
@@ -825,7 +825,7 @@ FUSE_INLINE
 size_t
 fuse_kstatfs_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_kstatfs);
 }
 
@@ -947,7 +947,7 @@ FUSE_INLINE
 size_t
 fuse_file_lock_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_file_lock);
 }
 
@@ -1113,7 +1113,7 @@ FUSE_INLINE
 size_t
 fuse_forget_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_forget_in);
 }
 
@@ -1137,7 +1137,7 @@ FUSE_INLINE
 size_t
 fuse_forget_one_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_forget_one);
 }
 
@@ -1175,7 +1175,7 @@ FUSE_INLINE
 size_t
 fuse_batch_forget_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_batch_forget_in);
 }
 
@@ -1204,7 +1204,7 @@ fuse_getattr_in_sizeof(int abi_version)
         return 0;
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_getattr_in);
@@ -1312,7 +1312,7 @@ FUSE_INLINE
 size_t
 fuse_getxtimes_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_getxtimes_out);
 }
 
@@ -1383,7 +1383,7 @@ fuse_mknod_in_sizeof(int abi_version)
         return FUSE_COMPAT_MKNOD_IN_SIZE;
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_mknod_in);
@@ -1449,7 +1449,7 @@ FUSE_INLINE
 size_t
 fuse_mkdir_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_mkdir_in);
 }
 
@@ -1487,7 +1487,7 @@ FUSE_INLINE
 size_t
 fuse_rename_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_rename_in);
 }
 
@@ -1511,7 +1511,7 @@ FUSE_INLINE
 size_t
 fuse_exchange_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_exchange_in);
 }
 
@@ -1563,7 +1563,7 @@ FUSE_INLINE
 size_t
 fuse_link_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_link_in);
 }
 
@@ -1587,7 +1587,7 @@ FUSE_INLINE
 size_t
 fuse_setattr_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_setattr_in);
 }
 
@@ -1905,7 +1905,7 @@ FUSE_INLINE
 size_t
 fuse_open_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_open_in);
 }
 
@@ -1948,7 +1948,7 @@ fuse_create_in_sizeof(int abi_version)
         return fuse_open_in_sizeof(abi_version);
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_create_in);
@@ -2014,7 +2014,7 @@ FUSE_INLINE
 size_t
 fuse_open_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_open_out);
 }
 
@@ -2052,7 +2052,7 @@ FUSE_INLINE
 size_t
 fuse_release_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_release_in);
 }
 
@@ -2118,7 +2118,7 @@ FUSE_INLINE
 size_t
 fuse_flush_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_flush_in);
 }
 
@@ -2175,7 +2175,7 @@ fuse_read_in_sizeof(int abi_version)
         return 24;
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_read_in);
@@ -2300,7 +2300,7 @@ fuse_write_in_sizeof(int abi_version)
         return FUSE_COMPAT_WRITE_IN_SIZE;
     }
 #else
-#pragma unused(abi_version)
+    (void)abi_version;
 #endif
 
     return sizeof(struct fuse_write_in);
@@ -2420,7 +2420,7 @@ FUSE_INLINE
 size_t
 fuse_write_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_write_out);
 }
 
@@ -2460,7 +2460,7 @@ FUSE_INLINE
 size_t
 fuse_fsync_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_fsync_in);
 }
 
@@ -2498,7 +2498,7 @@ FUSE_INLINE
 size_t
 fuse_setxattr_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_setxattr_in);
 }
 
@@ -2550,7 +2550,7 @@ FUSE_INLINE
 size_t
 fuse_getxattr_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_getxattr_in);
 }
 
@@ -2588,7 +2588,7 @@ FUSE_INLINE
 size_t
 fuse_getxattr_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_getxattr_out);
 }
 
@@ -2704,7 +2704,7 @@ FUSE_INLINE
 size_t
 fuse_access_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_access_in);
 }
 
@@ -2728,7 +2728,7 @@ FUSE_INLINE
 size_t
 fuse_init_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_init_in);
 }
 
@@ -2794,7 +2794,7 @@ FUSE_INLINE
 size_t
 fuse_init_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_init_out);
 }
 
@@ -2926,7 +2926,7 @@ FUSE_INLINE
 size_t
 cuse_init_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct cuse_init_in);
 }
 
@@ -2992,7 +2992,7 @@ FUSE_INLINE
 size_t
 cuse_init_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct cuse_init_out);
 }
 
@@ -3114,7 +3114,7 @@ FUSE_INLINE
 size_t
 fuse_interrupt_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_interrupt_in);
 }
 
@@ -3138,7 +3138,7 @@ FUSE_INLINE
 size_t
 fuse_bmap_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_bmap_in);
 }
 
@@ -3176,7 +3176,7 @@ FUSE_INLINE
 size_t
 fuse_bmap_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_bmap_out);
 }
 
@@ -3200,7 +3200,7 @@ FUSE_INLINE
 size_t
 fuse_ioctl_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_ioctl_in);
 }
 
@@ -3294,7 +3294,7 @@ FUSE_INLINE
 size_t
 fuse_ioctl_iovec_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_ioctl_iovec);
 }
 
@@ -3332,7 +3332,7 @@ FUSE_INLINE
 size_t
 fuse_ioctl_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_ioctl_out);
 }
 
@@ -3398,7 +3398,7 @@ FUSE_INLINE
 size_t
 fuse_poll_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_poll_in);
 }
 
@@ -3450,7 +3450,7 @@ FUSE_INLINE
 size_t
 fuse_poll_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_poll_out);
 }
 
@@ -3474,7 +3474,7 @@ FUSE_INLINE
 size_t
 fuse_notify_poll_wakeup_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_poll_wakeup_out);
 }
 
@@ -3498,7 +3498,7 @@ FUSE_INLINE
 size_t
 fuse_fallocate_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_fallocate_in);
 }
 
@@ -3564,7 +3564,7 @@ FUSE_INLINE
 size_t
 fuse_in_header_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_in_header);
 }
 
@@ -3672,7 +3672,7 @@ FUSE_INLINE
 size_t
 fuse_out_header_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_out_header);
 }
 
@@ -3724,7 +3724,7 @@ FUSE_INLINE
 size_t
 fuse_dirent_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_dirent);
 }
 
@@ -3797,7 +3797,7 @@ FUSE_INLINE
 size_t
 fuse_notify_inval_inode_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_inval_inode_out);
 }
 
@@ -3849,7 +3849,7 @@ FUSE_INLINE
 size_t
 fuse_notify_inval_entry_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_inval_entry_out);
 }
 
@@ -3887,7 +3887,7 @@ FUSE_INLINE
 size_t
 fuse_notify_delete_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_delete_out);
 }
 
@@ -3939,7 +3939,7 @@ FUSE_INLINE
 size_t
 fuse_notify_store_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_store_out);
 }
 
@@ -3991,7 +3991,7 @@ FUSE_INLINE
 size_t
 fuse_notify_retrieve_out_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_retrieve_out);
 }
 
@@ -4057,7 +4057,7 @@ FUSE_INLINE
 size_t
 fuse_notify_retrieve_in_sizeof(int abi_version)
 {
-#pragma unused(abi_version)
+    (void)abi_version;
     return sizeof(struct fuse_notify_retrieve_in);
 }
 

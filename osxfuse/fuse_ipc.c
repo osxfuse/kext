@@ -1144,10 +1144,10 @@ fuse_ipc_notify_audit(struct fuse_data *data, int notify, size_t notify_len) {
 
         FN_AUDIT_CASE_OUT(FUSE_NOTIFY_RETRIEVE, fuse_notify_retrieve_out)
 
-        FN_AUDIT_CASE_OUT(FUSE_NOTIFY_DELETE, fuse_notify_delete_out)
+        FN_AUDIT_CASE_SIZE(FUSE_NOTIFY_DELETE, >=,
+                           fuse_notify_delete_out_sizeof(DATOI(data)))
 
         default:
-            IOLog("osxfuse: notification codes out of sync (%d)\n", notify);
             panic("osxfuse: notification codes out of sync (%d)", notify);
     }
 
@@ -1196,9 +1196,12 @@ fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio) {
             err = fuse_notify_inval_inode(data, &iov);
             break;
 
+        case FUSE_NOTIFY_DELETE:
+            err = fuse_notify_delete(data, &iov);
+            break;
+
         case FUSE_NOTIFY_STORE:
         case FUSE_NOTIFY_RETRIEVE:
-        case FUSE_NOTIFY_DELETE:
             /* Not implemented */
             break;
     }

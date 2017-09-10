@@ -10,6 +10,8 @@
 
 #include "fuse.h"
 
+#include <stdbool.h>
+
 /*
  * The shop of horrors
  */
@@ -208,6 +210,6 @@ struct fuse_kludge_thread_16
     uint32_t sched_flags;
 } __attribute__ ((packed));
 
-boolean_t fuse_kludge_thread_should_abort(thread_t th);
+bool fuse_kludge_thread_should_abort(thread_t th);
 
 #endif /* _FUSE_KLUDGES_H_ */
