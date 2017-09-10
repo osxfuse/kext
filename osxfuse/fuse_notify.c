@@ -13,6 +13,7 @@
 
 #include <sys/ubc.h>
 
+__private_extern__
 int
 fuse_vnode_notify(vnode_t vp, uint32_t events)
 {
@@ -238,6 +239,7 @@ fuse_notify_inval_entry_file_callback(vnode_t vp, uint64_t fileid)
     return 0;
 }
 
+__private_extern__
 int
 fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
 {
@@ -268,6 +270,7 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
                               &fuse_notify_inval_entry_file_callback);
 }
 
+__private_extern__
 int
 fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 {
@@ -390,6 +393,7 @@ fuse_notify_delete_file_callback(vnode_t vp, uint64_t fileid)
     return 0;
 }
 
+__private_extern__
 int
 fuse_notify_delete(struct fuse_data *data, struct fuse_iov *iov)
 {
