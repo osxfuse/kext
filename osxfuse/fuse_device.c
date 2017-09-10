@@ -717,11 +717,8 @@ fuse_device_ioctl(dev_t dev, u_long cmd, caddr_t udata,
 
             struct fuse_avfi_ioctl *avfi = (struct fuse_avfi_ioctl *)udata;
 
-            ret = (int)HNodeLookupRealQuickIfExists(dummy_device,
-                                                    (ino_t)avfi->inode,
-                                                    0, /* fork index */
-                                                    &hn,
-                                                    &vn);
+            ret = HNodeLookupRealQuickIfExists(dummy_device, avfi->inode,
+                                               0 /* fork index */, &hn, &vn);
             if (ret) {
                 break;
             }

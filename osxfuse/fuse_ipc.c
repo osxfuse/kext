@@ -1196,9 +1196,12 @@ fuse_ipc_notify_handler(struct fuse_data *data, int notify, uio_t uio) {
             err = fuse_notify_inval_inode(data, &iov);
             break;
 
+        case FUSE_NOTIFY_DELETE:
+            err = fuse_notify_delete(data, &iov);
+            break;
+
         case FUSE_NOTIFY_STORE:
         case FUSE_NOTIFY_RETRIEVE:
-        case FUSE_NOTIFY_DELETE:
             /* Not implemented */
             break;
     }

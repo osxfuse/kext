@@ -69,6 +69,7 @@ int fuse_vnode_notify(vnode_t vp, uint32_t events);
 
 int fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov);
 int fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov);
+int fuse_notify_delete(struct fuse_data *data, struct fuse_iov *iov);
 
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
 

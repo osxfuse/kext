@@ -20,18 +20,18 @@ fuse_vnode_notify(vnode_t vp, uint32_t events)
     struct vnode_attr va;
     struct vnode_attr *vap = &va;
     struct vnode_attr *cached_vap = VTOVA(vp);
-    
+
     (void)vfs_get_notify_attributes(vap);
-    
+
     VATTR_RETURN(vap, va_fsid, cached_vap->va_fsid);
     VATTR_RETURN(vap, va_fileid, cached_vap->va_fileid);
     VATTR_RETURN(vap, va_mode, cached_vap->va_mode);
     VATTR_RETURN(vap, va_uid, cached_vap->va_uid);
     VATTR_RETURN(vap, va_gid, cached_vap->va_gid);
     VATTR_RETURN(vap, va_nlink, cached_vap->va_nlink);
-    
+
     return vnode_notify(vp, events, vap);
-    
+
 #else /* M_OSXFUSE_ENABLE_VNODE_NOTIFY */
     (void)vp;
     (void)events;
@@ -53,7 +53,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
     vfs_context_t context;
-    
+
     struct fuse_dispatcher fdi;
     struct fuse_abi_data fgi;
     struct fuse_abi_data fao;
@@ -82,7 +82,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
     if (err) {
         if (err == ENOENT) {
             events |= FUSE_VNODE_EVENT_DELETE;
-            
+
             fuse_biglock_unlock(data->biglock);
             fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
             fuse_biglock_lock(data->biglock);
@@ -98,7 +98,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
      * but we send out the notification anyway.
      */
     events = FUSE_VNODE_EVENT_ATTRIB | FUSE_VNODE_EVENT_WRITE;
-    
+
     cache_attrs(vp, fuse_attr_out, &fao);
 
     old_filesize = fvdat->filesize;
@@ -113,7 +113,7 @@ fuse_notify_getattr(void *parameter, __unused wait_result_t wait_result)
 
         if (new_filesize > old_filesize) {
             events |= FUSE_VNODE_EVENT_EXTEND;
-            
+
             /*
              * Note: Unless the file did end on a page boundary we need to
              * invalidate the last page of the file's unified buffer cache
@@ -149,43 +149,32 @@ out:
     thread_terminate(current_thread());
 }
 
+typedef int (*fuse_notify_lookup_callback)(vnode_t, uint64_t);
+
+static
 int
-fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
+fuse_notify_lookup(struct fuse_data *data, uint64_t parentid, uint64_t fileid,
+                   char *name, size_t namelen,
+                   fuse_notify_lookup_callback parent_callback,
+                   fuse_notify_lookup_callback file_callback)
 {
     int err = 0;
 
-    struct fuse_abi_data fnieo;
-    char name[FUSE_MAXNAMLEN + 1];
-    void *next;
-
-    uint32_t namelen;
-    uint64_t parent_ino;
-
     HNodeRef dhp;
     vnode_t dvp;
-    vnode_t vp;
     struct componentname cn;
+    vnode_t vp;
 
-    fuse_abi_data_init(&fnieo, DATOI(data), iov->base);
-    next = (char *)iov->base + fuse_notify_inval_entry_out_sizeof(DATOI(data));
+    struct fuse_vnode_data *fdvdat;
 
-    namelen = fuse_notify_inval_entry_out_get_namelen(&fnieo);
-    if (namelen > iov->len - ((char *)next - (char *)iov->base)) {
-        return EINVAL;
-    }
-    if (namelen > FUSE_MAXNAMLEN) {
-        return ENAMETOOLONG;
-    }
-    memcpy(name, next, namelen);
-    name[namelen] = '\0';
-
-    parent_ino = fuse_notify_inval_entry_out_get_parent(&fnieo);
-    err = (int)HNodeLookupRealQuickIfExists(data->fdev, parent_ino,
-                                            0 /* fork index */, &dhp, &dvp);
+    err = HNodeLookupRealQuickIfExists(data->fdev, parentid, 0 /* fork index */,
+                                       &dhp, &dvp);
     if (err) {
         return err;
     }
     assert(dvp != NULL);
+
+    fdvdat = VTOFUD(dvp);
 
     /*
      * We have to look up the vnode for the specified name in the vnode cache,
@@ -197,36 +186,86 @@ fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
     memset(&cn, 0, sizeof(cn));
     cn.cn_nameiop = LOOKUP;
     cn.cn_flags = MAKEENTRY;
-    cn.cn_namelen = namelen;
+    cn.cn_namelen = (int)namelen;
     cn.cn_nameptr = name;
 
-    fuse_nodelock_lock(VTOFUD(dvp), FUSEFS_EXCLUSIVE_LOCK);
+    fuse_nodelock_lock(fdvdat, FUSEFS_EXCLUSIVE_LOCK);
 
     err = fuse_vncache_lookup(dvp, &vp, &cn);
     switch (err) {
         case -1:
-            /* positive match */
+            /* Positive match */
             err = 0;
-            fuse_vncache_purge(vp);
+            (void)file_callback(vp, fileid);
             vnode_put(vp);
-        case 0:
-            /* no match in cache */
             break;
+
+        case 0:
+            /* No match in cache */
+            break;
+
         case ENOENT:
-            /* negative match */
-        default:
+            /* Negative match */
             goto out;
     }
 
-    fuse_invalidate_attr(dvp);
-    FUSE_KNOTE(dvp, NOTE_ATTRIB);
-    fuse_vnode_notify(dvp, FUSE_VNODE_EVENT_ATTRIB);
+    (void)parent_callback(dvp, parentid);
 
 out:
-    fuse_nodelock_unlock(VTOFUD(dvp));
+    fuse_nodelock_unlock(fdvdat);
 
     vnode_put(dvp);
     return err;
+}
+
+static
+int
+fuse_notify_inval_entry_parent_callback(vnode_t dvp, uint64_t parentid)
+{
+    fuse_invalidate_attr(dvp);
+
+    FUSE_KNOTE(dvp, NOTE_ATTRIB);
+    fuse_vnode_notify(dvp, FUSE_VNODE_EVENT_ATTRIB);
+
+    return 0;
+}
+
+static
+int
+fuse_notify_inval_entry_file_callback(vnode_t vp, uint64_t fileid)
+{
+    fuse_vncache_purge(vp);
+    return 0;
+}
+
+int
+fuse_notify_inval_entry(struct fuse_data *data, struct fuse_iov *iov)
+{
+    struct fuse_abi_data fnieo;
+    void *next;
+
+    uint64_t parentid;
+    size_t namelen;
+    char name[FUSE_MAXNAMLEN + 1];
+
+    fuse_abi_data_init(&fnieo, DATOI(data), iov->base);
+    next = (char *)iov->base + fuse_notify_inval_entry_out_sizeof(DATOI(data));
+
+    parentid = fuse_notify_inval_entry_out_get_parent(&fnieo);
+
+    namelen = fuse_notify_inval_entry_out_get_namelen(&fnieo);
+    if (namelen > iov->len - ((char *)next - (char *)iov->base)) {
+        return EINVAL;
+    }
+    if (namelen > FUSE_MAXNAMLEN) {
+        return ENAMETOOLONG;
+    }
+    memcpy(name, next, namelen);
+    name[namelen] = '\0';
+
+    return fuse_notify_lookup(data, parentid, 0 /* fileid */, name, namelen,
+                              &fuse_notify_inval_entry_parent_callback,
+                              &fuse_notify_inval_entry_file_callback);
 }
 
 int
@@ -236,7 +275,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 
     struct fuse_abi_data fniio;
 
-    ino_t ino;
+    ino_t fileid;
     int64_t off;
     int64_t len;
 
@@ -258,12 +297,12 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 
     fuse_abi_data_init(&fniio, DATOI(data), iov->base);
 
-    ino = (ino_t)fuse_notify_inval_inode_out_get_ino(&fniio);
+    fileid = (ino_t)fuse_notify_inval_inode_out_get_ino(&fniio);
     off = fuse_notify_inval_inode_out_get_off(&fniio);
     len = fuse_notify_inval_inode_out_get_len(&fniio);
 
-    err = (int)HNodeLookupRealQuickIfExists(data->fdev, ino, 0 /* fork index */,
-                                            &hp, &vp);
+    err = HNodeLookupRealQuickIfExists(data->fdev, fileid, 0 /* fork index */,
+                                       &hp, &vp);
     if (err) {
         return err;
     }
@@ -307,14 +346,80 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
         }
     }
 
-    FUSE_KNOTE(vp, NOTE_ATTRIB | NOTE_WRITE);
-    fuse_vnode_notify(vp, FUSE_VNODE_EVENT_ATTRIB | FUSE_VNODE_EVENT_WRITE);
+    FUSE_KNOTE(vp, NOTE_WRITE | NOTE_ATTRIB);
+    fuse_vnode_notify(vp, FUSE_VNODE_EVENT_WRITE | FUSE_VNODE_EVENT_ATTRIB);
 
     fuse_nodelock_unlock(VTOFUD(vp));
     vnode_put(vp);
 
 out:
     return err;
+}
+
+static
+int
+fuse_notify_delete_parent_callback(vnode_t dvp, uint64_t parentid)
+{
+    fuse_invalidate_attr(dvp);
+
+    FUSE_KNOTE(dvp, NOTE_WRITE | NOTE_ATTRIB);
+    fuse_vnode_notify(dvp, FUSE_VNODE_EVENT_WRITE | FUSE_VNODE_EVENT_ATTRIB);
+
+    return 0;
+}
+
+static
+int
+fuse_notify_delete_file_callback(vnode_t vp, uint64_t fileid)
+{
+    struct fuse_vnode_data *fvdat = VTOFUD(vp);
+
+    if (fileid == fvdat->nodeid) {
+        vfs_context_t context = vfs_context_create(NULL);
+
+        fuse_nodelock_lock(fvdat, FUSEFS_EXCLUSIVE_LOCK);
+        fuse_internal_vnode_disappear(vp, context, REVOKE_SOFT);
+        fuse_nodelock_unlock(fvdat);
+
+        vfs_context_rele(context);
+
+        FUSE_KNOTE(vp, NOTE_DELETE);
+        fuse_vnode_notify(vp, FUSE_VNODE_EVENT_DELETE);
+    }
+
+    return 0;
+}
+
+int
+fuse_notify_delete(struct fuse_data *data, struct fuse_iov *iov)
+{
+    struct fuse_abi_data fndo;
+    void *next;
+
+    uint64_t parentid;
+    uint64_t fileid;
+    size_t namelen;
+    char name[FUSE_MAXNAMLEN + 1];
+
+    fuse_abi_data_init(&fndo, DATOI(data), iov->base);
+    next = (char *)iov->base + fuse_notify_delete_out_sizeof(DATOI(data));
+
+    parentid = fuse_notify_delete_out_get_parent(&fndo);
+    fileid = fuse_notify_delete_out_get_child(&fndo);
+
+    namelen = fuse_notify_delete_out_get_namelen(&fndo);
+    if (namelen > iov->len - ((char *)next - (char *)iov->base)) {
+        return EINVAL;
+    }
+    if (namelen > FUSE_MAXNAMLEN) {
+        return ENAMETOOLONG;
+    }
+    memcpy(name, next, namelen);
+    name[namelen] = '\0';
+
+    return fuse_notify_lookup(data, parentid, fileid, name, namelen,
+                              &fuse_notify_delete_parent_callback,
+                              &fuse_notify_delete_file_callback);
 }
 
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
