@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
+ * Copyright (c) 2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -51,8 +52,10 @@ __private_extern__
 int
 fusefs_lock(fusenode_t cp, enum fusefslocktype locktype)
 {
+    int err = 0;
     void *thread = current_thread();
 
+restart:
     if (locktype == FUSEFS_SHARED_LOCK) {
         lck_rw_lock_shared(cp->nodelock);
         cp->nodelockowner = FUSEFS_SHARED_OWNER;
@@ -66,10 +69,27 @@ fusefs_lock(fusenode_t cp, enum fusefslocktype locktype)
      */
     if ((locktype != FUSEFS_FORCE_LOCK) && (cp->c_flag & C_NOEXISTS)) {
         fusefs_unlock(cp);
-        return ENOENT;
+        err = ENOENT;
+        goto out;
     }
 
-    return 0;
+    if (cp->flag & FN_GETATTR && cp->getattr_thread != thread) {
+        fuse_lck_mtx_lock(cp->getattr_lock);
+        fusefs_unlock(cp);
+
+        while (true) {
+            err = msleep(cp->getattr_thread, cp->getattr_lock, PDROP | PCATCH,
+                         "fuse_getattr", NULL);
+            if (err == 0) {
+                goto restart;
+            } else if (err == EINTR && fuse_kludge_thread_should_abort(thread)) {
+                goto out;
+            }
+        }
+    }
+
+out:
+    return err;
 }
 
 /*

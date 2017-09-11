@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2011 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -30,10 +30,11 @@ enum {
     kHNodeMagic     = 'HNOD',
 };
 
-#define FN_CREATING          0x00000002
-#define FN_DIRECT_IO         0x00000004
-#define FN_IS_ROOT           0x00000010
-#define FN_REVOKED           0x00000020
+#define FN_CREATING          0x00000001
+#define FN_DIRECT_IO         0x00000002
+#define FN_IS_ROOT           0x00000004
+#define FN_REVOKED           0x00000008
+#define FN_GETATTR           0x00000010
 
 #define C_NEED_RVNODE_PUT    0x000000001
 #define C_NEED_DVNODE_PUT    0x000000002
@@ -87,6 +88,9 @@ struct fuse_vnode_data {
 
     lck_mtx_t *createlock;
     void      *creator;
+
+    lck_mtx_t *getattr_lock;
+    void      *getattr_thread;
 
 #if M_OSXFUSE_ENABLE_TSLOCKING
     /*

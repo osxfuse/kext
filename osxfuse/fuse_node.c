@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
- * Copyright (c) 2011 Benjamin Fleischer
+ * Copyright (c) 2011-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -21,6 +21,7 @@ void
 FSNodeScrub(struct fuse_vnode_data *fvdat)
 {
     lck_mtx_free(fvdat->createlock, fuse_lock_group);
+    lck_mtx_free(fvdat->getattr_lock, fuse_lock_group);
 #if M_OSXFUSE_ENABLE_TSLOCKING
     lck_rw_free(fvdat->nodelock, fuse_lock_group);
     lck_rw_free(fvdat->truncatelock, fuse_lock_group);
@@ -127,6 +128,8 @@ FSNodeGetOrCreateFileVNodeByID(vnode_t              *vnPtr,
             fvdat->createlock = lck_mtx_alloc_init(fuse_lock_group,
                                                    fuse_lock_attr);
             fvdat->creator = current_thread();
+            fvdat->getattr_lock = lck_mtx_alloc_init(fuse_lock_group,
+                                                     fuse_lock_attr);
 #if M_OSXFUSE_ENABLE_TSLOCKING
             fvdat->nodelock = lck_rw_alloc_init(fuse_lock_group,
                                                 fuse_lock_attr);

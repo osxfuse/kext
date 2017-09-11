@@ -14,6 +14,7 @@
 #include "fuse_ipc.h"
 #include "fuse_locking.h"
 #include "fuse_node.h"
+#include "fuse_notify.h"
 
 #include <fuse_ioctl.h>
 
@@ -566,6 +567,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     struct vnode_attr *in_vap = VTOVA(vp);
     struct fuse_vnode_data *fvdat = VTOFUD(vp);
     int purged = 0;
+    uint32_t events = 0;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
     struct fuse_data *data;
 #endif
@@ -603,6 +605,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     } else {
         /* The size might have changed remotely. */
         if (fvdat->filesize != (off_t)in_vap->va_data_size) {
+            events |= FUSE_VNODE_EVENT_WRITE;
             /* Remote size overrides what we have. */
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -613,6 +616,9 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
             fuse_biglock_lock(data->biglock);
 #endif
             purged = 1;
+            if (fvdat->filesize > (off_t)in_vap->va_data_size) {
+                events |= FUSE_VNODE_EVENT_EXTEND;
+            }
             fvdat->filesize = in_vap->va_data_size;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -658,6 +664,7 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         (fvdat->modify_time.tv_nsec != in_vap->va_modify_time.tv_nsec)) {
         fvdat->modify_time.tv_sec = in_vap->va_modify_time.tv_sec;
         fvdat->modify_time.tv_nsec = in_vap->va_modify_time.tv_nsec;
+        events |= FUSE_VNODE_EVENT_ATTRIB;
         if (fuse_isautocache_mp(mp) && !purged) {
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_unlock(data->biglock);
@@ -674,6 +681,10 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         (VATTR_IS_ACTIVE(out_vap, va_create_time) &&
          !VATTR_IS_SUPPORTED(out_vap, va_create_time))) {
         (void)fuse_internal_loadxtimes(vp, out_vap, context);
+    }
+
+    if (events) {
+        fuse_vnode_notify(vp, events);
     }
 }
 

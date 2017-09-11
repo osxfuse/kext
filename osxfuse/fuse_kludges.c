@@ -17,7 +17,7 @@
 #define FUSE_KLUDGE_TH_SFLAG_ABORTED_MASK   (FUSE_KLUDGE_TH_SFLAG_ABORT | FUSE_KLUDGE_TH_SFLAG_ABORTSAFELY)
 
 __private_extern__
-boolean_t
+bool
 fuse_kludge_thread_should_abort(thread_t th)
 {
     uint32_t sched_flags;

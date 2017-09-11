@@ -2192,6 +2192,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
     struct fuse_filehandle *fufh_rw = NULL;
 
     int error, isdir = 0;
+    uint32_t events = 0;
 
     struct fuse_data *data = fuse_get_mpdata(vnode_mount(vp));
 
@@ -2373,6 +2374,7 @@ ok:
         fuse_clearnosyncwrites_mp(vnode_mount(vp));
         fvdat->flag |= FN_DIRECT_IO;
         goto out;
+
     } else if (fufh->fuse_open_flags & FOPEN_PURGE_UBC) {
 #if M_OSXFUSE_ENABLE_BIG_LOCK
         fuse_biglock_unlock(data->biglock);
@@ -2383,11 +2385,13 @@ ok:
         fuse_biglock_lock(data->biglock);
 #endif
         fufh->fuse_open_flags &= ~FOPEN_PURGE_UBC;
+        events |= FUSE_VNODE_EVENT_WRITE;
         if (fufh->fuse_open_flags & FOPEN_PURGE_ATTR) {
             struct fuse_dispatcher fdi;
             struct fuse_abi_data fgi;
 
             fuse_invalidate_attr(vp);
+            events |= FUSE_VNODE_EVENT_ATTRIB;
 
             fdisp_init_abi(&fdi, fuse_getattr_in, data);
             fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
@@ -2407,6 +2411,9 @@ ok:
                 if ((fuse_attr_get_mode(&fa) & S_IFMT)) {
                     cache_attrs(vp, fuse_attr_out, &fao);
                     off_t new_filesize = fuse_attr_get_size(&fa);
+                    if (new_filesize > VTOFUD(vp)->filesize) {
+                        events |= FUSE_VNODE_EVENT_EXTEND;
+                    }
                     VTOFUD(vp)->filesize = new_filesize;
 #if M_OSXFUSE_ENABLE_BIG_LOCK
                     fuse_biglock_unlock(data->biglock);
@@ -2420,6 +2427,10 @@ ok:
             }
             fufh->fuse_open_flags &= ~FOPEN_PURGE_ATTR;
         }
+    }
+
+    if (events) {
+        fuse_vnode_notify(vp, events);
     }
 
     if (fuse_isnoreadahead(vp)) {
