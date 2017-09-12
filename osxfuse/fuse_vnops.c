@@ -824,31 +824,34 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
      * open file handle and FGETATTR was implemented by the daemon, the call
      * might succeed.
      *
-     * We could do something like this:
-     *
-     * struct fuse_filehandle *fufh;
-     * int type;
-     * for (type = 0; type < FUFH_MAXTYPE; type++) {
-     *     fufh = &(fvdat->fufh[type]);
-     *     if (FUFH_IS_VALID(fufh)) {
-     *         fgi->getattr_flags = FUSE_GETATTR_FH;
-     *         fgi->fh = fufh->fh_id;
-     *         break;
-     *     }
-     * }
-     *
      * But by doing so, we would not get an ENOENT error in case the file does
      * no longer exist (under its original name) for as long as its vnode is in
      * the vnode name cache.
      */
+
+    struct fuse_filehandle *fufh = NULL;
+    int type;
+    bool found_valid_fh = false;
+    for (type = 0; type < FUFH_MAXTYPE; type++) {
+        fufh = &(fvdat->fufh[type]);
+        if (FUFH_IS_VALID(fufh)) {
+            found_valid_fh = true;
+            break;
+        }
+    }
 
     fdata_wait_init(data);
     fdisp_init_abi(&fdi, fuse_getattr_in, data);
     fdisp_make_vp(&fdi, FUSE_GETATTR, vp, context);
     fuse_abi_data_init(&fgi, DATOI(data), fdi.indata);
 
-    fuse_getattr_in_set_fh(&fgi, 0);
-    fuse_getattr_in_set_getattr_flags(&fgi, 0);
+    if (found_valid_fh) {
+        fuse_getattr_in_set_fh(&fgi, fufh->fh_id);
+        fuse_getattr_in_set_getattr_flags(&fgi, FUSE_GETATTR_FH);
+    } else {
+        fuse_getattr_in_set_fh(&fgi, 0);
+        fuse_getattr_in_set_getattr_flags(&fgi, 0);
+    }
 
     err = fdisp_wait_answ(&fdi);
     if (err) {
@@ -2692,7 +2695,7 @@ fuse_vnop_read(struct vnop_read_args *ap)
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs(vp)) {
+    if (fuse_isdeadfs(vp) && !vnode_isinuse(vp, 0)) {
         if (!vnode_ischr(vp)) {
             return ENXIO;
         } else {
@@ -3825,7 +3828,7 @@ fuse_vnop_write(struct vnop_write_args *ap)
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs(vp)) {
+    if (fuse_isdeadfs(vp) && !vnode_isinuse(vp, 0)) {
         return ENXIO;
     }
 
