@@ -413,6 +413,9 @@ fuse_notify_delete_file_callback(vnode_t vp, uint64_t fileid)
 
         FUSE_KNOTE(vp, NOTE_DELETE);
         fuse_vnode_notify(vp, FUSE_VNODE_EVENT_DELETE);
+
+    } else {
+        fuse_vncache_purge(vp);
     }
 
     return 0;
