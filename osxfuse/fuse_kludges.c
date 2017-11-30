@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2012 Tuxera Inc.
- * Copyright (c) 2015-2016 Benjamin Fleischer
+ * Copyright (c) 2015-2017 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -45,9 +45,7 @@ __private_extern__
 int
 fuse_kludge_vnode_isrecycled(vnode_t vp)
 {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
-    return vnode_isrecycled(vp);
-#else
+#if VERSION_MAJOR < 10
     lck_mtx_t *v_lock;
     uint16_t v_lflag;
 
@@ -63,6 +61,8 @@ fuse_kludge_vnode_isrecycled(vnode_t vp)
     lck_mtx_unlock(v_lock);
 
     return (v_lflag & (FUSE_KLUDGE_VL_TERMINATE | FUSE_KLUDGE_VL_DEAD)) ? 1 : 0;
+#else
+    return vnode_isrecycled(vp);
 #endif
 }
 
