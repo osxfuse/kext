@@ -9,6 +9,8 @@
 
 #include <libkern/version.h>
 
+#if VERSION_MAJOR < 10
+
 FUSE_INLINE
 lck_mtx_t *
 fuse_kludge_vnode_get_v_lock(vnode_t vp)
@@ -21,6 +23,12 @@ fuse_kludge_vnode_get_v_lock(vnode_t vp)
         return (lck_mtx_t *)((struct fuse_kludge_vnode_9 *)vp)->v_lock;
     }
 }
+
+/*
+ * Constants from bsd/sys/vnode_internal.h.
+ */
+#define FUSE_KLUDGE_VL_TERMINATE    0x0004
+#define FUSE_KLUDGE_VL_DEAD         0x0010
 
 FUSE_INLINE
 uint16_t
@@ -35,11 +43,7 @@ fuse_kludge_vnode_get_v_lflag(vnode_t vp)
     }
 }
 
-/*
- * Constants from bsd/sys/vnode_internal.h.
- */
-#define FUSE_KLUDGE_VL_TERMINATE    0x0004
-#define FUSE_KLUDGE_VL_DEAD         0x0010
+#endif /* VERSION_MAJOR < 10 */
 
 __private_extern__
 int
@@ -61,9 +65,9 @@ fuse_kludge_vnode_isrecycled(vnode_t vp)
     lck_mtx_unlock(v_lock);
 
     return (v_lflag & (FUSE_KLUDGE_VL_TERMINATE | FUSE_KLUDGE_VL_DEAD)) ? 1 : 0;
-#else
+#else /* VERSION_MAJOR < 10 */
     return vnode_isrecycled(vp);
-#endif
+#endif /* VERSION_MAJOR < 10 */
 }
 
 /*
