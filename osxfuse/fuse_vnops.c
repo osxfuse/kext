@@ -3937,6 +3937,11 @@ fuse_vnop_write(struct vnop_write_args *ap)
             /* Using existing fufh of type fufh_type. */
         }
 
+        if (ioflag & IO_APPEND) {
+            /* Arrange for append */
+            uio_setoffset(uio, fvdat->filesize);
+        }
+
         fdata_wait_init(data);
         fdisp_init(&fdi, 0);
 
