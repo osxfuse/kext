@@ -1,11 +1,13 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
+ * Copyright (c) 2018 Benjamin Fleischer
  * All rights reserved.
  */
 
 #include "fuse.h"
 
+#include "fuse_kludges.h"
 #include "fuse_locking.h"
 #include "fuse_sysctl.h"
 
@@ -111,6 +113,10 @@ init_stuff(void)
     }
 #endif /* M_OSXFUSE_ENABLE_HUGE_LOCK */
 #endif /* M_OSXFUSE_ENABLE_INTERIM_FSNODE_LOCK */
+
+    if (ret == KERN_SUCCESS) {
+        fuse_kludge_init();
+    }
 
     if (ret != KERN_SUCCESS) {
         fini_stuff();
