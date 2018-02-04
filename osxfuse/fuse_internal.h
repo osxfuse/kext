@@ -664,8 +664,8 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
     VATTR_RETURN(out_vap, va_modify_time, in_vap->va_modify_time);
 
     /*
-     * When _DARWIN_FEATURE_64_BIT_INODE is not enabled, the User library will
-     * set va_create_time to -1. In that case, we will have to ask for it
+     * When _DARWIN_FEATURE_64_BIT_INODE is not enabled, the user space library
+     * will set va_create_time to -1. In that case, we will have to ask for it
      * separately, if necessary.
      */
     if (in_vap->va_create_time.tv_sec != (int64_t)-1) {
@@ -695,10 +695,12 @@ fuse_internal_attr_loadvap(vnode_t vp, struct vnode_attr *out_vap,
         (void)fuse_internal_loadxtimes(vp, out_vap, context);
     }
 
-    if (events) {
+    if (events && (fvdat->flag & FN_NO_AUTO_NOTIFY) == 0) {
         FUSE_KNOTE(vp, events);
         fuse_vnode_notify(vp, events);
     }
+
+    fvdat->flag &= ~FN_NO_AUTO_NOTIFY;
 }
 
 #define cache_attrs(vp, struct_name, fuse_out) \

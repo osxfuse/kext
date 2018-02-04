@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011 Anatol Pomozov
- * Copyright (c) 2012-2017 Benjamin Fleischer
+ * Copyright (c) 2012-2018 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -759,6 +759,7 @@ fuse_vfsop_root(mount_t mp, struct vnode **vpp, vfs_context_t context)
     err = FSNodeGetOrCreateFileVNodeByID(&vp, FN_IS_ROOT, &feo_root, mp,
                                          NULLVP /* dvp */, context,
                                          NULL /* oflags */);
+    VTOFUD(vp)->flag |= FN_NO_AUTO_NOTIFY;
     *vpp = vp;
 
     if (!err) {

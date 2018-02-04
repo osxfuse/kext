@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2017 Benjamin Fleischer
+ * Copyright (c) 2012-2018 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -357,7 +357,7 @@ fuse_notify_inval_inode(struct fuse_data *data, struct fuse_iov *iov)
 
         if (kr == KERN_SUCCESS) {
             /*
-             * Note: We will derement the vnode's iocount after updating the
+             * Note: We will decrement the vnode's iocount after updating the
              * file's attributes in fuse_notify_getattr_thread().
              */
 

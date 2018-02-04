@@ -2373,6 +2373,7 @@ fuse_vnop_open(struct vnop_open_args *ap)
         IOLog("osxfuse: filehandle_get failed in open (type=%d, err=%d)\n",
               fufh_type, error);
         if (error == ENOENT) {
+            /* XXX: We could post a FUSE_VNODE_EVENT_DELETE here. */
             cache_purge(vp);
         }
         return error;
@@ -2431,7 +2432,15 @@ ok:
             fuse_getattr_in_set_getattr_flags(&fgi, FUSE_GETATTR_FH);
             fuse_getattr_in_set_fh(&fgi, fufh->fh_id);
 
-            if (!fdisp_wait_answ(&fdi)) {
+            if (fdisp_wait_answ(&fdi)) {
+                /*
+                 * The request failed. This means we won't be able to detect
+                 * remote file changes reliably, until the next successful
+                 * FUSE_GETATTR or FUSE_LOOKUP.
+                 */
+                fvdat->flag |= FN_NO_AUTO_NOTIFY;
+
+            } else {
                 struct fuse_abi_data fao;
                 struct fuse_abi_data fa;
 
@@ -2441,11 +2450,13 @@ ok:
                 /* XXX: Could check the sanity/volatility of va_mode here. */
                 if ((fuse_attr_get_mode(&fa) & S_IFMT)) {
                     cache_attrs(vp, fuse_attr_out, &fao);
+
                     off_t new_filesize = fuse_attr_get_size(&fa);
-                    if (new_filesize > VTOFUD(vp)->filesize) {
+                    if (new_filesize > fvdat->filesize) {
                         events |= FUSE_VNODE_EVENT_EXTEND;
                     }
-                    VTOFUD(vp)->filesize = new_filesize;
+                    fvdat->filesize = new_filesize;
+
 #if M_OSXFUSE_ENABLE_BIG_LOCK
                     fuse_biglock_unlock(data->biglock);
 #endif
@@ -2453,6 +2464,11 @@ ok:
 #if M_OSXFUSE_ENABLE_BIG_LOCK
                     fuse_biglock_lock(data->biglock);
 #endif
+
+                    fvdat->modify_time.tv_sec = (typeof(fvdat->modify_time.tv_sec))fuse_attr_get_mtime(&fa);
+                    fvdat->modify_time.tv_nsec = fuse_attr_get_mtimensec(&fa);
+
+                    fvdat->flag &= ~FN_NO_AUTO_NOTIFY;
                 }
                 fuse_ticket_release(fdi.tick);
             }
