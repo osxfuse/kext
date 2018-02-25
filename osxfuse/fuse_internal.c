@@ -269,17 +269,6 @@ fuse_internal_exchange(vnode_t       fvp,
 #endif
 
         /*
-         * We need to increase the iocount of fdvp to make sure it will not be reclaimed
-         * when assiginig fvp a new parent.
-         */
-        vnode_get(fdvp);
-
-        vnode_update_identity(fvp, tdvp, tname, (int)tlen, 0, VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
-        vnode_update_identity(tvp, fdvp, fname, (int)flen, 0, VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
-
-        vnode_put(fdvp);
-
-        /*
          * Another approach (will need additional kernel support to work):
          *
          * vnode_t tmpvp = ffud->vp;
