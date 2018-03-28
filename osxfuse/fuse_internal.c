@@ -268,6 +268,8 @@ fuse_internal_exchange(vnode_t       fvp,
         fuse_biglock_lock(data->biglock);
 #endif
 
+        fuse_kludge_exchange(fvp, tvp);
+
         /*
          * Another approach (will need additional kernel support to work):
          *
