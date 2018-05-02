@@ -130,9 +130,13 @@ FUSE_INLINE
 void
 fuse_invalidate_attr(vnode_t vp)
 {
-    if (VTOFUD(vp)) {
-        bzero(&VTOFUD(vp)->attr_valid, sizeof(struct timespec));
-        VTOFUD(vp)->c_flag &= ~C_XTIMES_VALID;
+    struct fuse_vnode_data *fvd = VTOFUD(vp);
+
+    if (fvd) {
+        fvd->flag |= FN_NO_AUTO_NOTIFY;
+
+        bzero(&fvd->attr_valid, sizeof(struct timespec));
+        fvd->c_flag &= ~C_XTIMES_VALID;
     }
 }
 
