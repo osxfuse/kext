@@ -162,7 +162,7 @@ __private_extern__
 void
 fuse_kludge_exchange(vnode_t vp1, vnode_t vp2)
 {
-    if (version_major > 16) {
+    if (version_major > 15) {
         char *tmp_v_name = ((struct fuse_kludge_vnode_16 *)vp1)->v_name;
         ((struct fuse_kludge_vnode_16 *)vp1)->v_name =
         ((struct fuse_kludge_vnode_16 *)vp2)->v_name;
@@ -331,6 +331,7 @@ struct fuse_kludge_thread_10
  *     10.7    x86_64    140
  *     10.9              132
  *     10.12             136
+ *     10.14             168
  */
 
 #ifdef __LP64__
@@ -363,6 +364,12 @@ struct fuse_kludge_thread_16
     uint32_t sched_flags;
 } __attribute__ ((packed));
 
+struct fuse_kludge_thread_18
+{
+    char dummy[168];
+    uint32_t sched_flags;
+} __attribute__ ((packed));
+
 /*
  * offsetof(thread_t, sched_flags)
  *
@@ -371,6 +378,7 @@ struct fuse_kludge_thread_16
  *     10.7    x86_64    268
  *     10.9              260
  *     10.12             272
+ *     10.14             304
  */
 
 #ifdef __LP64__
@@ -403,12 +411,19 @@ struct fuse_kludge_thread_debug_16
     uint32_t sched_flags;
 } __attribute__ ((packed));
 
+struct fuse_kludge_thread_debug_18
+{
+    char dummy[304];
+    uint32_t sched_flags;
+} __attribute__ ((packed));
+
 /*
  * offsetof(thread_t, sched_flags)
  *
  * DEVELOPMENT kernel
  *     10.10             132
  *     10.12             144
+ *     10.14             176
  */
 
 struct fuse_kludge_thread_development_14
@@ -420,6 +435,12 @@ struct fuse_kludge_thread_development_14
 struct fuse_kludge_thread_development_16
 {
     char dummy[144];
+    uint32_t sched_flags;
+} __attribute__ ((packed));
+
+struct fuse_kludge_thread_development_18
+{
+    char dummy[176];
     uint32_t sched_flags;
 } __attribute__ ((packed));
 
@@ -438,7 +459,9 @@ fuse_kludge_thread_should_abort(thread_t th)
 
     switch (fuse_kludge_kernel) {
         case FUSE_KLUDGE_KERNEL_RELEASE:
-            if (version_major >= 16) {
+            if (version_major >= 18) {
+                sched_flags = ((struct fuse_kludge_thread_18 *)th)->sched_flags;
+            } else if (version_major >= 16) {
                 sched_flags = ((struct fuse_kludge_thread_16 *)th)->sched_flags;
             } else if (version_major >= 13) {
                 sched_flags = ((struct fuse_kludge_thread_13 *)th)->sched_flags;
@@ -452,7 +475,9 @@ fuse_kludge_thread_should_abort(thread_t th)
             break;
 
         case FUSE_KLUDGE_KERNEL_DEBUG:
-            if (version_major >= 16) {
+            if (version_major >= 18) {
+                sched_flags = ((struct fuse_kludge_thread_debug_18 *)th)->sched_flags;
+            } else if (version_major >= 16) {
                 sched_flags = ((struct fuse_kludge_thread_debug_16 *)th)->sched_flags;
             } else if (version_major >= 13) {
                 sched_flags = ((struct fuse_kludge_thread_debug_13 *)th)->sched_flags;
@@ -462,7 +487,9 @@ fuse_kludge_thread_should_abort(thread_t th)
             break;
 
         case FUSE_KLUDGE_KERNEL_DEVELOPMENT:
-            if (version_major >= 16) {
+            if (version_major >= 18) {
+                sched_flags = ((struct fuse_kludge_thread_development_18 *)th)->sched_flags;
+            } else if (version_major >= 16) {
                 sched_flags = ((struct fuse_kludge_thread_development_16 *)th)->sched_flags;
             } else {
                 sched_flags = ((struct fuse_kludge_thread_development_14 *)th)->sched_flags;

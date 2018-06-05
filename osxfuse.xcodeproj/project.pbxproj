@@ -423,6 +423,7 @@
 				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.13]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.14]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
@@ -464,6 +465,7 @@
 				"VALID_ARCHS[sdk=macosx10.11]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.12]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.13]" = x86_64;
+				"VALID_ARCHS[sdk=macosx10.14]" = x86_64;
 				"VALID_ARCHS[sdk=macosx10.5]" = "i386 ppc";
 				"VALID_ARCHS[sdk=macosx10.6]" = "i386 x86_64";
 				"VALID_ARCHS[sdk=macosx10.7]" = "i386 x86_64";
