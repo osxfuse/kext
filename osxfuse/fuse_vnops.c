@@ -2,7 +2,7 @@
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
  * Copyright (c) 2010 Tuxera Inc.
  * Copyright (c) 2011-2012 Anatol Pomozov
- * Copyright (c) 2011-2017 Benjamin Fleischer
+ * Copyright (c) 2011-2018 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -783,11 +783,19 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     fuse_trace_printf_vnop();
 
+    /*
+     * Note: Third party kernel extensions might call us with a NULL context.
+     * As a workaround we fall back to the current thread's context. Do not
+     * forget to release context after we are done with it.
+     */
+    context = vfs_context_create(NULL);
+
     if (fuse_isdeadfs(vp)) {
         if (vnode_isvroot(vp)) {
             goto fake;
         } else {
-            return ENXIO;
+            err = ENXIO;
+            goto out;
         }
     }
 
@@ -799,8 +807,9 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
          * delete process. Therefore we are no longer blocking calls by root
          * even if allow_root and allow_other are not set.
          */
-    } else {
-        CHECK_BLANKET_DENIAL(vp, context, ENOENT);
+    } else if (fuse_blanket_deny(vp, context)) {
+        err = ENOENT;
+        goto out;
     }
 
     fvdat = VTOFUD(vp);
@@ -816,13 +825,13 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
         if (vap != VTOVA(vp)) {
             fuse_internal_attr_loadvap(vp, vap, context);
         }
-        return 0;
+        goto out;
     }
 
     if (!(dataflags & FSESS_INITED) && !vnode_isvroot(vp)) {
         fdata_set_dead(data, false);
         err = ENOTCONN;
-        return err;
+        goto out;
     }
 
     /*
@@ -873,7 +882,7 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
             fuse_biglock_lock(data->biglock);
 #endif
         }
-        return err;
+        goto out;
     }
 
     fuse_abi_data_init(&fao, DATOI(data), fdi.answ);
@@ -883,7 +892,8 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 
     if ((fuse_attr_get_mode(&fa) & S_IFMT) == 0) {
         fuse_ticket_release(fdi.tick);
-        return EIO;
+        err = EIO;
+        goto out;
     }
 
     cache_attrs(vp, fuse_attr_out, &fao);
@@ -940,11 +950,12 @@ fuse_vnop_getattr(struct vnop_getattr_args *ap)
 #if M_OSXFUSE_ENABLE_BIG_LOCK
             fuse_biglock_lock(data->biglock);
 #endif
-            return EIO;
+            err = EIO;
+            goto out;
         }
     }
 
-    return 0;
+    goto out;
 
 fake:
     VATTR_RETURN(vap, va_type, vnode_vtype(vp));
@@ -952,7 +963,9 @@ fake:
     VATTR_RETURN(vap, va_gid, kauth_cred_getgid(data->daemoncred));
     VATTR_RETURN(vap, va_mode, S_IRWXU);
 
-    return 0;
+out:
+    vfs_context_rele(context);
+    return err;
 }
 
 #if M_OSXFUSE_ENABLE_XATTR
