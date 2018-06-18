@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2006-2008 Amit Singh/Google Inc.
- * Copyright (c) 2016 Benjamin Fleischer
+ * Copyright (c) 2016-2018 Benjamin Fleischer
  * All rights reserved.
  */
 
@@ -146,7 +146,7 @@ fuse_filehandle_put(vnode_t vp, vfs_context_t context, fufh_type_t fufh_type,
         /* NOTREACHED */
     }
 
-    if (fuse_isdeadfs(vp)) {
+    if (fuse_isdeadfs_mp(vnode_mount(vp))) {
         goto out;
     }
 

@@ -319,7 +319,7 @@ fuse_vnop_close(struct vnop_close_args *ap)
 
     fuse_trace_printf_vnop();
 
-    if (fuse_isdeadfs(vp)) {
+    if (fuse_isdeadfs_mp(vnode_mount(vp))) {
         return 0;
     }
 
