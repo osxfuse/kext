@@ -183,7 +183,6 @@ struct fuse_data {
     vnode_t                    rootvp;
     enum mount_state           mount_state;
     kauth_cred_t               daemoncred;
-    pid_t                      daemonpid;
     uint32_t                   dataflags;     /* effective fuse_data flags */
     uint64_t                   mountaltflags; /* as-is copy of altflags    */
     uint64_t                   noimplflags;   /* not-implemented flags     */

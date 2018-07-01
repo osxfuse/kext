@@ -400,7 +400,6 @@ fdata_alloc(struct proc *p)
     data->rootvp        = NULLVP;
     data->mount_state   = FM_NOTMOUNTED;
     data->daemoncred    = kauth_cred_proc_ref(p);
-    data->daemonpid     = proc_pid(p);
     data->dataflags     = 0;
     data->mountaltflags = 0ULL;
     data->noimplflags   = 0ULL;
