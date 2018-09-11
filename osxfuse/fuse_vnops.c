@@ -3374,6 +3374,13 @@ fuse_vnop_rename(struct vnop_rename_args *ap)
         FUSE_KNOTE(fvp, NOTE_RENAME);
     }
 
+    /* Explicitly set the parent vnode pointer and parent node id. */
+    if (err == 0) {
+        struct fuse_vnode_data *vn_data = VTOFUD(fvp);
+        vn_data->parentvp = tdvp;
+        vn_data->parent_nodeid = VTOI(tdvp);
+    }
+
     return err;
 }
 
