@@ -1100,12 +1100,27 @@ fuse_internal_rename(vnode_t               fdvp,
 
     err = fdisp_wait_answ(&fdi);
     if (!err) {
+        struct fuse_vnode_data *ffvdat;
+
         fuse_ticket_release(fdi.tick);
 
         fuse_invalidate_attr(fdvp);
         if (tdvp != fdvp) {
             fuse_invalidate_attr(tdvp);
         }
+
+        /*
+         * Note: We need to update the vnode's parent and name now that the
+         * rename has completed successfully.
+         */
+
+        ffvdat = VTOFUD(fvp);
+        ffvdat->parentvp = tdvp;
+        ffvdat->parent_nodeid = VTOI(tdvp);
+
+        vnode_update_identity(fvp, tdvp, tcnp->cn_nameptr, tcnp->cn_namelen,
+                              tcnp->cn_hash,
+                              VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
     }
 
     return err;
