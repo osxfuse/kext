@@ -1121,6 +1121,12 @@ fuse_internal_rename(vnode_t               fdvp,
         vnode_update_identity(fvp, tdvp, tcnp->cn_nameptr, tcnp->cn_namelen,
                               tcnp->cn_hash,
                               VNODE_UPDATE_PARENT | VNODE_UPDATE_NAME);
+
+        /* An invalidate is required here because rename updates atime.
+         * XXX: Only invalidate if the volume's been mounted without the
+         * `noatime` attribute? Are there other cases to be considered?
+         */
+        fuse_invalidate_attr(fvp);
     }
 
     return err;
